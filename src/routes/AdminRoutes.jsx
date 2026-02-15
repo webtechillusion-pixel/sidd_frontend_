@@ -5,16 +5,16 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 // Lazy load admin pages
 const AdminLogin = React.lazy(() => import('../pages/Admin/AdminLogin'));
-const AdminLayout = React.lazy(() => import('../components/admin/AdminLayout'));
-const AdminDashboard = React.lazy(() => import('../pages/admin/AdminDashboard'));
-const ManageRiders = React.lazy(() => import('../pages/admin/ManageRiders'));
-const ManageCabs = React.lazy(() => import('../pages/admin/ManageCabs'));
-const ManageBookings = React.lazy(() => import('../pages/admin/ManageBookings'));
-const ManageUsers = React.lazy(() => import('../pages/admin/ManageUsers'));
-const ManagePricing = React.lazy(() => import('../pages/admin/ManagePricing'));
-const ManagePayouts = React.lazy(() => import('../pages/admin/ManagePayouts'));
-const AdminAnalytics = React.lazy(() => import('../pages/admin/AdminAnalytics'));
-const AdminSettings = React.lazy(() => import('../pages/admin/AdminSettings'));
+const AdminLayout = React.lazy(() => import('../components/Admin/AdminLayout'));
+const AdminDashboard = React.lazy(() => import('../pages/Admin/AdminDashboard'));
+const ManageRiders = React.lazy(() => import('../pages/Admin/ManageRiders'));
+const ManageCabs = React.lazy(() => import('../pages/Admin/ManageCabs'));
+const ManageBookings = React.lazy(() => import('../pages/Admin/ManageBookings'));
+const ManageUsers = React.lazy(() => import('../pages/Admin/ManageUsers'));
+const ManagePricing = React.lazy(() => import('../pages/Admin/ManagePricing'));
+const ManagePayouts = React.lazy(() => import('../pages/Admin/ManagePayouts'));
+const AdminAnalytics = React.lazy(() => import('../pages/Admin/AdminAnalytics'));
+const AdminSettings = React.lazy(() => import('../pages/Admin/AdminSettings'));
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
