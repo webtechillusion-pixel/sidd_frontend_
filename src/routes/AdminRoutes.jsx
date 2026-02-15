@@ -5,7 +5,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 // Lazy load admin pages
 const AdminLogin = React.lazy(() => import('../pages/Admin/AdminLogin'));
-const AdminLayout = React.lazy(() => import('../components/Admin/AdminLayout'));
+const AdminLayout = React.lazy(() => import('../components/admin/AdminLayout'));
 const AdminDashboard = React.lazy(() => import('../pages/Admin/AdminDashboard'));
 const ManageRiders = React.lazy(() => import('../pages/Admin/ManageRiders'));
 const ManageCabs = React.lazy(() => import('../pages/Admin/ManageCabs'));
