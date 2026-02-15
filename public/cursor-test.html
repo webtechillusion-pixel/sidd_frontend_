@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursor Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            cursor: auto !important;
+        }
+        
+        .test-area {
+            border: 2px solid #ccc;
+            padding: 20px;
+            margin: 20px 0;
+            min-height: 200px;
+            background: #f9f9f9;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer !important;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        input {
+            padding: 8px;
+            margin: 10px;
+            cursor: text !important;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        .debug-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cursor Movement Test</h1>
+    
+    <div class="debug-info">
+        <h3>Debug Information:</h3>
+        <p><strong>User Agent:</strong> <span id="userAgent"></span></p>
+        <p><strong>Screen Resolution:</strong> <span id="screenRes"></span></p>
+        <p><strong>Browser:</strong> <span id="browser"></span></p>
+    </div>
+    
+    <div class="test-area">
+        <h3>Test Area - Move your cursor here</h3>
+        <p>If your cursor is working properly, you should be able to:</p>
+        <ul>
+            <li>Move the cursor freely in this area</li>
+            <li>Click on buttons and see hover effects</li>
+            <li>Click in input fields and type</li>
+        </ul>
+        
+        <button onclick="alert('Button clicked! Cursor is working.')">Test Button</button>
+        <button onclick="testCursorPosition()">Test Cursor Position</button>
+        
+        <br><br>
+        
+        <input type="text" placeholder="Type here to test cursor..." />
+        
+        <div id="cursorInfo" style="margin-top: 20px; padding: 10px; background: #e9ecef; border-radius: 4px;">
+            <strong>Cursor Position:</strong> <span id="cursorPos">Move cursor to see position</span>
+        </div>
+    </div>
+    
+    <div class="debug-info">
+        <h3>Troubleshooting Steps:</h3>
+        <ol>
+            <li><strong>Check Browser:</strong> Try a different browser (Chrome, Firefox, Edge)</li>
+            <li><strong>Clear Cache:</strong> Clear browser cache and cookies</li>
+            <li><strong>Disable Extensions:</strong> Disable browser extensions temporarily</li>
+            <li><strong>Check CSS:</strong> Look for CSS rules that might be affecting cursor</li>
+            <li><strong>Hardware:</strong> Try a different mouse or trackpad</li>
+            <li><strong>Restart:</strong> Restart your browser or computer</li>
+        </ol>
+    </div>
+    
+    <script>
+        // Display debug information
+        document.getElementById('userAgent').textContent = navigator.userAgent;
+        document.getElementById('screenRes').textContent = screen.width + 'x' + screen.height;
+        document.getElementById('browser').textContent = getBrowserName();
+        
+        function getBrowserName() {
+            const userAgent = navigator.userAgent;
+            if (userAgent.includes('Chrome')) return 'Chrome';
+            if (userAgent.includes('Firefox')) return 'Firefox';
+            if (userAgent.includes('Safari')) return 'Safari';
+            if (userAgent.includes('Edge')) return 'Edge';
+            return 'Unknown';
+        }
+        
+        // Track cursor position
+        document.addEventListener('mousemove', function(e) {
+            document.getElementById('cursorPos').textContent = `X: ${e.clientX}, Y: ${e.clientY}`;
+        });
+        
+        function testCursorPosition() {
+            alert('If you can see this alert, your cursor click is working!');
+        }
+        
+        // Force cursor styles
+        document.body.style.cursor = 'auto';
+        
+        // Add global cursor fix
+        const style = document.createElement('style');
+        style.textContent = `
+            * { cursor: auto !important; }
+            button, a, [onclick] { cursor: pointer !important; }
+            input, textarea { cursor: text !important; }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
