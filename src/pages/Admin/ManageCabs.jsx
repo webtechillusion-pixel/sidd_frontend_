@@ -15,13 +15,17 @@ import {
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
 import StatusBadge from '../../components/admin/StatusBadge';
+import AddCabModal from '../../components/admin/AddCabModal';
 import { toast } from 'react-toastify';
 
 const ManageCabs = () => {
   const {
     cabs,
+    riders,
     loadCabs,
-    handleCabApproval
+    loadRiders,
+    handleCabApproval,
+    createCab
   } = useAdmin();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,11 +34,13 @@ const ManageCabs = () => {
   const [loading, setLoading] = useState(false);
   const [selectedCab, setSelectedCab] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchCabs();
+    loadRiders({ limit: 100, status: 'APPROVED' });
   }, [currentPage, statusFilter, cabTypeFilter]);
 
   const fetchCabs = async () => {
@@ -148,6 +154,14 @@ const ManageCabs = () => {
             <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
               <Download className="h-5 w-5" />
               <span>Export</span>
+            </button>
+
+            <button 
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <Car className="h-5 w-5" />
+              <span>Add Cab</span>
             </button>
           </div>
         </div>
@@ -586,6 +600,18 @@ const ManageCabs = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add Cab Modal */}
+      {isAddModalOpen && (
+        <AddCabModal 
+          riders={riders}
+          onClose={() => setIsAddModalOpen(false)}
+          onSuccess={() => {
+            setIsAddModalOpen(false);
+            fetchCabs();
+          }}
+        />
       )}
     </div>
   );

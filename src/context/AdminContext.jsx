@@ -368,6 +368,21 @@ const clearAllCookies = () => {
     return false;
   };
 
+  // Create Cab
+  const createCab = async (cabData) => {
+    try {
+      const response = await adminService.createCab(cabData);
+      if (response.success) {
+        toast.success('Cab created successfully');
+        setCabs(prev => [response.data, ...prev]);
+        return response.data;
+      }
+    } catch (error) {
+      toast.error(error.message || 'Failed to create cab');
+    }
+    return null;
+  };
+
   // Update Pricing
   const updatePricing = async (cabType, data) => {
     try {
@@ -469,6 +484,7 @@ const clearAllCookies = () => {
     handleRiderApproval,
     suspendRider,
     handleCabApproval,
+    createCab,
     updatePricing,
     processPayout,
     bulkProcessPayouts,

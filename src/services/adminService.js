@@ -22,6 +22,7 @@ export const adminService = {
   
   // Cabs
   getCabs: (params) => api.get('/api/admin/cabs', { params }),
+  createCab: (data) => api.post('/api/admin/cabs', data),
   approveCab: (id, data) => api.put(`/api/admin/cabs/${id}/approve`, data),
   
   // Pricing

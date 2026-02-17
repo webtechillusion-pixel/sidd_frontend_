@@ -514,14 +514,32 @@ socket.io.on('reconnect', onReconnect);
     setLoadingCabs(true);
     console.log('🔍 Fetching nearby cabs for:', { lat: pickupLocation.lat, lng: pickupLocation.lng, vehicleType });
     
-    // Development: mock cabs removed for deployment
-    // const mockCabs = [ ... ];
-    // setNearbyCabs(mockCabs);
-    // console.log('✅ Mock cabs loaded:', mockCabs.length);
-    // toast.success('Found available drivers in your area!');
-    // Production fallback: no nearby cabs until API returns data
-    setNearbyCabs([]);
-    setLoadingCabs(false);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/search/cabs/nearby?lat=${pickupLocation.lat}&lng=${pickupLocation.lng}&cabType=${vehicleType}`,
+        {
+          credentials: 'include'
+        }
+      );
+      
+      const data = await response.json();
+      console.log('📡 API Response:', data);
+      
+      if (data.success && data.data.availableCabs) {
+        setNearbyCabs(data.data.availableCabs);
+        console.log('✅ Cabs loaded:', data.data.availableCabs.length);
+        if (data.data.availableCabs.length > 0) {
+          toast.success(`Found ${data.data.availableCabs.length} available cabs!`);
+        }
+      } else {
+        setNearbyCabs([]);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching cabs:', error);
+      setNearbyCabs([]);
+    } finally {
+      setLoadingCabs(false);
+    }
   };
 
   // Add this function to handle date/time selection
