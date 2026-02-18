@@ -27,7 +27,7 @@ import {
   User
 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import bookingService from '../../services/bookingService';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
@@ -41,6 +41,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const BookingPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { socket, isConnected, joinBookingRoom, joinUserRoom } = useSocket();
   
@@ -165,6 +166,64 @@ const BookingPage = () => {
       loadBooking();
     }
   }, [id, navigate]);
+
+  // Handle hero form data
+  useEffect(() => {
+    const heroData = location.state;
+    if (heroData?.fromHero) {
+      // Set pickup location
+      if (heroData.pickup) {
+        setPickupLocation({ text: heroData.pickup, lat: null, lng: null });
+        setManualInput(prev => ({ ...prev, pickup: heroData.pickup }));
+      }
+      
+      // Set drop location
+      if (heroData.destination) {
+        setDropLocation({ text: heroData.destination, lat: null, lng: null });
+        setManualInput(prev => ({ ...prev, drop: heroData.destination }));
+      }
+      
+      // Set trip type
+      if (heroData.tripType) {
+        const tripTypeMap = {
+          'oneway': 'ONE_WAY',
+          'roundtrip': 'ROUND_TRIP',
+          'outstation': 'OUTSTATION',
+          'local': 'LOCAL'
+        };
+        setTripType(tripTypeMap[heroData.tripType] || 'ONE_WAY');
+      }
+      
+      // Set scheduled date/time
+      if (heroData.date) {
+        setScheduledDate(heroData.date);
+        setBookingType('SCHEDULED');
+        setShowDateTimePicker(true);
+      }
+      if (heroData.time) {
+        setScheduledTime(heroData.time);
+      }
+      
+      // Set hours for local rental
+      if (heroData.hours) {
+        // Could set rental hours here if there's a state for it
+      }
+      
+      // Set vehicle type from hero form
+      if (heroData.vehicle) {
+        const vehicleMap = {
+          'sedan': 'SEDAN',
+          'suv': 'SUV',
+          'luxury': 'PREMIUM',
+          'mini_bus': 'SUV'
+        };
+        setVehicleType(vehicleMap[heroData.vehicle.id] || 'SEDAN');
+      }
+      
+      // Clear the state to prevent re-applying on refresh
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.state]);
 
   // Initialize Google Maps and Autocomplete
   useEffect(() => {
@@ -1253,7 +1312,7 @@ navigate('/checkout', {
           onClick={() => setTripType('ONE_WAY')}
           className={`flex-1 py-3 rounded-lg font-medium flex items-center justify-center ${
             tripType === 'ONE_WAY'
-              ? 'bg-blue-600 text-white'
+              ? 'bg-yellow-500 text-gray-900'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
@@ -1265,7 +1324,7 @@ navigate('/checkout', {
           onClick={() => setTripType('ROUND_TRIP')}
           className={`flex-1 py-3 rounded-lg font-medium flex items-center justify-center ${
             tripType === 'ROUND_TRIP'
-              ? 'bg-blue-600 text-white'
+              ? 'bg-yellow-500 text-gray-900'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
@@ -1301,7 +1360,7 @@ navigate('/checkout', {
           </button>
         </div>
         {paymentMethod === 'ONLINE' && (
-          <p className="text-xs text-blue-600 mt-2">
+          <p className="text-xs text-yellow-500 mt-2">
             You'll be redirected to secure payment page
           </p>
         )}
@@ -1333,7 +1392,7 @@ navigate('/checkout', {
       onClick={() => setBookingType('SCHEDULED')}
       className={`flex-1 py-3 rounded-lg font-medium flex items-center justify-center ${
         bookingType === 'SCHEDULED'
-          ? 'bg-blue-600 text-white'
+          ? 'bg-yellow-500 text-gray-900'
           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
       }`}
     >
@@ -1349,9 +1408,9 @@ navigate('/checkout', {
     <div className="flex items-center justify-between mb-3">
       <div>
         <h4 className="font-bold text-blue-800">Schedule Your Ride</h4>
-        <p className="text-sm text-blue-600">Pick a date and time for your ride</p>
+        <p className="text-sm text-yellow-500">Pick a date and time for your ride</p>
       </div>
-      <Calendar className="h-5 w-5 text-blue-600" />
+      <Calendar className="h-5 w-5 text-yellow-500" />
     </div>
     
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1405,7 +1464,7 @@ navigate('/checkout', {
       </div>
     )}
     
-    <div className="mt-4 text-xs text-blue-600">
+    <div className="mt-4 text-xs text-yellow-500">
       <p>✓ Ride will be booked 15 minutes before scheduled time</p>
       <p>✓ You can cancel up to 30 minutes before scheduled time</p>
     </div>
@@ -1424,7 +1483,7 @@ navigate('/checkout', {
               setMapSelectingFor('pickup');
               setShowMapModal(true);
             }}
-            className="flex items-center text-sm text-blue-600 hover:text-blue-800 mt-1 sm:mt-0"
+            className="flex items-center text-sm text-yellow-500 hover:text-blue-800 mt-1 sm:mt-0"
           >
             <Navigation className="h-4 w-4 mr-1" />
             Select on Map
@@ -1470,7 +1529,7 @@ navigate('/checkout', {
                 }}
                 className="w-full p-3 text-left hover:bg-gray-50 border-b last:border-b-0 flex items-start"
               >
-                <MapPin className="h-4 w-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                <MapPin className="h-4 w-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="font-medium text-sm">{result.name}</p>
                   <p className="text-xs text-gray-500">Click to select</p>
@@ -1499,7 +1558,7 @@ navigate('/checkout', {
               setMapSelectingFor('drop');
               setShowMapModal(true);
             }}
-            className="flex items-center text-sm text-blue-600 hover:text-blue-800 mt-1 sm:mt-0"
+            className="flex items-center text-sm text-yellow-500 hover:text-blue-800 mt-1 sm:mt-0"
           >
             <Target className="h-4 w-4 mr-1" />
             Select on Map
@@ -1545,7 +1604,7 @@ navigate('/checkout', {
                 }}
                 className="w-full p-3 text-left hover:bg-gray-50 border-b last:border-b-0 flex items-start"
               >
-                <MapPin className="h-4 w-4 text-blue-600 mr-2 mt-0.5 flex-shrink-0" />
+                <MapPin className="h-4 w-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="font-medium text-sm">{result.name}</p>
                   <p className="text-xs text-gray-500">Click to select</p>
@@ -1621,7 +1680,7 @@ navigate('/checkout', {
               </div>
             </div>
             <div className="text-left sm:text-right">
-              <p className="text-xl sm:text-2xl font-bold text-blue-600">
+              <p className="text-xl sm:text-2xl font-bold text-yellow-500">
                 ₹{fareEstimate || 'Calculating...'}
               </p>
               <p className="text-sm text-gray-500">Estimated fare</p>
@@ -1685,7 +1744,7 @@ navigate('/checkout', {
               <div className="pt-3 border-t border-gray-300">
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-bold">Total Amount</span>
-                  <span className="text-2xl font-bold text-blue-600">₹{fareEstimate}</span>
+                  <span className="text-2xl font-bold text-yellow-500">₹{fareEstimate}</span>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
                   *Final fare may vary based on actual route
@@ -1791,7 +1850,7 @@ navigate('/checkout', {
             
             <button
               onClick={() => setStep(2)}
-              className="ml-4 text-sm text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap"
+              className="ml-4 text-sm text-yellow-500 hover:text-blue-800 font-medium whitespace-nowrap"
             >
               Change
             </button>
@@ -1811,7 +1870,7 @@ navigate('/checkout', {
               <button
                 onClick={fetchNearbyCabs}
                 disabled={loadingCabs}
-                className="px-4 py-2 text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center bg-blue-50 hover:bg-blue-100 rounded-lg"
+                className="px-4 py-2 text-sm text-yellow-500 hover:text-blue-800 font-medium flex items-center bg-blue-50 hover:bg-blue-100 rounded-lg"
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -1850,7 +1909,7 @@ navigate('/checkout', {
                 </button>
                 <button
                   onClick={() => setStep(2)}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  className="px-6 py-2 bg-yellow-500 text-gray-900 rounded-lg hover:bg-yellow-400 text-gray-900 font-medium"
                 >
                   Change Vehicle Type
                 </button>
@@ -1875,7 +1934,7 @@ navigate('/checkout', {
                       <div className="flex-1">
                         <div className="flex items-start">
                           <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-                            <Truck className="h-6 w-6 text-blue-600" />
+                            <Truck className="h-6 w-6 text-yellow-500" />
                           </div>
                           <div className="flex-1">
                             <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -2008,7 +2067,7 @@ navigate('/checkout', {
               ) : currentStatus === 'DRIVER_ASSIGNED' ? (
                 <CheckCircle className="h-12 w-12 text-green-600" />
               ) : (
-                <Truck className="h-12 w-12 text-blue-600" />
+                <Truck className="h-12 w-12 text-yellow-500" />
               )}
             </div>
             
@@ -2034,8 +2093,8 @@ navigate('/checkout', {
           {/* Progress Bar */}
           <div className="mb-6">
             <div className="flex justify-between mb-2">
-              <span className="text-sm font-medium text-blue-600">Booking Status</span>
-              <span className="text-sm font-medium text-blue-600">
+              <span className="text-sm font-medium text-yellow-500">Booking Status</span>
+              <span className="text-sm font-medium text-yellow-500">
                 {currentStatus === 'SEARCHING_DRIVER' ? 'Searching' : 
                  currentStatus === 'DRIVER_ASSIGNED' ? 'Assigned' :
                  currentStatus === 'DRIVER_ARRIVED' ? 'Arrived' :
@@ -2072,7 +2131,7 @@ navigate('/checkout', {
     </div>
     <div className="flex justify-between">
       <span className="text-gray-600">Booking Type</span>
-      <span className={`font-medium ${bookingType === 'IMMEDIATE' ? 'text-green-600' : 'text-blue-600'}`}>
+      <span className={`font-medium ${bookingType === 'IMMEDIATE' ? 'text-green-600' : 'text-yellow-500'}`}>
         {bookingType === 'IMMEDIATE' ? 'Ride Now' : 'Scheduled'}
       </span>
     </div>
@@ -2121,7 +2180,7 @@ navigate('/checkout', {
                   <p className="text-sm text-gray-600">Rating: {assignedRider.rating || 4.5} ★</p>
                 </div>
                 <div className="text-right">
-                  <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                  <button className="px-4 py-2 bg-yellow-500 text-gray-900 rounded-lg hover:bg-yellow-400 text-gray-900 text-sm">
                     Call Rider
                   </button>
                 </div>
@@ -2162,7 +2221,7 @@ navigate('/checkout', {
             step > index + 1
               ? 'bg-green-600 text-white'
               : step === index + 1
-              ? 'bg-blue-600 text-white'
+              ? 'bg-yellow-500 text-gray-900'
               : 'bg-gray-200 text-gray-500'
           }`}>
             {step > index + 1 ? (
@@ -2172,7 +2231,7 @@ navigate('/checkout', {
             )}
           </div>
           <span className={`text-xs mt-1 sm:mt-2 text-center ${
-            step >= index + 1 ? 'font-medium text-blue-600' : 'text-gray-500'
+            step >= index + 1 ? 'font-medium text-yellow-500' : 'text-gray-500'
           }`}>
             {label}
           </span>
@@ -2230,7 +2289,7 @@ navigate('/checkout', {
                 </div>
                 <a 
                   href="tel:+919876543210"
-                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center text-sm sm:text-base"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 bg-yellow-500 text-gray-900 rounded-lg font-medium hover:bg-yellow-400 text-gray-900 transition-colors flex items-center justify-center text-sm sm:text-base"
                 >
                   <Phone className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                   +91-9876543210
@@ -2243,8 +2302,8 @@ navigate('/checkout', {
           <div className="mt-6 text-center text-xs sm:text-sm text-gray-600">
             <p>
               By proceeding, you agree to our{' '}
-              <a href="/terms" className="text-blue-600 hover:underline">Terms of Service</a> and{' '}
-              <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>
+              <a href="/terms" className="text-yellow-500 hover:underline">Terms of Service</a> and{' '}
+              <a href="/privacy" className="text-yellow-500 hover:underline">Privacy Policy</a>
             </p>
             <p className="mt-1 sm:mt-2">
               Your fare includes GST and may vary based on actual route
@@ -2298,7 +2357,7 @@ navigate('/checkout', {
                     </div>
                     <div className="text-right">
                       <span className="text-sm text-gray-600">Base: ₹{vehicle.baseFare}</span>
-                      <span className="text-lg font-bold text-blue-600 block">
+                      <span className="text-lg font-bold text-yellow-500 block">
                         ₹{vehicle.pricePerKm}/km
                       </span>
                     </div>
@@ -2345,7 +2404,7 @@ navigate('/checkout', {
                   <button
                     onClick={handleSearch}
                     disabled={isSearching}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-blue-600 text-white px-3 py-1 rounded text-sm disabled:opacity-50"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-yellow-500 text-gray-900 px-3 py-1 rounded text-sm disabled:opacity-50"
                   >
                     {isSearching ? 'Searching...' : 'Search'}
                   </button>
@@ -2376,7 +2435,7 @@ navigate('/checkout', {
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-green-100 flex items-center justify-center">
                       <div className="text-center p-4">
                         <div className="inline-block p-4 bg-white rounded-full shadow-lg mb-3">
-                          <MapPin className="h-8 w-8 sm:h-12 sm:w-12 text-blue-600" />
+                          <MapPin className="h-8 w-8 sm:h-12 sm:w-12 text-yellow-500" />
                         </div>
                         <p className="text-gray-600 font-medium">Loading Map...</p>
                         <p className="text-sm text-gray-500 mt-1 sm:mt-2 max-w-md">
@@ -2401,7 +2460,7 @@ navigate('/checkout', {
                           className="w-full p-3 border rounded-lg hover:bg-gray-50 text-left transition-colors"
                         >
                           <div className="flex items-start">
-                            <MapPin className="h-4 w-4 text-blue-600 mr-2 mt-1 flex-shrink-0" />
+                            <MapPin className="h-4 w-4 text-yellow-500 mr-2 mt-1 flex-shrink-0" />
                             <div>
                               <h4 className="font-medium text-sm sm:text-base mb-1">{result.name}</h4>
                               <p className="text-xs text-gray-500">
@@ -2436,7 +2495,7 @@ navigate('/checkout', {
                             location.type === 'station' ? 'bg-green-100' : 'bg-purple-100'
                           }`}>
                             <MapPin className={`h-4 w-4 sm:h-5 sm:w-5 ${
-                              location.type === 'airport' ? 'text-blue-600' :
+                              location.type === 'airport' ? 'text-yellow-500' :
                               location.type === 'station' ? 'text-green-600' : 'text-purple-600'
                             }`} />
                           </div>
@@ -2454,7 +2513,7 @@ navigate('/checkout', {
               <div className="sticky bottom-0 bg-white border-t p-4">
                 <button
                   onClick={() => setShowMapModal(false)}
-                  className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors text-sm sm:text-base"
+                  className="w-full py-3 bg-yellow-500 text-gray-900 rounded-lg font-semibold hover:bg-yellow-400 text-gray-900 transition-colors text-sm sm:text-base"
                 >
                   Use Selected Location
                 </button>

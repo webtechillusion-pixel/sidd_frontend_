@@ -101,6 +101,16 @@ function App() {
                 }
               />
               <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute roles={["USER", "customer"]}>
+                    <Layout>
+                      <CustomerDashboard initialView="settings" />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/book"
                 element={
                   <ProtectedRoute roles={["USER", "customer"]}>

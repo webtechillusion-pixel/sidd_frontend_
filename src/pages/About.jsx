@@ -1,129 +1,157 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { 
   CheckCircle, 
   Users, 
-  Shield, 
-  Award, 
-  MapPin, 
-  Car, 
-  Globe, 
+  Shield,
   Clock,
-  TrendingUp,
-  Heart,
   Star,
-  Target
+  MapPin,
+  Car,
+  Globe,
+  Award
 } from 'lucide-react';
+
+const Counter = ({ value, suffix = '' }) => {
+  const [count, setCount] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isVisible) {
+          setIsVisible(true);
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, [isVisible]);
+
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const stringValue = String(value || '0');
+    const numValue = parseInt(stringValue.replace(/[^0-9]/g, '')) || 0;
+    if (numValue === 0) {
+      setCount(0);
+      return;
+    }
+    const duration = 2000;
+    const steps = 60;
+    const increment = numValue / steps;
+    let current = 0;
+
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= numValue) {
+        setCount(numValue);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, duration / steps);
+
+    return () => clearInterval(timer);
+  }, [isVisible, value]);
+
+  const formatNumber = (num, suffix) => {
+    if (!suffix || suffix === '24/7') {
+      return suffix || '';
+    }
+    if (suffix === '+') {
+      if (num >= 1000) {
+        return (num / 1000).toFixed(num % 1000 === 0 ? 0 : 1) + 'K+';
+      }
+      return num + '+';
+    }
+    return num ? num.toString() : '0';
+  };
+
+  return <span ref={ref}>{formatNumber(count, suffix)}</span>;
+};
 
 const AboutUsPage = () => {
   const navigate = useNavigate();
   const values = [
     {
-      icon: <Shield className="h-10 w-10" />,
+      icon: <Shield className="h-6 w-6" />,
       title: 'Safety First',
-      description: 'Verified drivers, insured vehicles, and strict safety protocols ensure secure journeys for all our customers.'
+      description: 'Verified drivers and insured vehicles for secure journeys.'
     },
     {
-      icon: <Heart className="h-10 w-10" />,
+      icon: <Users className="h-6 w-6" />,
       title: 'Customer Focus',
-      description: 'We prioritize customer satisfaction with 24/7 support, transparent pricing, and personalized services.'
+      description: '24/7 support and transparent pricing.'
     },
     {
-      icon: <Clock className="h-10 w-10" />,
+      icon: <Clock className="h-6 w-6" />,
       title: 'Reliability',
-      description: 'Punctual services, well-maintained vehicles, and dependable drivers you can count on every time.'
+      description: 'Punctual services you can count on.'
     },
     {
-      icon: <Target className="h-10 w-10" />,
+      icon: <Award className="h-6 w-6" />,
       title: 'Excellence',
-      description: 'Continuous improvement in services, technology, and customer experience drives everything we do.'
+      description: 'Best-in-class travel experience.'
     }
   ];
 
   const milestones = [
-    { year: '2015', title: 'Founded', description: 'Started with 5 vehicles in Delhi' },
-    { year: '2017', title: 'Expansion', description: 'Expanded to 3 cities with 50+ vehicles' },
-    { year: '2019', title: 'Digital Platform', description: 'Launched website and mobile app' },
-    { year: '2021', title: 'Nationwide', description: 'Covered 50+ cities across India' },
-    { year: '2023', title: '10K+ Customers', description: 'Served over 10,000 happy customers' },
-  ];
-
-  const team = [
-    {
-      name: 'Rahul Verma',
-      role: 'Founder & CEO',
-      experience: '15+ years in travel industry',
-      image: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400',
-      bio: 'Visionary leader with passion for revolutionizing travel experiences.'
-    },
-    {
-      name: 'Priya Sharma',
-      role: 'Operations Head',
-      experience: '12+ years in logistics',
-      image: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400',
-      bio: 'Ensures seamless operations and customer satisfaction across all services.'
-    },
-    {
-      name: 'Arjun Patel',
-      role: 'Technology Director',
-      experience: '10+ years in tech',
-      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400',
-      bio: 'Leads digital transformation and platform development.'
-    },
-    {
-      name: 'Meera Reddy',
-      role: 'Customer Success',
-      experience: '8+ years in hospitality',
-      image: 'https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?auto=format&fit=crop&w=400',
-      bio: 'Dedicated to building lasting relationships with our customers.'
-    }
+    { year: '2015', title: 'Founded', description: 'Started with 5 vehicles' },
+    { year: '2017', title: 'Expansion', description: 'Expanded to 3 cities' },
+    { year: '2019', title: 'Digital', description: 'Launched website & app' },
+    { year: '2021', title: 'Nationwide', description: '50+ cities covered' },
   ];
 
   const achievements = [
-    { number: '10,000+', label: 'Happy Customers', icon: <Users className="h-8 w-8" /> },
-    { number: '500+', label: 'Verified Vehicles', icon: <Car className="h-8 w-8" /> },
-    { number: '50+', label: 'Cities Covered', icon: <MapPin className="h-8 w-8" /> },
-    { number: '25,000+', label: 'Successful Trips', icon: <Globe className="h-8 w-8" /> },
-    { number: '4.8', label: 'Average Rating', icon: <Star className="h-8 w-8" /> },
-    { number: '24/7', label: 'Customer Support', icon: <Clock className="h-8 w-8" /> },
+    { number: '10000', label: 'Customers', suffix: '+', icon: <Users className="h-5 w-5" /> },
+    { number: '500', label: 'Vehicles', suffix: '+', icon: <Car className="h-5 w-5" /> },
+    { number: '50', label: 'Cities', suffix: '+', icon: <MapPin className="h-5 w-5" /> },
+    { number: '25000', label: 'Trips', suffix: '+', icon: <Globe className="h-5 w-5" /> },
+    { number: '48', label: 'Rating', suffix: '', icon: <Star className="h-5 w-5" /> },
+    { number: '0', label: 'Support', suffix: '24/7', icon: <Clock className="h-5 w-5" /> },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden bg-gray-900">
         <div 
           className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage: 'url("https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1920")'
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 to-purple-900/80"></div>
+          <div className="absolute inset-0 bg-black/70"></div>
         </div>
         
-        <div className="relative container mx-auto px-4 py-20 md:py-32">
+        <div className="relative container mx-auto px-4 py-16 md:py-24">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full mb-6">
-              <span className="text-white text-sm font-medium">Since 2015</span>
+            <div className="inline-flex items-center px-3 py-1.5 bg-yellow-500 rounded-full mb-4">
+              <span className="text-gray-900 text-xs font-semibold">Since 2015</span>
             </div>
             
-            <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
-              Our Journey of <span className="text-blue-300">Trust & Excellence</span>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+              Our Journey of <span className="text-yellow-400"> Trust & Excellence</span>
             </h1>
             
-            <p className="text-xl text-white/90 mb-8">
-              For nearly a decade, Siddharth Tour & Travel has been redefining travel experiences 
-              across India with reliability, safety, and unmatched customer service.
+            <p className="text-base md:text-lg text-gray-300 mb-6">
+              Siddharth Tour & Travel - Redefining travel experiences across India.
             </p>
             
-            <div className="flex flex-wrap gap-4">
-              <Link to = "/services" className="px-6 py-3 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-100 transition">
+            <div className="flex flex-wrap gap-3">
+              <Link to="/services" className="px-5 py-2.5 bg-yellow-500 text-gray-900 rounded-lg font-medium text-sm hover:bg-yellow-400 transition">
                 Our Services
               </Link>
-              <button onClick={() => navigate("/contact")}
-               className="px-6 py-3 border-2 border-white text-white rounded-lg font-semibold hover:bg-white/10 transition">
-                Meet Our Team
+              <button onClick={() => navigate("/contact")} className="px-5 py-2.5 border-2 border-yellow-500 text-yellow-500 rounded-lg font-medium text-sm hover:bg-yellow-500 hover:text-gray-900 transition">
+                Contact Us
               </button>
             </div>
           </div>
@@ -131,108 +159,73 @@ const AboutUsPage = () => {
       </div>
 
       {/* Our Story */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
+      <div className="container mx-auto px-4 py-10 md:py-14">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
               Our Story
             </h2>
             
-            <div className="space-y-4 text-gray-700">
+            <div className="space-y-3 text-gray-600 text-sm md:text-base">
               <p>
-                Founded in 2015 by Rahul Verma, Siddharth Tour & Travel began with a simple vision: 
-                to make travel safe, reliable, and accessible for everyone. Starting with just 5 vehicles 
-                in Delhi, we understood the challenges faced by travelers in finding trustworthy 
-                transportation.
+                Founded in 2015, Siddharth Tour & Travel began with a vision to make travel safe, reliable, and accessible. Starting with just 5 vehicles in Delhi.
               </p>
-              
               <p>
-                Today, we've grown into one of the most trusted travel service providers in India, 
-                serving thousands of customers across 50+ cities. Our journey has been fueled by 
-                unwavering commitment to customer satisfaction and continuous innovation.
-              </p>
-              
-              <p>
-                We believe that every journey should be memorable for the right reasons. That's why 
-                we've built a platform that connects travelers with verified drivers, transparent 
-                pricing, and exceptional service.
+                Today, we serve thousands of customers across 50+ cities in India with verified drivers, transparent pricing, and exceptional service.
               </p>
             </div>
           </div>
           
-          <div className="relative">
-            <div className="bg-blue-100 rounded-2xl p-8 shadow-lg">
-              <div className="aspect-video rounded-xl overflow-hidden mb-6">
-                <img 
-                  src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800"
-                  alt="Our Team"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              
-              <div className="bg-white rounded-xl p-6 shadow-md">
-                <h3 className="text-xl font-bold mb-4">Our Mission</h3>
-                <p className="text-gray-600 mb-4">
-                  To revolutionize travel experiences by providing safe, reliable, and comfortable 
-                  transportation solutions that exceed customer expectations.
-                </p>
-                
-                <h3 className="text-xl font-bold mb-4">Our Vision</h3>
-                <p className="text-gray-600">
-                  To become India's most trusted travel partner, setting new standards in customer 
-                  service and technological innovation.
-                </p>
-              </div>
+          <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-gray-200">
+            <div className="aspect-video rounded-lg overflow-hidden mb-4">
+              <img 
+                src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800"
+                alt="Our Journey"
+                className="w-full h-full object-cover"
+              />
             </div>
+            
+            <h3 className="font-bold text-gray-900 mb-2">Our Mission</h3>
+            <p className="text-sm text-gray-600">
+              To provide safe, reliable, and comfortable transportation that exceeds customer expectations.
+            </p>
           </div>
         </div>
 
         {/* Values */}
-        <div className="mb-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Our Core Values
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              These principles guide every decision we make and every service we provide
-            </p>
-          </div>
+        <div className="mb-10">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 text-center">
+            Why Choose Us
+          </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {values.map((value, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                <div className="text-blue-600 mb-4">
+              <div key={index} className="bg-white rounded-xl p-4 border border-gray-200 hover:border-yellow-400 transition">
+                <div className="text-yellow-500 mb-2">
                   {value.icon}
                 </div>
-                <h3 className="text-xl font-bold mb-3">{value.title}</h3>
-                <p className="text-gray-600">{value.description}</p>
+                <h3 className="font-bold text-gray-900 text-sm mb-1">{value.title}</h3>
+                <p className="text-xs text-gray-600">{value.description}</p>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Achievements */}
-        <div className="mb-16">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 md:p-12">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-white mb-4">
-                Our Achievements
-              </h2>
-              <p className="text-blue-100">
-                Numbers that reflect our commitment to excellence
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        {/* Achievements with Counter */}
+        <div className="mb-10">
+          <div className="bg-gray-900 rounded-xl p-6 md:p-8">
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
               {achievements.map((achievement, index) => (
                 <div key={index} className="text-center">
-                  <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <div className="text-white">
+                  <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <div className="text-gray-900">
                       {achievement.icon}
                     </div>
                   </div>
-                  <div className="text-3xl font-bold text-white mb-1">{achievement.number}</div>
-                  <div className="text-blue-200 text-sm">{achievement.label}</div>
+                  <div className="text-lg md:text-xl font-bold text-white">
+                    <Counter value={achievement.value} suffix={achievement.suffix} />
+                  </div>
+                  <div className="text-xs text-gray-400">{achievement.label}</div>
                 </div>
               ))}
             </div>
@@ -240,150 +233,41 @@ const AboutUsPage = () => {
         </div>
 
         {/* Journey Timeline */}
-        <div className="mb-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Our Journey
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Milestones that mark our growth and success
-            </p>
-          </div>
+        <div className="mb-10">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6 text-center">
+            Our Journey
+          </h2>
           
-          <div className="relative">
-            {/* Timeline line */}
-            <div className="hidden md:block absolute top-12 left-0 right-0 h-1 bg-blue-200"></div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-              {milestones.map((milestone, index) => (
-                <div key={index} className="relative">
-                  <div className="flex flex-col items-center text-center">
-                    <div className="w-24 h-24 bg-white border-4 border-blue-600 rounded-full flex items-center justify-center mb-4 relative z-10 shadow-lg">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">{milestone.year}</div>
-                        <div className="text-xs font-semibold text-gray-600 mt-1">{milestone.title}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-white rounded-lg p-4 shadow-md">
-                      <p className="text-gray-700">{milestone.description}</p>
-                    </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            {milestones.map((milestone, index) => (
+              <div key={index} className="text-center">
+                <div className="w-16 h-16 md:w-20 md:h-20 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg">
+                  <div className="text-center">
+                    <div className="text-sm md:text-base font-bold text-gray-900">{milestone.year}</div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Team */}
-        <div className="mb-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Meet Our Leadership Team
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              The passionate individuals who drive our vision forward
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {team.map((member, index) => (
-              <div key={index} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-                <div className="aspect-square overflow-hidden">
-                  <img 
-                    src={member.image} 
-                    alt={member.name}
-                    className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
-                  />
-                </div>
-                
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-1">{member.name}</h3>
-                  <div className="text-blue-600 font-medium mb-2">{member.role}</div>
-                  <div className="text-sm text-gray-500 mb-3">{member.experience}</div>
-                  <p className="text-gray-600 text-sm">{member.bio}</p>
-                  
-                  <div className="mt-4 pt-4 border-t border-gray-100">
-                    <div className="flex space-x-2">
-                      <button className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-200">
-                        <span className="text-xs font-semibold">L</span>
-                      </button>
-                      <button className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-200">
-                        <span className="text-xs font-semibold">T</span>
-                      </button>
-                      <button className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-200">
-                        <span className="text-xs font-semibold">M</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <div className="text-sm font-bold text-gray-900">{milestone.title}</div>
+                <div className="text-xs text-gray-600">{milestone.description}</div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Why Choose Us */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 md:p-12">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Why Choose Siddharth Tour & Travel?
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Discover what sets us apart from the competition
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-6">
-              {[
-                'Verified drivers with background checks',
-                'Well-maintained and insured vehicles',
-                'Transparent pricing with no hidden charges',
-                '24/7 customer support',
-                'Real-time booking and tracking',
-                'Multiple vehicle options for every need'
-              ].map((item, index) => (
-                <div key={index} className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-green-500 mr-3 mt-1 flex-shrink-0" />
-                  <span className="text-gray-700">{item}</span>
-                </div>
-              ))}
-            </div>
-            
-            <div className="space-y-6">
-              {[
-                'Instant booking confirmation',
-                'Flexible cancellation policy',
-                'Professional and trained drivers',
-                'Clean and hygienic vehicles',
-                'Corporate travel solutions',
-                'Special packages for events and tours'
-              ].map((item, index) => (
-                <div key={index} className="flex items-start">
-                  <CheckCircle className="h-6 w-6 text-green-500 mr-3 mt-1 flex-shrink-0" />
-                  <span className="text-gray-700">{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
         {/* CTA Section */}
-        <div className="mt-16 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-6">
-            Ready to Experience Premium Travel Services?
+        <div className="text-center">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4">
+            Ready to Travel?
           </h2>
-          <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-            Join thousands of satisfied customers who trust us for their travel needs
+          <p className="text-sm text-gray-600 mb-6">
+            Book your ride now
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button onClick={() => navigate("/book")}
-             className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
-              Book Your Ride Now
+          <div className="flex flex-wrap gap-3 justify-center">
+            <button onClick={() => navigate("/book")} className="px-6 py-2.5 bg-yellow-500 text-gray-900 rounded-lg font-medium text-sm hover:bg-yellow-400 transition">
+              Book Now
             </button>
-            <Link to = "/contact" className="px-8 py-3 border-2 border-blue-600 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition">
-              Contact Our Team
+            <Link to="/contact" className="px-6 py-2.5 border-2 border-gray-900 text-gray-900 rounded-lg font-medium text-sm hover:bg-gray-900 hover:text-yellow-500 transition">
+              Contact Us
             </Link>
           </div>
         </div>

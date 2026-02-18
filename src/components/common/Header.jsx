@@ -88,7 +88,7 @@ const Header = () => {
     
     // Handle different user data structures
     if (typeof userData === 'object') {
-      if (userData.name && typeof userData.name === 'string') {
+      if (userData.name && typeof userData.name === 'string' && userData.name.trim() !== '') {
         return userData.name.split(' ')[0] || userData.name
       }
       if (userData.email && typeof userData.email === 'string') {
@@ -176,11 +176,11 @@ const Header = () => {
         <div className="flex items-center justify-between h-16 md:h-20">
           
           {/* Logo with Link to Home */}
-          <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-            <MapPin className="h-8 w-8 text-blue-600" />
+          <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity cursor-pointer">
+            <Car className="h-8 w-8 text-blue-600" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">TravelX</h1>
-              <p className="text-xs text-gray-500">Siddharth Tour & Travel</p>
+              <h1 className="text-3xl font-bold text-gray-900">Pariyatan</h1>
+             
             </div>
           </Link>
 
@@ -191,7 +191,7 @@ const Header = () => {
                 key={item.label}
                 to={item.path}
                 className={`
-                  flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300
+                  flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 cursor-pointer
                   ${location.pathname === item.path 
                     ? 'bg-blue-50 text-blue-600 font-semibold' 
                     : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50 font-medium'
@@ -221,7 +221,7 @@ const Header = () => {
             <div className="relative">
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center space-x-2 px-4 py-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors cursor-pointer"
               >
                 <div className="h-8 w-8 bg-white text-blue-600 rounded-full flex items-center justify-center font-bold">
                   {getUserInitials()}
@@ -240,21 +240,21 @@ const Header = () => {
                       </div>
                       <Link 
                         to={getDashboardPath()} 
-                        className="block px-4 py-2 hover:bg-gray-50 text-gray-700"
+                        className="block px-4 py-2 hover:bg-gray-50 text-gray-700 cursor-pointer"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         Dashboard
                       </Link>
                       <Link 
                         to="/profile" 
-                        className="block px-4 py-2 hover:bg-gray-50 text-gray-700"
+                        className="block px-4 py-2 hover:bg-gray-50 text-gray-700 cursor-pointer"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         My Profile
                       </Link>
                       <Link 
                         to="/my-bookings" 
-                        className="block px-4 py-2 hover:bg-gray-50 text-gray-700"
+                        className="block px-4 py-2 hover:bg-gray-50 text-gray-700 cursor-pointer"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         My Bookings
@@ -262,7 +262,7 @@ const Header = () => {
                       <div className="border-t border-gray-100 mt-1 pt-1">
                         <button
                           onClick={handleLogout}
-                          className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50"
+                          className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 cursor-pointer"
                         >
                           Logout
                         </button>
@@ -272,28 +272,28 @@ const Header = () => {
                     <>
                       <Link 
                         to="/login/customer" 
-                        className="block px-4 py-2 hover:bg-gray-50 text-gray-700"
+                        className="block px-4 py-2 hover:bg-gray-50 text-gray-700 cursor-pointer"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         Customer Login
                       </Link>
                       <Link 
                         to="/login/rider" 
-                        className="block px-4 py-2 hover:bg-gray-50 text-gray-700"
+                        className="block px-4 py-2 hover:bg-gray-50 text-gray-700 cursor-pointer"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         Rider Login
                       </Link>
                       <Link 
                         to="/register/customer" 
-                        className="block px-4 py-2 hover:bg-gray-50 text-gray-700"
+                        className="block px-4 py-2 hover:bg-gray-50 text-gray-700 cursor-pointer"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         Register as Customer
                       </Link>
                       <Link 
                         to="/rider/register" 
-                        className="block px-4 py-2 hover:bg-gray-50 text-gray-700"
+                        className="block px-4 py-2 hover:bg-gray-50 text-gray-700 cursor-pointer"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         Become a Rider
@@ -301,7 +301,7 @@ const Header = () => {
                       <div className="border-t border-gray-100 mt-1 pt-1">
                         <Link 
                           to="/admin/login" 
-                          className="block px-4 py-2 hover:bg-gray-50 text-sm text-gray-500"
+                          className="block px-4 py-2 hover:bg-gray-50 text-sm text-gray-500 cursor-pointer"
                           onClick={() => setIsUserMenuOpen(false)}
                         >
                           Admin Login
@@ -317,7 +317,7 @@ const Header = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="lg:hidden p-2 text-gray-700 hover:text-blue-600"
+            className="lg:hidden p-2 text-gray-700 hover:text-blue-600 cursor-pointer"
           >
             {isMenuOpen ? (
               <X className="h-6 w-6" />
@@ -336,7 +336,7 @@ const Header = () => {
                   key={item.label}
                   to={item.path}
                   className={`
-                    flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors
+                    flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors cursor-pointer
                     ${location.pathname === item.path 
                       ? 'bg-blue-600 text-white' 
                       : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
@@ -366,21 +366,21 @@ const Header = () => {
                   </div>
                   <Link 
                     to={getDashboardPath()} 
-                    className="block py-2.5 px-4 hover:bg-gray-50 text-gray-700"
+                    className="block py-2.5 px-4 hover:bg-gray-50 text-gray-700 cursor-pointer"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Dashboard
                   </Link>
                   <Link 
                     to="/profile" 
-                    className="block py-2.5 px-4 hover:bg-gray-50 text-gray-700"
+                    className="block py-2.5 px-4 hover:bg-gray-50 text-gray-700 cursor-pointer"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     My Profile
                   </Link>
                   <Link 
                     to="/my-bookings" 
-                    className="block py-2.5 px-4 hover:bg-gray-50 text-gray-700"
+                    className="block py-2.5 px-4 hover:bg-gray-50 text-gray-700 cursor-pointer"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     My Bookings
@@ -388,7 +388,7 @@ const Header = () => {
                   <div className="border-t border-gray-100 pt-2">
                     <button
                       onClick={handleLogout}
-                      className="block w-full text-left py-2.5 px-4 text-red-600 hover:bg-red-50"
+                      className="block w-full text-left py-2.5 px-4 text-red-600 hover:bg-red-50 cursor-pointer"
                     >
                       Logout
                     </button>
@@ -407,28 +407,28 @@ const Header = () => {
                   <div className="space-y-2">
                     <Link 
                       to="/login/customer" 
-                      className="block w-full py-2.5 text-center bg-blue-600 text-white rounded-full hover:bg-blue-700"
+                      className="block w-full py-2.5 text-center bg-blue-600 text-white rounded-full hover:bg-blue-700 cursor-pointer"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Customer Login
                     </Link>
                     <Link 
                       to="/login/rider" 
-                      className="block w-full py-2.5 text-center bg-green-600 text-white rounded-full hover:bg-green-700"
+                      className="block w-full py-2.5 text-center bg-green-600 text-white rounded-full hover:bg-green-700 cursor-pointer"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Rider Login
                     </Link>
                     <Link 
                       to="/register/customer" 
-                      className="block w-full py-2.5 text-center border border-blue-600 text-blue-600 rounded-full hover:bg-blue-50"
+                      className="block w-full py-2.5 text-center border border-blue-600 text-blue-600 rounded-full hover:bg-blue-50 cursor-pointer"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Register as Customer
                     </Link>
                     <Link 
                       to="/rider/register" 
-                      className="block w-full py-2.5 text-center border border-green-600 text-green-600 rounded-full hover:bg-green-50"
+                      className="block w-full py-2.5 text-center border border-green-600 text-green-600 rounded-full hover:bg-green-50 cursor-pointer"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Become a Rider
@@ -436,7 +436,7 @@ const Header = () => {
                     <div className="pt-2 border-t border-gray-200">
                       <Link 
                         to="/admin/login" 
-                        className="block w-full py-2 text-center text-sm text-gray-500 hover:text-gray-700"
+                        className="block w-full py-2 text-center text-sm text-gray-500 hover:text-gray-700 cursor-pointer"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         Admin Login

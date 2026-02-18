@@ -4,102 +4,88 @@ import { Shield, Clock, DollarSign, Award, Headphones, MapPin } from 'lucide-rea
 const WhyChooseUs = () => {
   const features = [
     {
-      icon: <Shield className="h-8 w-8" />,
+      icon: <Shield className="h-6 w-6 md:h-7 md:w-7" />,
       title: 'Safe & Secure',
-      description: 'Verified drivers with background checks and insured vehicles for your peace of mind.',
-      bgColor: 'bg-blue-100 text-blue-600'
+      description: 'Verified drivers with background checks and insured vehicles.',
+      bgColor: 'bg-yellow-100 text-yellow-700'
     },
     {
-      icon: <Clock className="h-8 w-8" />,
+      icon: <Clock className="h-6 w-6 md:h-7 md:w-7" />,
       title: '24/7 Service',
-      description: 'Book anytime, anywhere with instant confirmation and real-time tracking.',
-      bgColor: 'bg-green-100 text-green-600'
+      description: 'Book anytime with instant confirmation and tracking.',
+      bgColor: 'bg-yellow-100 text-yellow-700'
     },
     {
-      icon: <DollarSign className="h-8 w-8" />,
+      icon: <DollarSign className="h-6 w-6 md:h-7 md:w-7" />,
       title: 'Transparent Pricing',
-      description: 'No hidden charges. See the exact fare before booking with multiple payment options.',
-      bgColor: 'bg-purple-100 text-purple-600'
+      description: 'No hidden charges. See exact fare before booking.',
+      bgColor: 'bg-yellow-100 text-yellow-700'
     },
     {
-      icon: <Award className="h-8 w-8" />,
+      icon: <Award className="h-6 w-6 md:h-7 md:w-7" />,
       title: 'Verified Drivers',
-      description: 'Professional, trained drivers with excellent ratings and clean records.',
-      bgColor: 'bg-orange-100 text-orange-600'
+      description: 'Professional drivers with excellent ratings.',
+      bgColor: 'bg-yellow-100 text-yellow-700'
     },
     {
-      icon: <Headphones className="h-8 w-8" />,
+      icon: <Headphones className="h-6 w-6 md:h-7 md:w-7" />,
       title: '24/7 Support',
-      description: 'Dedicated customer support team available round the clock for assistance.',
-      bgColor: 'bg-indigo-100 text-indigo-600'
+      description: 'Dedicated support team available round the clock.',
+      bgColor: 'bg-yellow-100 text-yellow-700'
     },
     {
-      icon: <MapPin className="h-8 w-8" />,
+      icon: <MapPin className="h-6 w-6 md:h-7 md:w-7" />,
       title: 'Wide Coverage',
-      description: 'Services available in 50+ cities across India with extensive route coverage.',
-      bgColor: 'bg-pink-100 text-pink-600'
+      description: 'Services in 50+ cities across India.',
+      bgColor: 'bg-yellow-100 text-yellow-700'
     }
   ];
 
   return (
-    <section className="py-16 md:py-24 bg-gradient-to-br from-blue-50 to-indigo-50">
+    <section className="py-10 md:py-12 bg-white">
       <div className="container mx-auto px-4">
-        {/* Header Section */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="inline-block px-4 py-1 bg-blue-100 text-blue-600 rounded-full text-sm font-semibold mb-4">
+        <div className="text-center max-w-2xl mx-auto mb-8">
+          <span className="inline-block px-3 py-1 bg-yellow-500 text-gray-900 rounded-full text-xs font-semibold mb-3">
             WHY CHOOSE US
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
             Experience Travel Excellence
           </h2>
-          <p className="text-lg text-gray-600">
-            We go beyond transportation to deliver exceptional travel experiences with unmatched reliability.
-          </p>
         </div>
 
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
           {features.map((feature, index) => (
             <div 
               key={index}
-              className="group bg-white rounded-xl p-6 border border-gray-200 hover:border-blue-300 transition-all duration-300 shadow-sm hover:shadow-md"
+              className="bg-white rounded-xl p-3 md:p-4 border border-gray-200 hover:border-yellow-400 transition-all duration-200"
             >
-              <div className="flex items-start mb-6">
-                <div className={`${feature.bgColor} p-3 rounded-lg`}>
-                  {feature.icon}
-                </div>
+              <div className={`${feature.bgColor} p-2 rounded-lg w-fit mb-3`}>
+                {feature.icon}
               </div>
               
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
+              <h3 className="text-sm md:text-base font-bold text-gray-900 mb-1">
                 {feature.title}
               </h3>
               
-              <p className="text-gray-600 mb-4">
+              <p className="text-xs text-gray-600">
                 {feature.description}
               </p>
-              
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <a href="#" className="text-sm text-blue-600 hover:text-blue-800 transition-colors font-medium">
-                  Learn more →
-                </a>
-              </div>
             </div>
           ))}
         </div>
 
-        {/* Stats Section */}
-        <div className="mt-16 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="mt-8 grid grid-cols-3 gap-4">
           <div className="text-center">
-            <div className="text-4xl font-bold text-gray-900 mb-2">10,000+</div>
-            <div className="text-gray-700">Happy Customers</div>
+            <div className="text-xl md:text-2xl font-bold text-gray-900">10K+</div>
+            <div className="text-xs text-gray-600">Customers</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-bold text-gray-900 mb-2">4.8/5</div>
-            <div className="text-gray-700">Average Rating</div>
+            <div className="text-xl md:text-2xl font-bold text-gray-900">4.8</div>
+            <div className="text-xs text-gray-600">Rating</div>
           </div>
           <div className="text-center">
-            <div className="text-4xl font-bold text-gray-900 mb-2">99%</div>
-            <div className="text-gray-700">On-time Service</div>
+            <div className="text-xl md:text-2xl font-bold text-gray-900">99%</div>
+            <div className="text-xs text-gray-600">On-time</div>
           </div>
         </div>
       </div>

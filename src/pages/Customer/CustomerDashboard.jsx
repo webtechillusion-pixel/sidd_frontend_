@@ -37,10 +37,10 @@ import SavedLocations from "./SavedLocations";
 import MyReviews from "./MyReviews";
 import PaymentHistory from "./PaymentHistory";
 
-const CustomerDashboard = () => {
+const CustomerDashboard = ({ initialView: initialViewProp }) => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeView, setActiveView] = useState("overview");
+  const [activeView, setActiveView] = useState(initialViewProp || "overview");
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeRide, setActiveRide] = useState(null);

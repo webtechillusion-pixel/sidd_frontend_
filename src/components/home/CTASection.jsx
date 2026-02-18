@@ -6,73 +6,56 @@ const CTASection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="py-16 md:py-24 bg-gradient-to-br from-gray-50 to-blue-50">
+    <section className="py-10 md:py-12 bg-gray-900">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 md:p-12 text-white">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+          <div className="bg-gray-800 rounded-xl p-5 md:p-8 text-white">
+            <div className="text-center mb-5 md:mb-6">
+              <h2 className="text-xl md:text-2xl font-bold mb-2">
                 Ready to Start Your Journey?
               </h2>
-              <p className="text-blue-100 text-lg">
-                Join thousands of satisfied customers who trust Siddharth Tour & Travel
+              <p className="text-gray-400 text-sm">
+                Book your ride now
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-5 md:mb-6">
               <button
                 onClick={() => navigate('/book')}
-                className="px-8 py-4 bg-white text-blue-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors flex flex-col items-center"
+                className="px-4 md:px-5 py-2.5 bg-yellow-500 text-gray-900 rounded-lg font-medium text-sm hover:bg-yellow-400 transition-colors"
               >
-                <span className="text-lg mb-2">🚗</span>
-                <span>Book Your Ride Now</span>
+                Book Now
               </button>
               
               <button
                 onClick={() => navigate('/rider/register')}
-                className="px-8 py-4 bg-transparent border-2 border-white text-white rounded-lg font-semibold hover:bg-white/10 transition-colors flex flex-col items-center"
+                className="px-4 md:px-5 py-2.5 border-2 border-yellow-500 text-yellow-500 rounded-lg font-medium text-sm hover:bg-yellow-500 hover:text-gray-900 transition-colors"
               >
-                <span className="text-lg mb-2">👨‍💼</span>
-                <span>Become a Rider</span>
+                Become a Rider
               </button>
               
               <button 
-  onClick={() => navigate('/gallery')}
-  className="px-8 py-4 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors flex flex-col items-center"
->
-  <span className="text-lg mb-2">📸</span>
-  <span>Explore Gallery</span>
-</button>
+                onClick={() => navigate('/services')}
+                className="px-4 md:px-5 py-2.5 bg-gray-700 text-white rounded-lg font-medium text-sm hover:bg-gray-600 transition-colors"
+              >
+                Our Services
+              </button>
             </div>
             
-            <div className="border-t border-blue-500 pt-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div className="text-center">
-                  <div className="flex justify-center mb-3">
-                    <Phone className="h-6 w-6 text-blue-300" />
-                  </div>
-                  <h4 className="font-semibold mb-2">Call Us Anytime</h4>
-                  <p className="text-blue-200">+91-9876543210</p>
-                </div>
-                
-                <div className="text-center">
-                  <div className="flex justify-center mb-3">
-                    <Mail className="h-6 w-6 text-blue-300" />
-                  </div>
-                  <h4 className="font-semibold mb-2">Email Support</h4>
-                  <p className="text-blue-200">support@siddharthtravel.com</p>
-                </div>
-                
-                 <button 
-      onClick={() => navigate('/services')}
-      className="text-center focus:outline-none hover:opacity-90 transition-opacity"
-    >
-      <div className="flex justify-center mb-3">
-        <Car className="h-6 w-6 text-blue-300" />
-      </div>
-      <h4 className="font-semibold mb-2">Our Services</h4>
-      <p className="text-blue-200">Explore all services</p>
-    </button>
+            <div className="grid grid-cols-3 gap-2 md:gap-4 pt-4 border-t border-gray-700">
+              <div className="text-center">
+                <Phone className="h-4 w-4 mx-auto mb-1 text-yellow-500" />
+                <p className="text-xs text-gray-400">+91-9876543210</p>
+              </div>
+              
+              <div className="text-center">
+                <Mail className="h-4 w-4 mx-auto mb-1 text-yellow-500" />
+                <p className="text-xs text-gray-400">support@siddharthtravel.com</p>
+              </div>
+              
+              <div className="text-center">
+                <Car className="h-4 w-4 mx-auto mb-1 text-yellow-500" />
+                <p className="text-xs text-gray-400">50+ Cities</p>
               </div>
             </div>
           </div>

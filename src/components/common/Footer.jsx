@@ -92,7 +92,7 @@ const Footer = () => {
                 <Car className="h-8 w-8" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold">Siddharth Tour & Travel</h2>
+                <h2 className="text-2xl font-bold">Pariyatan</h2>
                 <p className="text-sm text-gray-400">Since 2015</p>
               </div>
             </div>

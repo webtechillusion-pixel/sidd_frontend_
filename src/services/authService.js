@@ -128,32 +128,26 @@ const authService = {
   // Logout
   async logout() {
     try {
+      // Get user role BEFORE clearing auth data
+      const user = this.getCurrentUserFromStorage();
+      const userRole = user?.role;
+      
       // Clear local data first
       this.clearAuthData();
       
-      // Make logout API call
+      // Make logout API call (optional - won't affect if fails)
       await api.post('/api/auth/logout', {}, {
         timeout: 3000
       }).catch(() => {
-        // Ignore errors - we already cleared local data
         console.log('Logout API call completed');
       });
       
-      // Redirect to login
-      const user = this.getCurrentUserFromStorage();
-      let redirectPath = '/login/customer';
-      
-      if (user?.role === 'RIDER') {
-        redirectPath = '/login/rider';
-      } else if (user?.role === 'ADMIN') {
-        redirectPath = '/admin/login';
-      }
-      
-      window.location.href = redirectPath;
+      // Redirect to home page (not login)
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
-      // Still redirect even if API fails
-      window.location.href = '/login/customer';
+      // Still redirect to home even if API fails
+      window.location.href = '/';
     }
   },
 
@@ -166,11 +160,25 @@ const authService = {
     // Clear sessionStorage
     sessionStorage.clear();
     
-    // Clear cookies
+    // Clear all possible auth cookies
+    const cookies = ['token', 'user_token', 'auth_token', 'user_info', 'session_id', 'jwt'];
+    const hostname = window.location.hostname;
+    
+    cookies.forEach(cookieName => {
+      // Clear with domain
+      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${hostname};`;
+      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;`;
+      document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.${hostname};`;
+    });
+    
+    // Clear all cookies for current domain
     document.cookie.split(';').forEach(cookie => {
       const eqPos = cookie.indexOf('=');
       const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname};`;
+      if (name) {
+        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${hostname};`;
+        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;`;
+      }
     });
   },
 
@@ -365,6 +373,88 @@ const authService = {
       customError.response = error.response;
       
       throw customError;
+    }
+  },
+
+  // Update Profile
+  async updateProfile(profileData) {
+    try {
+      const response = await api.put('/api/auth/profile', profileData);
+      const data = response.data || response;
+      
+      // Update local storage with new user data
+      if (data.data?.user) {
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+      } else if (data?.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Update profile error:', error);
+      throw error;
+    }
+  },
+
+  // Update Profile Picture
+  async updateProfilePicture(imageFile) {
+    try {
+      const formData = new FormData();
+      formData.append('photo', imageFile);
+      
+      const response = await api.post('/api/auth/profile-picture', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      const data = response.data || response;
+      
+      // Update local storage with new user data
+      if (data.data?.user) {
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+      } else if (data?.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Update profile picture error:', error);
+      throw error;
+    }
+  },
+
+  // Delete Profile Picture
+  async deleteProfilePicture() {
+    try {
+      const response = await api.delete('/api/auth/profile-picture');
+      const data = response.data || response;
+      
+      // Update local storage with new user data
+      if (data.data?.user) {
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+      } else if (data?.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Delete profile picture error:', error);
+      throw error;
+    }
+  },
+
+  // Change Password
+  async changePassword(currentPassword, newPassword) {
+    try {
+      const response = await api.post('/api/auth/change-password', {
+        currentPassword,
+        newPassword
+      });
+      return response.data || response;
+    } catch (error) {
+      console.error('Change password error:', error);
+      throw error;
     }
   }
 };
