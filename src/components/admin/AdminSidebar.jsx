@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
+  Home,
   Users,
   Car,
   Calendar,
@@ -11,7 +12,6 @@ import {
   FileText,
   TrendingUp,
   Settings,
-  Home,
   BarChart3,
   ClipboardCheck,
   Wallet,
@@ -109,6 +109,14 @@ const AdminSidebar = ({ isOpen, onClose }) => {
       path: '/admin/settings',
       badge: null,
       section: 'settings'
+    },
+    // New "Go to Home" item added after Settings
+    {
+      title: 'Go to Home',
+      icon: Home,
+      path: '/',
+      badge: null,
+      section: 'home'
     }
   ];
 
@@ -295,7 +303,7 @@ const AdminSidebar = ({ isOpen, onClose }) => {
             </button>
           </div>
 
-          {/* Return to Main Site */}
+          {/* Return to Main Site - kept as an alternative */}
           <NavLink
             to="/"
             className="flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors"

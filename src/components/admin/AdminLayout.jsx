@@ -16,6 +16,7 @@ import {
   LogOut,
   Bell,
   Search,
+  Home
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
 
@@ -34,6 +35,7 @@ const AdminLayout = () => {
     { name: 'Payouts', href: '/admin/payouts', icon: FileText },
     { name: 'Analytics', href: '/admin/analytics', icon: TrendingUp },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
+    { name: 'Go to Home', href: '/', icon: Home }
   ];
 
   const isActive = (path) => location.pathname === path;
