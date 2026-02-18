@@ -1,98 +1,123 @@
 import React from 'react';
-import { Car, MapPin, Calendar, ChevronRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ArrowRight, Repeat, Plane, Clock, Check } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-const ServicesSection = () => {
-  const navigate = useNavigate();
+const SERVICES = [
+  {
+    id: 'oneway',
+    icon: 'ArrowRight',
+    title: 'One-Way Trips',
+    description: 'Point-to-point travel between any two cities with transparent pricing.',
+    features: ['Fixed pricing', 'Instant confirmation', 'Multiple vehicle options']
+  },
+  {
+    id: 'roundtrip',
+    icon: 'Repeat',
+    title: 'Round Trips',
+    description: 'Complete packages with return journey included. Perfect for weekend getaways.',
+    features: ['Return journey included', 'Driver accommodation', 'Flexible itinerary']
+  },
+  {
+    id: 'outstation',
+    icon: 'Plane',
+    title: 'Outstation Travel',
+    description: 'Inter-city travel with experienced drivers and comfortable vehicles.',
+    features: ['Long distance trips', 'Multiple stops', '24/7 availability']
+  },
+  {
+    id: 'hourly',
+    icon: 'Clock',
+    title: 'Hourly Rentals',
+    description: 'Local travel by the hour. Perfect for shopping, meetings, or sightseeing.',
+    features: ['Flexible hours', 'Multiple pickups/drops', 'No hidden charges']
+  }
+];
 
-  const services = [
-    {
-      icon: <Car className="h-6 w-6 md:h-8 md:w-8" />,
-      title: 'One-Way Trips',
-      description: 'Point-to-point travel between cities with transparent pricing.',
-      features: ['Fixed pricing', 'Instant confirmation', 'Multiple vehicles'],
-      color: 'bg-yellow-100 text-yellow-700',
-      route: '/book'
-    },
-    {
-      icon: <Calendar className="h-6 w-6 md:h-8 md:w-8" />,
-      title: 'Round Trips',
-      description: 'Complete packages with return journey included.',
-      features: ['Return included', 'Driver accommodation', 'Flexible itinerary'],
-      color: 'bg-yellow-100 text-yellow-700',
-      route: '/book'
-    },
-    {
-      icon: <MapPin className="h-6 w-6 md:h-8 md:w-8" />,
-      title: 'City Transfers',
-      description: 'Reliable city-to-city transfers with experienced drivers.',
-      features: ['Inter-city travel', 'Multiple stops', '24/7 availability'],
-      color: 'bg-yellow-100 text-yellow-700',
-      route: '/book'
-    }
-    ];
+const ServiceSection = () => {
+  // Map icon names to components
+  const getIcon = (iconName) => {
+    const icons = {
+      ArrowRight,
+      Repeat,
+      Plane,
+      Clock
+    };
+    return icons[iconName];
+  };
 
   return (
-    <section className="py-10 md:py-12 bg-gray-50">
-      <div className="container mx-auto px-4">
-        <div className="text-center max-w-2xl mx-auto mb-8">
-          <span className="inline-block px-3 py-1 bg-yellow-500 text-gray-900 rounded-full text-xs font-semibold mb-3">
-            OUR SERVICES
-          </span>
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
-            Comprehensive Travel Solutions
+    <section className="py-20 bg-[#8ecae6]/10" data-testid="services-section">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-12"
+        >
+          <h2 className="text-4xl md:text-5xl font-bold text-[#023047] mb-4">
+            Our Services
           </h2>
-        </div>
+          <p className="text-lg text-[#475569] max-w-2xl mx-auto">
+            Choose from our wide range of services tailored to your travel needs
+          </p>
+        </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
-          {services.map((service, index) => (
-            <div 
-              key={index}
-              className="group bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 hover:shadow-md hover:border-yellow-400 transition-all duration-200"
-            >
-              <div className={`inline-flex p-2 rounded-lg mb-3 ${service.color}`}>
-                {service.icon}
-              </div>
-              
-              <h3 className="text-base md:text-lg font-bold text-gray-900 mb-2">
-                {service.title}
-              </h3>
-              
-              <p className="text-sm text-gray-600 mb-3">
-                {service.description}
-              </p>
-              
-              <ul className="space-y-1 mb-3">
-                {service.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-center text-xs text-gray-600">
-                    <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full mr-2 flex-shrink-0"></div>
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
-              
-              <button
-                onClick={() => navigate(service.route)}
-                className="w-full py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-yellow-500 hover:text-gray-900 transition-colors flex items-center justify-center gap-1"
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {SERVICES.map((service, index) => {
+            const Icon = getIcon(service.icon);
+            return (
+              <motion.div
+                key={service.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ y: -8 }}
+                className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 hover:shadow-xl transition-all duration-300"
+                data-testid={`service-card-${service.id}`}
               >
-                Book Now
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
+                <div className="w-12 h-12 bg-[#219ebc]/10 rounded-lg flex items-center justify-center mb-4 group-hover:bg-[#219ebc]/20 transition">
+                  {Icon && <Icon className="text-[#219ebc]" size={24} />}
+                </div>
+
+                <h3 className="text-xl font-bold text-[#023047] mb-2">
+                  {service.title}
+                </h3>
+
+                <p className="text-[#475569] mb-4 text-sm">
+                  {service.description}
+                </p>
+
+                <ul className="space-y-2">
+                  {service.features.map((feature, idx) => (
+                    <li
+                      key={idx}
+                      className="flex items-center gap-2 text-sm text-[#475569]"
+                    >
+                      <Check className="text-[#fb8500]" size={16} />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            );
+          })}
         </div>
 
-        <div className="text-center mt-6">
-          <button
-            onClick={() => navigate('/services')}
-            className="inline-flex items-center px-5 py-2 border-2 border-gray-900 text-gray-900 rounded-lg text-sm font-semibold hover:bg-gray-900 hover:text-yellow-500 transition-colors"
+        <div className="text-center mt-12">
+          <Link
+            to="/services"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#219ebc] text-white font-semibold rounded-lg hover:bg-[#8ecae6] hover:text-[#023047] transition-colors"
+            data-testid="view-all-services-button"
           >
             View All Services
-          </button>
+            <ArrowRight size={20} />
+          </Link>
         </div>
       </div>
     </section>
   );
 };
 
-export default ServicesSection;
+export default ServiceSection;

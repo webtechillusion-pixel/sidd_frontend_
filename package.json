@@ -13,6 +13,7 @@
     "@react-google-maps/api": "^2.20.8",
     "axios": "^1.13.2",
     "chart.js": "^4.5.1",
+    "framer-motion": "^12.34.1",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.562.0",

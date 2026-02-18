@@ -1,11 +1,7 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { 
-  MapPin, 
-  Star, 
-  Heart,
-  X
-} from 'lucide-react';
+import { MapPin, Star, X } from 'lucide-react';
 
 const GalleryPage = () => {
   const navigate = useNavigate();
@@ -41,104 +37,187 @@ const GalleryPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
-      <div className="relative bg-gray-900 overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=1920")' }}
-        >
-          <div className="absolute inset-0 bg-black/70"></div>
-        </div>
-        
-        <div className="relative container mx-auto px-4 py-12 md:py-16">
-          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3">
-            Travel Gallery
-          </h1>
-          <p className="text-gray-300 text-sm md:text-base mb-5">
-            Explore moments from our journeys.
-          </p>
-          <button onClick={() => navigate('/book')} className="px-5 py-2.5 bg-yellow-500 text-gray-900 rounded-lg font-medium text-sm hover:bg-yellow-400 transition">
-            Book Your Ride
-          </button>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-8">
-        {/* Categories */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {categories.map((cat) => (
+      <section className="bg-gradient-to-br from-[#023047] to-[#023047]/80 text-white py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
+          >
+            <h1 className="text-5xl md:text-6xl font-bold mb-6">Travel Gallery</h1>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
+              Explore moments from our journeys and see the experiences we've created
+            </p>
             <button
-              key={cat.id}
-              onClick={() => setActiveCategory(cat.id)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition ${
-                activeCategory === cat.id ? 'bg-yellow-500 text-gray-900' : 'bg-white text-gray-700 border border-gray-200'
-              }`}
+              onClick={() => navigate('/book')}
+              className="px-8 py-3 bg-[#fb8500] hover:bg-[#ffb703] text-white font-semibold rounded-lg transition-colors"
             >
-              {cat.label}
+              Book Your Ride
             </button>
-          ))}
+          </motion.div>
         </div>
+      </section>
 
-        {/* Gallery Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-8">
-          {filteredImages.map((image) => (
-            <div 
-              key={image.id}
-              className="group relative aspect-square overflow-hidden rounded-lg cursor-pointer"
-              onClick={() => setSelectedImage(image)}
-            >
-              <img src={image.src} alt={image.title} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-end p-3">
-                <div className="text-white">
-                  <p className="font-bold text-sm">{image.title}</p>
-                  <p className="text-xs flex items-center gap-1"><MapPin className="h-3 w-3" />{image.location}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+      {/* Gallery Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Category Filter */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="flex flex-wrap justify-center gap-3 mb-12"
+          >
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all ${
+                  activeCategory === cat.id
+                    ? 'bg-[#fb8500] text-white shadow-lg'
+                    : 'bg-gray-100 text-[#475569] hover:bg-[#8ecae6]/20'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </motion.div>
 
-        {/* Testimonials */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 text-center">What Our Customers Say</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {testimonials.map((t, i) => (
-              <div key={i} className="bg-white rounded-xl p-4 border border-gray-200">
-                <div className="flex mb-2">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} className={`h-3.5 w-3.5 ${j < t.rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} />
-                  ))}
+          {/* Gallery Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {filteredImages.map((image, index) => (
+              <motion.div
+                key={image.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.05 }}
+                whileHover={{ y: -8 }}
+                className="group relative aspect-square overflow-hidden rounded-2xl cursor-pointer shadow-lg hover:shadow-xl transition-all"
+                onClick={() => setSelectedImage(image)}
+              >
+                <img
+                  src={image.src}
+                  alt={image.title}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#023047] via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                  <div className="text-white">
+                    <p className="font-bold text-lg">{image.title}</p>
+                    <p className="text-sm flex items-center gap-1">
+                      <MapPin className="h-4 w-4" /> {image.location}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-600 mb-2">"{t.comment}"</p>
-                <p className="font-bold text-sm text-gray-900">{t.name}</p>
-                <p className="text-xs text-gray-500">{t.trip}</p>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* CTA */}
-        <div className="bg-gray-900 rounded-xl p-6 text-white text-center">
-          <h2 className="text-lg font-bold mb-2">Ready to Create Your Memory?</h2>
-          <p className="text-gray-400 text-sm mb-4">Book your ride now</p>
-          <button onClick={() => navigate('/book')} className="px-6 py-2.5 bg-yellow-500 text-gray-900 rounded-lg font-medium text-sm hover:bg-yellow-400 transition">
-            Book Now
-          </button>
-        </div>
-      </div>
+      {/* Testimonials Section */}
+      <section className="py-20 bg-[#8ecae6]/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-[#023047] mb-4">What Our Customers Say</h2>
+            <p className="text-lg text-[#475569] max-w-2xl mx-auto">
+              Real experiences from happy travelers
+            </p>
+          </motion.div>
 
-      {/* Modal */}
-      {selectedImage && (
-        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setSelectedImage(null)}>
-          <div className="relative max-w-lg w-full" onClick={e => e.stopPropagation()}>
-            <button onClick={() => setSelectedImage(null)} className="absolute -top-10 right-0 text-white"><X className="h-6 w-6" /></button>
-            <img src={selectedImage.src} alt={selectedImage.title} className="w-full rounded-lg" />
-            <div className="bg-white rounded-b-lg p-4 mt-0">
-              <h3 className="font-bold text-gray-900">{selectedImage.title}</h3>
-              <p className="text-xs text-gray-500 flex items-center gap-1"><MapPin className="h-3 w-3" />{selectedImage.location}</p>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {testimonials.map((testimonial, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 hover:shadow-xl transition-all"
+              >
+                <div className="flex gap-1 mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`h-5 w-5 ${i < testimonial.rating ? 'text-[#fb8500] fill-[#fb8500]' : 'text-gray-300'}`}
+                    />
+                  ))}
+                </div>
+                <p className="text-[#475569] mb-4 text-sm italic">"{testimonial.comment}"</p>
+                <div>
+                  <p className="font-bold text-[#023047]">{testimonial.name}</p>
+                  <p className="text-xs text-[#475569]">{testimonial.trip}</p>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
-      )}
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl md:text-5xl font-bold text-[#023047] mb-4">Ready to Create Your Memory?</h2>
+            <p className="text-lg text-[#475569] mb-8">Book your ride now and start your journey</p>
+            <button
+              onClick={() => navigate('/book')}
+              className="px-8 py-3 bg-[#fb8500] hover:bg-[#ffb703] text-white font-semibold rounded-lg transition-colors"
+            >
+              Book Now
+            </button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Lightbox Modal */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedImage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="relative max-w-3xl w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute -top-12 right-0 text-white hover:text-[#fb8500] transition-colors"
+              >
+                <X className="h-8 w-8" />
+              </button>
+              <img
+                src={selectedImage.src}
+                alt={selectedImage.title}
+                className="w-full rounded-t-2xl"
+              />
+              <div className="bg-white rounded-b-2xl p-6">
+                <h3 className="text-2xl font-bold text-[#023047] mb-2">{selectedImage.title}</h3>
+                <p className="text-[#475569] flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-[#fb8500]" /> {selectedImage.location}
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
