@@ -13,7 +13,7 @@ import {
   Award
 } from 'lucide-react';
 
-// Enhanced Counter that handles decimals
+// Enhanced Counter that handles decimals and non-numeric strings
 const Counter = ({ value, suffix = '' }) => {
   const [count, setCount] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -39,13 +39,19 @@ const Counter = ({ value, suffix = '' }) => {
   useEffect(() => {
     if (!isVisible) return;
 
-    // Parse the value, handling decimals
     const stringValue = String(value || '0');
-    const numValue = parseFloat(stringValue.replace(/[^0-9.]/g, '')) || 0;
     
-    // If value is not a number (like '24/7'), just display the suffix
-    if (isNaN(numValue) || numValue === 0) {
+    // Check if the string contains any non-numeric character (except '.')
+    // If it does, treat as a static string (no animation)
+    if (/[^0-9.]/.test(stringValue)) {
       setCount(stringValue);
+      return;
+    }
+
+    // Parse numeric value (including decimals)
+    const numValue = parseFloat(stringValue) || 0;
+    if (numValue === 0) {
+      setCount('0');
       return;
     }
 
@@ -68,7 +74,8 @@ const Counter = ({ value, suffix = '' }) => {
   }, [isVisible, value]);
 
   const formatNumber = (num) => {
-    if (typeof num === 'string') return num; // For non-numeric like '24/7'
+    // If it's a string (non-numeric), return as-is
+    if (typeof num === 'string') return num;
     
     // Check if original value had decimals
     const originalString = String(value);
@@ -77,9 +84,9 @@ const Counter = ({ value, suffix = '' }) => {
       return num.toFixed(decimals);
     }
     
-    // For integers
+    // For integers over 1000, format with K
     if (num >= 1000) {
-      return (num / 1000).toFixed(num % 1000 === 0 ? 0 : 1) + 'K+';
+      return (num / 1000).toFixed(num % 1000 === 0 ? 0 : 1) + 'K';
     }
     return Math.floor(num).toString();
   };
@@ -112,14 +119,13 @@ const AboutUsPage = () => {
     { year: '2021', title: 'Nationwide', description: '50+ cities covered' },
   ];
 
-  // Fixed achievements array – rating is now "4.8"
   const achievements = [
     { number: '10000', label: 'Customers', suffix: '+', icon: <Users className="h-6 w-6" /> },
     { number: '500', label: 'Vehicles', suffix: '+', icon: <Car className="h-6 w-6" /> },
     { number: '50', label: 'Cities', suffix: '+', icon: <MapPin className="h-6 w-6" /> },
     { number: '25000', label: 'Trips', suffix: '+', icon: <Globe className="h-6 w-6" /> },
     { number: '4.8', label: 'Rating', suffix: '', icon: <Star className="h-6 w-6" /> },
-    { number: '0', label: 'Support', suffix: '24/7', icon: <Clock className="h-6 w-6" /> },
+    { number: '24/7', label: 'Support', suffix: '', icon: <Clock className="h-6 w-6" /> }, // Fixed
   ];
 
   return (

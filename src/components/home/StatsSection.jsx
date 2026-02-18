@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Car, Users, MapPin, Award, Clock, Star } from 'lucide-react';
 
+// Enhanced Counter that handles decimals and non-numeric values
 const Counter = ({ value, suffix = '' }) => {
   const [count, setCount] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -27,30 +28,52 @@ const Counter = ({ value, suffix = '' }) => {
   useEffect(() => {
     if (!isVisible) return;
 
-    const numValue = parseInt(value.replace(/[^0-9]/g, ''));
-    const duration = 2000;
+    // Handle non-numeric values (like '24/7')
+    if (isNaN(parseFloat(value)) || value.includes('/')) {
+      setCount(value);
+      return;
+    }
+
+    // Parse numeric value including decimals
+    const numericValue = parseFloat(value.replace(/[^0-9.]/g, ''));
+    if (isNaN(numericValue)) return;
+
+    const duration = 2000; // 2 seconds
     const steps = 60;
-    const increment = numValue / steps;
+    const increment = numericValue / steps;
     let current = 0;
 
     const timer = setInterval(() => {
       current += increment;
-      if (current >= numValue) {
-        setCount(numValue);
+      if (current >= numericValue) {
+        setCount(numericValue);
         clearInterval(timer);
       } else {
-        setCount(Math.floor(current));
+        setCount(current);
       }
     }, duration / steps);
 
     return () => clearInterval(timer);
   }, [isVisible, value]);
 
+  // Format the displayed number
   const formatNumber = (num) => {
-    if (num >= 1000) {
-      return (num / 1000).toFixed(num % 1000 === 0 ? 0 : 1) + 'K+';
+    // If it's not a number (like '24/7'), return as is
+    if (typeof num === 'string') return num;
+
+    // Check if original value had decimals
+    const originalString = String(value);
+    if (originalString.includes('.')) {
+      const decimals = originalString.split('.')[1].length;
+      return num.toFixed(decimals);
     }
-    return num.toString();
+
+    // For integers over 1000, format with K
+    if (num >= 1000) {
+      return (num / 1000).toFixed(num % 1000 === 0 ? 0 : 1) + 'K';
+    }
+
+    return Math.floor(num).toString();
   };
 
   return <span ref={ref}>{formatNumber(count)}{suffix}</span>;
