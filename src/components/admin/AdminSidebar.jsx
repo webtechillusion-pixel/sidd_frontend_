@@ -128,7 +128,6 @@ const AdminSidebar = ({ isOpen, onClose }) => {
   };
 
   useEffect(() => {
-    // Auto-expand section if a child is active
     navigationItems.forEach(item => {
       if (item.children) {
         if (isChildActive(item.children)) {
@@ -160,18 +159,18 @@ const AdminSidebar = ({ isOpen, onClose }) => {
       `}>
         {/* Logo and Brand */}
         <div className="flex items-center justify-between h-16 px-4 border-b border-gray-800">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-600 rounded-lg">
+          <div className="flex items-center space-x-3 min-w-0">
+            <div className="p-2 bg-blue-600 rounded-lg flex-shrink-0">
               <Car className="h-6 w-6" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold">TravelX Admin</h1>
-              <p className="text-xs text-gray-400">Management Portal</p>
+            <div className="truncate">
+              <h1 className="text-xl font-bold truncate">TravelX Admin</h1>
+              <p className="text-xs text-gray-400 truncate">Management Portal</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="lg:hidden text-gray-400 hover:text-white"
+            className="lg:hidden text-gray-400 hover:text-white flex-shrink-0"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -181,18 +180,18 @@ const AdminSidebar = ({ isOpen, onClose }) => {
         <div className="p-4 border-b border-gray-800">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Activity className="h-4 w-4 text-green-400 mr-2" />
-                <span className="text-sm text-gray-300">Online</span>
+              <div className="flex items-center min-w-0">
+                <Activity className="h-4 w-4 text-green-400 mr-2 flex-shrink-0" />
+                <span className="text-sm text-gray-300 truncate">Online</span>
               </div>
-              <span className="text-sm font-semibold">{stats?.riders?.online || 0}</span>
+              <span className="text-sm font-semibold flex-shrink-0">{stats?.riders?.online || 0}</span>
             </div>
             <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <ClipboardCheck className="h-4 w-4 text-yellow-400 mr-2" />
-                <span className="text-sm text-gray-300">Pending</span>
+              <div className="flex items-center min-w-0">
+                <ClipboardCheck className="h-4 w-4 text-yellow-400 mr-2 flex-shrink-0" />
+                <span className="text-sm text-gray-300 truncate">Pending</span>
               </div>
-              <span className="text-sm font-semibold">{stats?.riders?.pending || 0}</span>
+              <span className="text-sm font-semibold flex-shrink-0">{stats?.riders?.pending || 0}</span>
             </div>
           </div>
         </div>
@@ -213,12 +212,12 @@ const AdminSidebar = ({ isOpen, onClose }) => {
                     }
                   `}
                 >
-                  <div className="flex items-center">
-                    <item.icon className="h-5 w-5 mr-3" />
-                    {item.title}
+                  <div className="flex items-center min-w-0">
+                    <item.icon className="h-5 w-5 mr-3 flex-shrink-0" />
+                    <span className="truncate">{item.title}</span>
                   </div>
                   {item.badge && item.badge > 0 && (
-                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full flex-shrink-0 ml-2">
                       {item.badge}
                     </span>
                   )}
@@ -233,11 +232,11 @@ const AdminSidebar = ({ isOpen, onClose }) => {
                       ${expandedSections[item.section] || isChildActive(item.children) ? 'bg-gray-800' : ''}
                     `}
                   >
-                    <div className="flex items-center">
-                      <item.icon className="h-5 w-5 mr-3" />
-                      {item.title}
+                    <div className="flex items-center min-w-0">
+                      <item.icon className="h-5 w-5 mr-3 flex-shrink-0" />
+                      <span className="truncate">{item.title}</span>
                     </div>
-                    <ChevronRight className={`h-4 w-4 transition-transform ${
+                    <ChevronRight className={`h-4 w-4 flex-shrink-0 transition-transform ${
                       expandedSections[item.section] ? 'rotate-90' : ''
                     }`} />
                   </button>
@@ -257,12 +256,12 @@ const AdminSidebar = ({ isOpen, onClose }) => {
                             }
                           `}
                         >
-                          <div className="flex items-center">
-                            <child.icon className="h-4 w-4 mr-3" />
-                            {child.title}
+                          <div className="flex items-center min-w-0">
+                            <child.icon className="h-4 w-4 mr-3 flex-shrink-0" />
+                            <span className="truncate">{child.title}</span>
                           </div>
                           {child.badge && child.badge > 0 && (
-                            <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-5 text-center">
+                            <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full min-w-5 text-center flex-shrink-0 ml-2">
                               {child.badge}
                             </span>
                           )}
@@ -284,15 +283,15 @@ const AdminSidebar = ({ isOpen, onClose }) => {
               onClick={() => window.open('https://help.travelx.com/admin', '_blank')}
               className="flex items-center w-full px-3 py-2 text-sm text-gray-300 hover:bg-gray-800 rounded-lg transition-colors"
             >
-              <HelpCircle className="h-4 w-4 mr-3" />
-              Help & Support
+              <HelpCircle className="h-4 w-4 mr-3 flex-shrink-0" />
+              <span className="truncate">Help & Support</span>
             </button>
             <button
               onClick={() => window.open('/admin/system-status', '_blank')}
               className="flex items-center w-full px-3 py-2 text-sm text-gray-300 hover:bg-gray-800 rounded-lg transition-colors"
             >
-              <Activity className="h-4 w-4 mr-3" />
-              System Status
+              <Activity className="h-4 w-4 mr-3 flex-shrink-0" />
+              <span className="truncate">System Status</span>
             </button>
           </div>
 
@@ -301,8 +300,8 @@ const AdminSidebar = ({ isOpen, onClose }) => {
             to="/"
             className="flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors"
           >
-            <Home className="h-4 w-4 mr-2" />
-            Visit Main Site
+            <Home className="h-4 w-4 mr-2 flex-shrink-0" />
+            <span className="truncate">Visit Main Site</span>
           </NavLink>
 
           {/* Version Info */}

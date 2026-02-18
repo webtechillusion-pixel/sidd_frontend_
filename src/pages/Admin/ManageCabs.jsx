@@ -113,7 +113,7 @@ const ManageCabs = () => {
 
       {/* Filters and Search */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <form onSubmit={handleSearch} className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -127,7 +127,7 @@ const ManageCabs = () => {
             </div>
           </form>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <select
               className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={statusFilter}
@@ -199,13 +199,13 @@ const ManageCabs = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredCabs.map((cab) => (
                     <tr key={cab._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-2">
                           <div className="flex items-center">
-                            <Car className="h-5 w-5 mr-2 text-blue-600" />
-                            <div>
-                              <div className="font-medium text-gray-900">{cab.cabNumber}</div>
-                              <div className="text-sm text-gray-500">{cab.cabModel}</div>
+                            <Car className="h-5 w-5 mr-2 text-blue-600 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <div className="font-medium text-gray-900 truncate">{cab.cabNumber}</div>
+                              <div className="text-sm text-gray-500 truncate">{cab.cabModel}</div>
                             </div>
                           </div>
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCabTypeColor(cab.cabType)}`}>
@@ -216,23 +216,23 @@ const ManageCabs = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-2">
                           {cab.riderId && (
                             <div className="flex items-center">
-                              <User className="h-4 w-4 mr-2 text-gray-400" />
-                              <div>
-                                <div className="text-sm font-medium">{cab.riderId.name}</div>
-                                <div className="text-xs text-gray-500">{cab.riderId.phone}</div>
+                              <User className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium truncate">{cab.riderId.name}</div>
+                                <div className="text-xs text-gray-500 truncate">{cab.riderId.phone}</div>
                               </div>
                             </div>
                           )}
                           <div className="flex items-center text-sm text-gray-600">
-                            <ImageIcon className="h-4 w-4 mr-2" />
+                            <ImageIcon className="h-4 w-4 mr-2 flex-shrink-0" />
                             <span>{cab.images?.length || 0} images</span>
                           </div>
                           <div className="flex items-center text-sm text-gray-600">
-                            <Shield className="h-4 w-4 mr-2" />
+                            <Shield className="h-4 w-4 mr-2 flex-shrink-0" />
                             <span>Docs: {[
                               cab.rcImage?.front && 'RC',
                               cab.insuranceImage?.front && 'Insurance',
@@ -242,7 +242,7 @@ const ManageCabs = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-1 text-sm">
                           <div>
                             <span className="text-gray-500">Seats: </span>
@@ -268,7 +268,7 @@ const ManageCabs = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <StatusBadge status={cab.approvalStatus} />
                         {cab.isApproved && (
                           <div className="mt-1 text-xs text-gray-500">
@@ -329,7 +329,7 @@ const ManageCabs = () => {
 
             {/* Pagination */}
             <div className="px-6 py-3 border-t border-gray-200">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-sm text-gray-700">
                   Showing <span className="font-medium">{((currentPage - 1) * 10) + 1}</span> to{' '}
                   <span className="font-medium">
@@ -363,7 +363,7 @@ const ManageCabs = () => {
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="text-2xl font-bold text-gray-900">{cabs.length}</div>
           <div className="text-sm text-gray-600">Total Cabs</div>
@@ -432,25 +432,25 @@ const ManageCabs = () => {
                         <div>
                           <h4 className="text-sm font-medium text-gray-500">Basic Information</h4>
                           <div className="mt-2 space-y-2">
-                            <div className="flex justify-between">
+                            <div className="flex justify-between flex-wrap gap-2">
                               <span className="text-gray-600">Cab Number:</span>
-                              <span className="font-medium">{selectedCab.cabNumber}</span>
+                              <span className="font-medium truncate">{selectedCab.cabNumber}</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between flex-wrap gap-2">
                               <span className="text-gray-600">Model:</span>
-                              <span className="font-medium">{selectedCab.cabModel}</span>
+                              <span className="font-medium truncate">{selectedCab.cabModel}</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between flex-wrap gap-2">
                               <span className="text-gray-600">Type:</span>
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCabTypeColor(selectedCab.cabType)}`}>
                                 {selectedCab.cabType}
                               </span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between flex-wrap gap-2">
                               <span className="text-gray-600">Seating Capacity:</span>
                               <span className="font-medium">{selectedCab.seatingCapacity} persons</span>
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between flex-wrap gap-2">
                               <span className="text-gray-600">AC:</span>
                               <span className={`font-medium ${selectedCab.acAvailable ? 'text-green-600' : 'text-red-600'}`}>
                                 {selectedCab.acAvailable ? 'Available' : 'Not Available'}
@@ -464,17 +464,17 @@ const ManageCabs = () => {
                           <div>
                             <h4 className="text-sm font-medium text-gray-500">Rider Information</h4>
                             <div className="mt-2 space-y-2">
-                              <div className="flex justify-between">
+                              <div className="flex justify-between flex-wrap gap-2">
                                 <span className="text-gray-600">Name:</span>
-                                <span className="font-medium">{selectedCab.riderId.name}</span>
+                                <span className="font-medium truncate">{selectedCab.riderId.name}</span>
                               </div>
-                              <div className="flex justify-between">
+                              <div className="flex justify-between flex-wrap gap-2">
                                 <span className="text-gray-600">Phone:</span>
                                 <span className="font-medium">{selectedCab.riderId.phone}</span>
                               </div>
-                              <div className="flex justify-between">
+                              <div className="flex justify-between flex-wrap gap-2">
                                 <span className="text-gray-600">Email:</span>
-                                <span className="font-medium">{selectedCab.riderId.email}</span>
+                                <span className="font-medium truncate">{selectedCab.riderId.email}</span>
                               </div>
                             </div>
                           </div>
@@ -487,24 +487,24 @@ const ManageCabs = () => {
                         <div>
                           <h4 className="text-sm font-medium text-gray-500">Status Information</h4>
                           <div className="mt-2 space-y-2">
-                            <div className="flex justify-between">
+                            <div className="flex justify-between flex-wrap gap-2">
                               <span className="text-gray-600">Approval Status:</span>
                               <StatusBadge status={selectedCab.approvalStatus} />
                             </div>
-                            <div className="flex justify-between">
+                            <div className="flex justify-between flex-wrap gap-2">
                               <span className="text-gray-600">Availability:</span>
                               <span className={`font-medium ${selectedCab.isAvailable ? 'text-green-600' : 'text-red-600'}`}>
                                 {selectedCab.isAvailable ? 'Available' : 'Not Available'}
                               </span>
                             </div>
                             {selectedCab.approvedAt && (
-                              <div className="flex justify-between">
+                              <div className="flex justify-between flex-wrap gap-2">
                                 <span className="text-gray-600">Approved On:</span>
                                 <span className="font-medium">{new Date(selectedCab.approvedAt).toLocaleDateString()}</span>
                               </div>
                             )}
                             {selectedCab.rejectionReason && (
-                              <div className="flex justify-between">
+                              <div className="flex justify-between flex-wrap gap-2">
                                 <span className="text-gray-600">Rejection Reason:</span>
                                 <span className="font-medium text-red-600">{selectedCab.rejectionReason}</span>
                               </div>
@@ -549,7 +549,7 @@ const ManageCabs = () => {
                     {selectedCab.images && selectedCab.images.length > 0 && (
                       <div className="mt-6">
                         <h4 className="text-sm font-medium text-gray-500 mb-3">Cab Images</h4>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           {selectedCab.images.map((image, index) => (
                             <div key={index} className="relative group">
                               <img
@@ -570,13 +570,13 @@ const ManageCabs = () => {
 
                     {/* Action Buttons */}
                     {selectedCab.approvalStatus === 'PENDING' && (
-                      <div className="mt-6 flex space-x-3">
+                      <div className="mt-6 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                         <button
                           onClick={() => {
                             handleApprove(selectedCab._id);
                             setIsDetailsModalOpen(false);
                           }}
-                          className="flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                          className="w-full sm:flex-1 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                         >
                           Approve Cab
                         </button>
@@ -588,7 +588,7 @@ const ManageCabs = () => {
                               setIsDetailsModalOpen(false);
                             }
                           }}
-                          className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                          className="w-full sm:flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
                         >
                           Reject Cab
                         </button>

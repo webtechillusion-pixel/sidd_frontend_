@@ -88,57 +88,57 @@ const ManageUsers = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Users</p>
-              <p className="text-2xl font-bold">{pagination.total || 0}</p>
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Total Users</p>
+              <p className="text-2xl font-bold truncate">{pagination.total || 0}</p>
             </div>
-            <Users className="h-8 w-8 text-blue-500" />
+            <Users className="h-8 w-8 text-blue-500 flex-shrink-0 ml-4" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Active Users</p>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Active Users</p>
+              <p className="text-2xl font-bold truncate">
                 {users.filter(u => u.isActive).length}
               </p>
             </div>
-            <Activity className="h-8 w-8 text-green-500" />
+            <Activity className="h-8 w-8 text-green-500 flex-shrink-0 ml-4" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Verified Users</p>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Verified Users</p>
+              <p className="text-2xl font-bold truncate">
                 {users.filter(u => u.isEmailVerified).length}
               </p>
             </div>
-            <Shield className="h-8 w-8 text-purple-500" />
+            <Shield className="h-8 w-8 text-purple-500 flex-shrink-0 ml-4" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Google Users</p>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Google Users</p>
+              <p className="text-2xl font-bold truncate">
                 {users.filter(u => u.googleId).length}
               </p>
             </div>
-            <User className="h-8 w-8 text-orange-500" />
+            <User className="h-8 w-8 text-orange-500 flex-shrink-0 ml-4" />
           </div>
         </div>
       </div>
 
       {/* Filters and Search */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <form onSubmit={handleSearch} className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -152,7 +152,7 @@ const ManageUsers = () => {
             </div>
           </form>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <select
               className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={statusFilter}
@@ -230,9 +230,9 @@ const ManageUsers = () => {
                               </div>
                             )}
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                            <div className="text-sm text-gray-500">
+                          <div className="ml-4 min-w-0">
+                            <div className="text-sm font-medium text-gray-900 truncate">{user.name}</div>
+                            <div className="text-sm text-gray-500 truncate">
                               ID: {user._id?.slice(-6)}
                               {user.googleId && (
                                 <span className="ml-2 text-xs bg-orange-100 text-orange-800 px-1 rounded">Google</span>
@@ -241,15 +241,15 @@ const ManageUsers = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-1">
                           <div className="flex items-center text-sm text-gray-900">
-                            <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                            {user.email}
+                            <Mail className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                            <span className="truncate">{user.email}</span>
                           </div>
                           <div className="flex items-center text-sm text-gray-500">
-                            <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                            {user.phone}
+                            <Phone className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                            <span className="truncate">{user.phone}</span>
                           </div>
                         </div>
                       </td>
@@ -275,7 +275,7 @@ const ManageUsers = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-1">
                           <div className="flex items-center text-sm text-gray-900">
-                            <Calendar className="h-4 w-4 mr-2 text-gray-400" />
+                            <Calendar className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
                             {formatDate(user.createdAt)}
                           </div>
                           {user.lastLogin && (
@@ -322,7 +322,7 @@ const ManageUsers = () => {
 
             {/* Pagination */}
             <div className="px-6 py-3 border-t border-gray-200">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-sm text-gray-700">
                   Showing <span className="font-medium">{((currentPage - 1) * 10) + 1}</span> to{' '}
                   <span className="font-medium">
@@ -376,24 +376,24 @@ const ManageUsers = () => {
                     
                     <div className="space-y-6">
                       {/* Profile Header */}
-                      <div className="flex items-center space-x-4">
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-4">
                         {selectedUser.photo ? (
                           <img
-                            className="h-20 w-20 rounded-full object-cover"
+                            className="h-20 w-20 rounded-full object-cover flex-shrink-0"
                             src={selectedUser.photo}
                             alt={selectedUser.name}
                           />
                         ) : (
-                          <div className="h-20 w-20 rounded-full bg-gray-200 flex items-center justify-center">
+                          <div className="h-20 w-20 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                             <span className="text-2xl font-medium text-gray-600">
                               {selectedUser.name?.charAt(0).toUpperCase()}
                             </span>
                           </div>
                         )}
-                        <div>
-                          <h4 className="text-xl font-bold text-gray-900">{selectedUser.name}</h4>
-                          <p className="text-gray-600">{selectedUser.email}</p>
-                          <div className="flex items-center space-x-2 mt-2">
+                        <div className="min-w-0">
+                          <h4 className="text-xl font-bold text-gray-900 truncate">{selectedUser.name}</h4>
+                          <p className="text-gray-600 truncate">{selectedUser.email}</p>
+                          <div className="flex flex-wrap items-center gap-2 mt-2">
                             <span className={`px-2 py-1 text-xs rounded-full ${selectedUser.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                               {selectedUser.isActive ? 'Active' : 'Inactive'}
                             </span>
@@ -414,7 +414,7 @@ const ManageUsers = () => {
                         <div className="space-y-3">
                           <div>
                             <label className="block text-sm font-medium text-gray-500">User ID</label>
-                            <p className="mt-1 text-sm text-gray-900">{selectedUser._id}</p>
+                            <p className="mt-1 text-sm text-gray-900 truncate">{selectedUser._id}</p>
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-500">Phone Number</label>
@@ -476,22 +476,20 @@ const ManageUsers = () => {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex space-x-3 pt-4 border-t border-gray-200">
+                      <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-200">
                         <button
                           onClick={() => {
-                            // Implement send notification functionality
                             toast.info('Send notification feature coming soon');
                           }}
-                          className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                          className="w-full sm:flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                         >
                           Send Notification
                         </button>
                         <button
                           onClick={() => {
-                            // Implement reset password functionality
                             toast.info('Password reset feature coming soon');
                           }}
-                          className="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                          className="w-full sm:flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
                         >
                           Reset Password
                         </button>

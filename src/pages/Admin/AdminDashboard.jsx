@@ -55,7 +55,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Total Users"
           value={stats?.users?.total || 0}
@@ -94,51 +94,51 @@ const AdminDashboard = () => {
       </div>
 
       {/* Rider Status Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
+            <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
               <UserCheck className="h-6 w-6 text-blue-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">Approved Riders</p>
-              <p className="text-2xl font-bold">{stats?.riders?.approved || 0}</p>
+            <div className="ml-4 min-w-0">
+              <p className="text-sm text-gray-500 truncate">Approved Riders</p>
+              <p className="text-2xl font-bold truncate">{stats?.riders?.approved || 0}</p>
             </div>
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
+            <div className="p-2 bg-yellow-100 rounded-lg flex-shrink-0">
               <Clock className="h-6 w-6 text-yellow-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">Pending Riders</p>
-              <p className="text-2xl font-bold">{stats?.riders?.pending || 0}</p>
+            <div className="ml-4 min-w-0">
+              <p className="text-sm text-gray-500 truncate">Pending Riders</p>
+              <p className="text-2xl font-bold truncate">{stats?.riders?.pending || 0}</p>
             </div>
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center">
-            <div className="p-2 bg-red-100 rounded-lg">
+            <div className="p-2 bg-red-100 rounded-lg flex-shrink-0">
               <UserX className="h-6 w-6 text-red-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">Suspended</p>
-              <p className="text-2xl font-bold">0</p>
+            <div className="ml-4 min-w-0">
+              <p className="text-sm text-gray-500 truncate">Suspended</p>
+              <p className="text-2xl font-bold truncate">0</p>
             </div>
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
+            <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
               <TrendingUp className="h-6 w-6 text-green-600" />
             </div>
-            <div className="ml-4">
-              <p className="text-sm text-gray-500">Active Users</p>
-              <p className="text-2xl font-bold">{stats?.users?.active || 0}</p>
+            <div className="ml-4 min-w-0">
+              <p className="text-sm text-gray-500 truncate">Active Users</p>
+              <p className="text-2xl font-bold truncate">{stats?.users?.active || 0}</p>
             </div>
           </div>
         </div>
@@ -147,9 +147,9 @@ const AdminDashboard = () => {
       {/* Charts and Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
             <h2 className="text-lg font-semibold text-gray-900">Revenue Overview</h2>
-            <select className="text-sm border border-gray-300 rounded-md px-3 py-1">
+            <select className="text-sm border border-gray-300 rounded-md px-3 py-1 w-full sm:w-auto">
               <option>Last 7 days</option>
               <option>Last 30 days</option>
               <option>Last 90 days</option>
@@ -172,18 +172,18 @@ const AdminDashboard = () => {
       {/* Quick Actions */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <button className="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            <UserCheck className="h-5 w-5 text-green-600 mr-2" />
-            <span>Approve Pending Riders</span>
+            <UserCheck className="h-5 w-5 text-green-600 mr-2 flex-shrink-0" />
+            <span className="truncate">Approve Pending Riders</span>
           </button>
           <button className="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            <CreditCard className="h-5 w-5 text-blue-600 mr-2" />
-            <span>Process Payouts</span>
+            <CreditCard className="h-5 w-5 text-blue-600 mr-2 flex-shrink-0" />
+            <span className="truncate">Process Payouts</span>
           </button>
           <button className="flex items-center justify-center p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-            <TrendingUp className="h-5 w-5 text-purple-600 mr-2" />
-            <span>View Reports</span>
+            <TrendingUp className="h-5 w-5 text-purple-600 mr-2 flex-shrink-0" />
+            <span className="truncate">View Reports</span>
           </button>
         </div>
       </div>

@@ -107,7 +107,7 @@ const ManageRiders = () => {
 
       {/* Filters and Search */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <form onSubmit={handleSearch} className="flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -121,7 +121,7 @@ const ManageRiders = () => {
             </div>
           </form>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <select
               className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={statusFilter}
@@ -196,21 +196,21 @@ const ManageRiders = () => {
                               </div>
                             )}
                           </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{rider.name}</div>
-                            <div className="text-sm text-gray-500">ID: {rider._id?.slice(-6)}</div>
+                          <div className="ml-4 min-w-0">
+                            <div className="text-sm font-medium text-gray-900 truncate">{rider.name}</div>
+                            <div className="text-sm text-gray-500 truncate">ID: {rider._id?.slice(-6)}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-1">
                           <div className="flex items-center text-sm text-gray-900">
-                            <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                            {rider.email}
+                            <Mail className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                            <span className="truncate">{rider.email}</span>
                           </div>
                           <div className="flex items-center text-sm text-gray-500">
-                            <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                            {rider.phone}
+                            <Phone className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                            <span className="truncate">{rider.phone}</span>
                           </div>
                         </div>
                       </td>
@@ -273,7 +273,7 @@ const ManageRiders = () => {
 
             {/* Pagination */}
             <div className="px-6 py-3 border-t border-gray-200">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-sm text-gray-700">
                   Showing <span className="font-medium">{((currentPage - 1) * 10) + 1}</span> to{' '}
                   <span className="font-medium">
@@ -307,7 +307,7 @@ const ManageRiders = () => {
       </div>
 
       {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="text-2xl font-bold text-blue-700">{riders.length}</div>
           <div className="text-sm text-blue-600">Total Riders</div>

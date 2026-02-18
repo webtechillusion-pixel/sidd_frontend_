@@ -68,15 +68,15 @@ const AdminLayout = () => {
           </button>
         </div>
 
-        <div className="flex flex-col h-[calc(100%-4rem)]">
+        <div className="flex flex-col h-[calc(100%-4rem)] overflow-y-auto">
           {/* User info */}
           <div className="border-b border-gray-800 p-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white font-bold">
                 {admin?.name?.charAt(0)?.toUpperCase() || 'A'}
               </div>
-              <div>
-                <p className="font-medium">{admin?.name || 'Admin'}</p>
+              <div className="truncate">
+                <p className="font-medium truncate">{admin?.name || 'Admin'}</p>
                 <p className="text-xs text-gray-400">Administrator</p>
               </div>
             </div>
@@ -100,7 +100,7 @@ const AdminLayout = () => {
                   onClick={() => setSidebarOpen(false)}
                 >
                   <Icon className="h-5 w-5 flex-shrink-0" />
-                  {item.name}
+                  <span className="truncate">{item.name}</span>
                 </Link>
               );
             })}
@@ -119,8 +119,8 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-      {/* Main content wrapper - this is the key fix */}
-      <div className="flex-1 lg:ml-64 flex flex-col">
+      {/* Main content wrapper */}
+      <div className="flex-1 lg:ml-64 flex flex-col min-w-0">
         {/* Top bar */}
         <header className="sticky top-0 z-10 border-b bg-white">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -131,8 +131,8 @@ const AdminLayout = () => {
               <Menu className="h-6 w-6" />
             </button>
 
-            <div className="flex flex-1 items-center justify-end gap-4">
-              {/* Search - optional, can be moved or removed */}
+            <div className="flex flex-1 items-center justify-end gap-2 sm:gap-4">
+              {/* Search - hidden on small screens, visible on medium+ */}
               <div className="hidden md:block w-80 max-w-full">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
@@ -144,14 +144,14 @@ const AdminLayout = () => {
                 </div>
               </div>
 
-              <button className="relative">
+              <button className="relative p-1">
                 <Bell className="h-6 w-6 text-gray-600 hover:text-gray-900" />
                 <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" />
               </button>
 
-              <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-3">
                 <div className="text-right">
-                  <p className="text-sm font-medium">{admin?.name || 'Admin'}</p>
+                  <p className="text-sm font-medium truncate max-w-[150px]">{admin?.name || 'Admin'}</p>
                   <p className="text-xs text-gray-500">Administrator</p>
                 </div>
               </div>

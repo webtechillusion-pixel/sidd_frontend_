@@ -63,16 +63,16 @@ const PricingCard = ({ cabType, pricing, onUpdate }) => {
       {/* Card Header */}
       <div className={`bg-${info.color}-50 border-b border-${info.color}-100 p-4`}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <span className="text-2xl mr-3">{info.icon}</span>
-            <div>
-              <h3 className="font-bold text-gray-900">{info.name}</h3>
-              <p className="text-xs text-gray-600">{info.description}</p>
+          <div className="flex items-center min-w-0">
+            <span className="text-2xl mr-3 flex-shrink-0">{info.icon}</span>
+            <div className="min-w-0">
+              <h3 className="font-bold text-gray-900 truncate">{info.name}</h3>
+              <p className="text-xs text-gray-600 truncate">{info.description}</p>
             </div>
           </div>
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 flex-shrink-0 ml-2"
           >
             <Edit className="h-5 w-5" />
           </button>
@@ -126,17 +126,17 @@ const PricingCard = ({ cabType, pricing, onUpdate }) => {
                 max="100"
               />
             </div>
-            <div className="flex space-x-2 pt-2">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pt-2">
               <button
                 onClick={handleSave}
-                className="flex-1 bg-green-600 text-white px-3 py-2 rounded-md text-sm hover:bg-green-700 flex items-center justify-center"
+                className="w-full sm:flex-1 bg-green-600 text-white px-3 py-2 rounded-md text-sm hover:bg-green-700 flex items-center justify-center"
               >
                 <Save className="h-4 w-4 mr-1" />
                 Save
               </button>
               <button
                 onClick={handleCancel}
-                className="flex-1 bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm hover:bg-gray-300 flex items-center justify-center"
+                className="w-full sm:flex-1 bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm hover:bg-gray-300 flex items-center justify-center"
               >
                 <X className="h-4 w-4 mr-1" />
                 Cancel
@@ -147,42 +147,42 @@ const PricingCard = ({ cabType, pricing, onUpdate }) => {
           <>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <DollarSign className="h-4 w-4 mr-2 text-gray-400" />
-                  <span className="text-sm text-gray-600">Base Fare</span>
+                <div className="flex items-center min-w-0">
+                  <DollarSign className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                  <span className="text-sm text-gray-600 truncate">Base Fare</span>
                 </div>
-                <span className="font-bold text-gray-900">₹{pricing.baseFare}</span>
+                <span className="font-bold text-gray-900 flex-shrink-0 ml-2">₹{pricing.baseFare}</span>
               </div>
               
               <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <TrendingUp className="h-4 w-4 mr-2 text-gray-400" />
-                  <span className="text-sm text-gray-600">Price per KM</span>
+                <div className="flex items-center min-w-0">
+                  <TrendingUp className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                  <span className="text-sm text-gray-600 truncate">Price per KM</span>
                 </div>
-                <span className="font-bold text-gray-900">₹{pricing.pricePerKm}/km</span>
+                <span className="font-bold text-gray-900 flex-shrink-0 ml-2">₹{pricing.pricePerKm}/km</span>
               </div>
               
               <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <BarChart className="h-4 w-4 mr-2 text-gray-400" />
-                  <span className="text-sm text-gray-600">Commission</span>
+                <div className="flex items-center min-w-0">
+                  <BarChart className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                  <span className="text-sm text-gray-600 truncate">Commission</span>
                 </div>
-                <span className="font-bold text-gray-900">{pricing.adminCommissionPercent}%</span>
+                <span className="font-bold text-gray-900 flex-shrink-0 ml-2">{pricing.adminCommissionPercent}%</span>
               </div>
               
               <div className="border-t border-gray-200 pt-3 mt-3">
                 <p className="text-xs text-gray-500 mb-2">Example for 10km:</p>
                 <div className="space-y-1">
-                  <div className="flex justify-between text-sm">
-                    <span>Total Fare:</span>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Total Fare:</span>
                     <span className="font-bold">₹{fareExample.total}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Rider Earnings:</span>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Rider Earnings:</span>
                     <span className="text-green-600">₹{fareExample.riderEarning}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span>Platform Commission:</span>
+                  <div className="flex justify-between">
+                    <span className="text-sm">Platform Commission:</span>
                     <span className="text-blue-600">₹{fareExample.commission}</span>
                   </div>
                 </div>

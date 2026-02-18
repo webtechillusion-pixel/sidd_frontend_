@@ -41,13 +41,13 @@ const BookingDetailsModal = ({ booking, isOpen, onClose }) => {
             
             <div className="space-y-6">
               {/* Booking Header */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex items-center">
-                    <Calendar className="h-5 w-5 text-gray-400 mr-3" />
-                    <div>
+                    <Calendar className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
+                    <div className="min-w-0">
                       <p className="text-sm text-gray-500">Booking Date</p>
-                      <p className="font-medium">
+                      <p className="font-medium truncate">
                         {new Date(booking.createdAt).toLocaleString()}
                       </p>
                     </div>
@@ -56,8 +56,8 @@ const BookingDetailsModal = ({ booking, isOpen, onClose }) => {
                 
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex items-center">
-                    <Clock className="h-5 w-5 text-gray-400 mr-3" />
-                    <div>
+                    <Clock className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
+                    <div className="min-w-0">
                       <p className="text-sm text-gray-500">Status</p>
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.bookingStatus)}`}>
                         {booking.bookingStatus}
@@ -68,10 +68,10 @@ const BookingDetailsModal = ({ booking, isOpen, onClose }) => {
                 
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="flex items-center">
-                    <DollarSign className="h-5 w-5 text-gray-400 mr-3" />
-                    <div>
+                    <DollarSign className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
+                    <div className="min-w-0">
                       <p className="text-sm text-gray-500">Total Fare</p>
-                      <p className="font-medium text-green-600">
+                      <p className="font-medium text-green-600 truncate">
                         {formatCurrency(booking.finalFare || booking.estimatedFare)}
                       </p>
                     </div>
@@ -84,10 +84,10 @@ const BookingDetailsModal = ({ booking, isOpen, onClose }) => {
                 <h4 className="font-medium text-gray-900 mb-4">Location Details</h4>
                 <div className="space-y-4">
                   <div className="flex items-start">
-                    <MapPin className="h-5 w-5 text-green-500 mr-3 mt-0.5" />
-                    <div className="flex-1">
+                    <MapPin className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900">Pickup Location</p>
-                      <p className="text-gray-600">{booking.pickup?.addressText}</p>
+                      <p className="text-gray-600 break-words">{booking.pickup?.addressText}</p>
                       <p className="text-sm text-gray-500 mt-1">
                         {booking.pickup?.lat}, {booking.pickup?.lng}
                       </p>
@@ -100,10 +100,10 @@ const BookingDetailsModal = ({ booking, isOpen, onClose }) => {
                   </div>
                   
                   <div className="flex items-start">
-                    <MapPin className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
-                    <div className="flex-1">
+                    <MapPin className="h-5 w-5 text-red-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900">Drop Location</p>
-                      <p className="text-gray-600">{booking.drop?.addressText}</p>
+                      <p className="text-gray-600 break-words">{booking.drop?.addressText}</p>
                       <p className="text-sm text-gray-500 mt-1">
                         {booking.drop?.lat}, {booking.drop?.lng}
                       </p>
@@ -131,19 +131,19 @@ const BookingDetailsModal = ({ booking, isOpen, onClose }) => {
                   {booking.userId && (
                     <div className="space-y-3">
                       <div className="flex items-center">
-                        <User className="h-5 w-5 text-gray-400 mr-3" />
-                        <div>
-                          <p className="font-medium">{booking.userId.name}</p>
-                          <p className="text-sm text-gray-500">User ID: {booking.userId._id?.slice(-6)}</p>
+                        <User className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{booking.userId.name}</p>
+                          <p className="text-sm text-gray-500 truncate">User ID: {booking.userId._id?.slice(-6)}</p>
                         </div>
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
-                        <Phone className="h-4 w-4 mr-2" />
-                        {booking.userId.phone}
+                        <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">{booking.userId.phone}</span>
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
-                        <Mail className="h-4 w-4 mr-2" />
-                        {booking.userId.email}
+                        <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">{booking.userId.email}</span>
                       </div>
                     </div>
                   )}
@@ -155,15 +155,15 @@ const BookingDetailsModal = ({ booking, isOpen, onClose }) => {
                   {booking.riderId ? (
                     <div className="space-y-3">
                       <div className="flex items-center">
-                        <Car className="h-5 w-5 text-gray-400 mr-3" />
-                        <div>
-                          <p className="font-medium">{booking.riderId.name}</p>
-                          <p className="text-sm text-gray-500">Rider ID: {booking.riderId._id?.slice(-6)}</p>
+                        <Car className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{booking.riderId.name}</p>
+                          <p className="text-sm text-gray-500 truncate">Rider ID: {booking.riderId._id?.slice(-6)}</p>
                         </div>
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
-                        <Phone className="h-4 w-4 mr-2" />
-                        {booking.riderId.phone}
+                        <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
+                        <span className="truncate">{booking.riderId.phone}</span>
                       </div>
                       <div className="text-sm text-gray-600">
                         Rating: {booking.riderId.overallRating || 'N/A'} ⭐
@@ -219,7 +219,7 @@ const BookingDetailsModal = ({ booking, isOpen, onClose }) => {
                 <div className="space-y-4">
                   <div className="flex items-start">
                     <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
-                    <div className="ml-4">
+                    <div className="ml-4 min-w-0">
                       <p className="text-sm font-medium">Booking Created</p>
                       <p className="text-xs text-gray-500">{new Date(booking.createdAt).toLocaleString()}</p>
                     </div>
@@ -228,7 +228,7 @@ const BookingDetailsModal = ({ booking, isOpen, onClose }) => {
                   {booking.acceptedAt && (
                     <div className="flex items-start">
                       <div className="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
-                      <div className="ml-4">
+                      <div className="ml-4 min-w-0">
                         <p className="text-sm font-medium">Rider Accepted</p>
                         <p className="text-xs text-gray-500">{new Date(booking.acceptedAt).toLocaleString()}</p>
                       </div>
@@ -238,7 +238,7 @@ const BookingDetailsModal = ({ booking, isOpen, onClose }) => {
                   {booking.rideStartTime && (
                     <div className="flex items-start">
                       <div className="flex-shrink-0 w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
-                      <div className="ml-4">
+                      <div className="ml-4 min-w-0">
                         <p className="text-sm font-medium">Ride Started</p>
                         <p className="text-xs text-gray-500">{new Date(booking.rideStartTime).toLocaleString()}</p>
                       </div>
@@ -248,7 +248,7 @@ const BookingDetailsModal = ({ booking, isOpen, onClose }) => {
                   {booking.rideEndTime && (
                     <div className="flex items-start">
                       <div className="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
-                      <div className="ml-4">
+                      <div className="ml-4 min-w-0">
                         <p className="text-sm font-medium">Ride Completed</p>
                         <p className="text-xs text-gray-500">{new Date(booking.rideEndTime).toLocaleString()}</p>
                       </div>
@@ -259,18 +259,18 @@ const BookingDetailsModal = ({ booking, isOpen, onClose }) => {
             </div>
           </div>
           
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse flex-col sm:flex-row gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+              className="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:text-sm"
             >
               Close
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+              className="w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:text-sm"
             >
               Print Receipt
             </button>

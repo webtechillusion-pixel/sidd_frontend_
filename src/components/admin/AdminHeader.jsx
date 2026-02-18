@@ -22,6 +22,7 @@ const AdminHeader = ({ onMenuToggle, sidebarOpen }) => {
   const [darkMode, setDarkMode] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -36,9 +37,9 @@ const AdminHeader = ({ onMenuToggle, sidebarOpen }) => {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // Implement global search functionality
       console.log('Searching for:', searchQuery);
       toast.info(`Searching for: ${searchQuery}`);
+      setMobileSearchOpen(false);
     }
   };
 
@@ -98,8 +99,8 @@ const AdminHeader = ({ onMenuToggle, sidebarOpen }) => {
             )}
           </button>
 
-          {/* Search Bar */}
-          <div className="ml-4 lg:ml-0 flex-1 max-w-xl">
+          {/* Search Bar - Desktop */}
+          <div className="hidden md:block ml-4 lg:ml-0 flex-1 max-w-xl">
             <form onSubmit={handleSearch} className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
@@ -116,7 +117,15 @@ const AdminHeader = ({ onMenuToggle, sidebarOpen }) => {
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          {/* Mobile Search Toggle */}
+          <button
+            onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+            className="md:hidden p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
+            <Search className="h-5 w-5" />
+          </button>
+
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleDarkMode}
@@ -205,25 +214,44 @@ const AdminHeader = ({ onMenuToggle, sidebarOpen }) => {
         </div>
       </div>
 
+      {/* Mobile Search Bar - Collapsible */}
+      {mobileSearchOpen && (
+        <div className="md:hidden p-4 border-t border-gray-200 dark:border-gray-700">
+          <form onSubmit={handleSearch} className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+            </div>
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent sm:text-sm"
+              placeholder="Search..."
+              autoFocus
+            />
+          </form>
+        </div>
+      )}
+
       {/* Quick Stats Bar (Optional) */}
-      <div className="hidden lg:block bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div className="px-8 py-2">
+      <div className="hidden lg:block bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 overflow-x-auto">
+        <div className="px-8 py-2 min-w-max">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 whitespace-nowrap">
                 <span className="text-gray-600 dark:text-gray-400">Online Riders:</span>
                 <span className="font-semibold text-green-600">24</span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 whitespace-nowrap">
                 <span className="text-gray-600 dark:text-gray-400">Pending Bookings:</span>
                 <span className="font-semibold text-yellow-600">8</span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 whitespace-nowrap">
                 <span className="text-gray-600 dark:text-gray-400">Today's Revenue:</span>
                 <span className="font-semibold text-blue-600">₹12,450</span>
               </div>
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
               Last updated: Just now
             </div>
           </div>

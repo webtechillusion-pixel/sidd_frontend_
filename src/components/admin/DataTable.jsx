@@ -226,7 +226,7 @@ const DataTable = ({
       {/* Pagination */}
       {pagination && totalPages > 1 && (
         <div className="px-6 py-3 border-t border-gray-200">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-sm text-gray-700">
               Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
               <span className="font-medium">

@@ -141,46 +141,46 @@ const ManagePricing = () => {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Average Base Fare</p>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Average Base Fare</p>
+              <p className="text-2xl font-bold truncate">
                 ₹{pricing.length > 0 ? Math.round(pricing.reduce((sum, p) => sum + p.baseFare, 0) / pricing.length) : 0}
               </p>
             </div>
-            <DollarSign className="h-8 w-8 text-green-500" />
+            <DollarSign className="h-8 w-8 text-green-500 flex-shrink-0 ml-4" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Avg Price per KM</p>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Avg Price per KM</p>
+              <p className="text-2xl font-bold truncate">
                 ₹{pricing.length > 0 ? (pricing.reduce((sum, p) => sum + p.pricePerKm, 0) / pricing.length).toFixed(2) : 0}
               </p>
             </div>
-            <TrendingUp className="h-8 w-8 text-blue-500" />
+            <TrendingUp className="h-8 w-8 text-blue-500 flex-shrink-0 ml-4" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Avg Commission</p>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Avg Commission</p>
+              <p className="text-2xl font-bold truncate">
                 {pricing.length > 0 ? (pricing.reduce((sum, p) => sum + p.adminCommissionPercent, 0) / pricing.length).toFixed(1) : 0}%
               </p>
             </div>
-            <BarChart className="h-8 w-8 text-purple-500" />
+            <BarChart className="h-8 w-8 text-purple-500 flex-shrink-0 ml-4" />
           </div>
         </div>
       </div>
 
       {/* Pricing Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {pricing.map((cab) => {
           const info = getCabTypeInfo(cab.cabType);
           const fareExample = calculateFare(10, cab); // Example for 10km
@@ -190,16 +190,16 @@ const ManagePricing = () => {
               {/* Card Header */}
               <div className={`bg-${info.color}-50 border-b border-${info.color}-100 p-4`}>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="text-2xl mr-2">{info.icon}</span>
-                    <div>
-                      <h3 className="font-bold text-gray-900">{info.name}</h3>
-                      <p className="text-xs text-gray-600">{info.description}</p>
+                  <div className="flex items-center min-w-0">
+                    <span className="text-2xl mr-2 flex-shrink-0">{info.icon}</span>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-gray-900 truncate">{info.name}</h3>
+                      <p className="text-xs text-gray-600 truncate">{info.description}</p>
                     </div>
                   </div>
                   <button
                     onClick={() => handleEdit(cab.cabType)}
-                    className="text-gray-400 hover:text-gray-600"
+                    className="text-gray-400 hover:text-gray-600 flex-shrink-0 ml-2"
                   >
                     <Edit className="h-5 w-5" />
                   </button>
@@ -243,17 +243,17 @@ const ManagePricing = () => {
                         max="100"
                       />
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                       <button
                         onClick={() => handleSave(cab.cabType)}
-                        className="flex-1 bg-green-600 text-white px-3 py-2 rounded-md text-sm hover:bg-green-700"
+                        className="w-full sm:flex-1 bg-green-600 text-white px-3 py-2 rounded-md text-sm hover:bg-green-700"
                       >
                         <Save className="h-4 w-4 inline mr-1" />
                         Save
                       </button>
                       <button
                         onClick={handleCancel}
-                        className="flex-1 bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm hover:bg-gray-300"
+                        className="w-full sm:flex-1 bg-gray-200 text-gray-700 px-3 py-2 rounded-md text-sm hover:bg-gray-300"
                       >
                         <X className="h-4 w-4 inline mr-1" />
                         Cancel
@@ -278,16 +278,16 @@ const ManagePricing = () => {
                       <div className="border-t border-gray-200 pt-3">
                         <p className="text-xs text-gray-500 mb-2">Example for 10km:</p>
                         <div className="space-y-1">
-                          <div className="flex justify-between text-sm">
-                            <span>Total Fare:</span>
+                          <div className="flex justify-between">
+                            <span className="text-sm">Total Fare:</span>
                             <span className="font-bold">₹{fareExample.total}</span>
                           </div>
-                          <div className="flex justify-between text-sm">
-                            <span>Rider Earnings:</span>
+                          <div className="flex justify-between">
+                            <span className="text-sm">Rider Earnings:</span>
                             <span className="text-green-600">₹{fareExample.riderEarning}</span>
                           </div>
-                          <div className="flex justify-between text-sm">
-                            <span>Platform Commission:</span>
+                          <div className="flex justify-between">
+                            <span className="text-sm">Platform Commission:</span>
                             <span className="text-blue-600">₹{fareExample.commission}</span>
                           </div>
                         </div>
@@ -307,7 +307,7 @@ const ManagePricing = () => {
       {/* Add New Pricing Form */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Cab Type Pricing</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Cab Type</label>
             <select
@@ -364,7 +364,7 @@ const ManagePricing = () => {
         <div className="mt-4 flex justify-end">
           <button
             onClick={handleAddNew}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+            className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
           >
             Add New Pricing
           </button>
@@ -373,12 +373,12 @@ const ManagePricing = () => {
 
       {/* Pricing Calculator */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-6 gap-4">
           <h3 className="text-lg font-semibold text-gray-900">Fare Calculator</h3>
           <RefreshCw className="h-5 w-5 text-gray-400" />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Select Cab Type</label>
             <select className="w-full border border-gray-300 rounded-md px-3 py-2">
@@ -413,7 +413,7 @@ const ManagePricing = () => {
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Commission Information</h3>
         <div className="space-y-4">
-          <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-100">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white rounded-lg border border-blue-100 gap-4">
             <div>
               <p className="font-medium text-gray-900">Platform Commission</p>
               <p className="text-sm text-gray-600">Percentage deducted from total fare</p>

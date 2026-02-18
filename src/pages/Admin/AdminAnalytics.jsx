@@ -114,6 +114,7 @@ const AdminAnalytics = () => {
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'top',
@@ -157,15 +158,15 @@ const AdminAnalytics = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
           <p className="text-gray-600">Platform performance and insights</p>
         </div>
         
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
           <select
-            className="border border-gray-300 rounded-lg px-3 py-2"
+            className="border border-gray-300 rounded-lg px-3 py-2 w-full sm:w-auto"
             value={period}
             onChange={(e) => setPeriod(e.target.value)}
           >
@@ -175,7 +176,7 @@ const AdminAnalytics = () => {
             <option value="year">Last 5 Years</option>
           </select>
           
-          <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+          <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
             <Download className="h-5 w-5" />
             <span>Export Report</span>
           </button>
@@ -183,15 +184,15 @@ const AdminAnalytics = () => {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg mr-4">
+            <div className="p-2 bg-blue-100 rounded-lg mr-4 flex-shrink-0">
               <DollarSign className="h-6 w-6 text-blue-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Revenue</p>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Total Revenue</p>
+              <p className="text-2xl font-bold truncate">
                 {formatCurrency(analyticsData?.trends?.reduce((sum, t) => sum + t.revenue, 0) || 0)}
               </p>
             </div>
@@ -200,12 +201,12 @@ const AdminAnalytics = () => {
         
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg mr-4">
+            <div className="p-2 bg-green-100 rounded-lg mr-4 flex-shrink-0">
               <TrendingUp className="h-6 w-6 text-green-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Total Bookings</p>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Total Bookings</p>
+              <p className="text-2xl font-bold truncate">
                 {analyticsData?.trends?.reduce((sum, t) => sum + t.count, 0) || 0}
               </p>
             </div>
@@ -214,12 +215,12 @@ const AdminAnalytics = () => {
         
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center">
-            <div className="p-2 bg-purple-100 rounded-lg mr-4">
+            <div className="p-2 bg-purple-100 rounded-lg mr-4 flex-shrink-0">
               <Car className="h-6 w-6 text-purple-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Avg Ride Distance</p>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Avg Ride Distance</p>
+              <p className="text-2xl font-bold truncate">
                 {analyticsData?.avgDistance || '0'} km
               </p>
             </div>
@@ -228,12 +229,12 @@ const AdminAnalytics = () => {
         
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center">
-            <div className="p-2 bg-orange-100 rounded-lg mr-4">
+            <div className="p-2 bg-orange-100 rounded-lg mr-4 flex-shrink-0">
               <Clock className="h-6 w-6 text-orange-600" />
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Avg Ride Duration</p>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Avg Ride Duration</p>
+              <p className="text-2xl font-bold truncate">
                 {analyticsData?.avgDuration || '0'} min
               </p>
             </div>
@@ -245,9 +246,9 @@ const AdminAnalytics = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue Chart */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
             <div className="flex items-center">
-              <BarChart className="h-5 w-5 text-blue-600 mr-2" />
+              <BarChart className="h-5 w-5 text-blue-600 mr-2 flex-shrink-0" />
               <h3 className="text-lg font-semibold text-gray-900">Revenue Trend</h3>
             </div>
             <div className="flex space-x-2">
@@ -265,7 +266,7 @@ const AdminAnalytics = () => {
               </button>
             </div>
           </div>
-          <div className="h-80">
+          <div className="h-80 w-full">
             {chartType === 'line' ? (
               <Line data={revenueChartData} options={chartOptions} />
             ) : (
@@ -286,7 +287,7 @@ const AdminAnalytics = () => {
               <option>By Revenue</option>
             </select>
           </div>
-          <div className="h-80">
+          <div className="h-80 w-full">
             <Bar data={bookingChartData} options={chartOptions} />
           </div>
         </div>
@@ -301,11 +302,12 @@ const AdminAnalytics = () => {
               <PieChart className="h-5 w-5 text-purple-600 mr-2" />
               <h3 className="text-lg font-semibold text-gray-900">Cab Type Distribution</h3>
             </div>
-            <Filter className="h-5 w-5 text-gray-400" />
+            <Filter className="h-5 w-5 text-gray-400 flex-shrink-0" />
           </div>
-          <div className="h-64">
+          <div className="h-64 w-full">
             <Pie data={cabDistributionData} options={{
               responsive: true,
+              maintainAspectRatio: false,
               plugins: {
                 legend: {
                   position: 'right',
@@ -328,19 +330,19 @@ const AdminAnalytics = () => {
           </div>
           <div className="space-y-4">
             {analyticsData?.topRiders?.slice(0, 5).map((rider, index) => (
-              <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+              <div key={index} className="flex flex-wrap items-center justify-between p-3 hover:bg-gray-50 rounded-lg gap-2">
+                <div className="flex items-center min-w-0 flex-1">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-3 flex-shrink-0">
                     <span className="text-sm font-medium">
                       {rider.rider?.name?.charAt(0) || 'R'}
                     </span>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">{rider.rider?.name || 'Unknown Rider'}</p>
-                    <p className="text-xs text-gray-500">{rider.rider?.phone || 'N/A'}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{rider.rider?.name || 'Unknown Rider'}</p>
+                    <p className="text-xs text-gray-500 truncate">{rider.rider?.phone || 'N/A'}</p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right flex-shrink-0">
                   <p className="text-sm font-bold text-green-600">
                     {formatCurrency(rider.totalEarnings)}
                   </p>
@@ -357,19 +359,19 @@ const AdminAnalytics = () => {
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Platform Performance</h3>
           <div className="space-y-4">
-            <div className="flex justify-between">
+            <div className="flex justify-between flex-wrap gap-2">
               <span className="text-gray-600">Rider Acceptance Rate</span>
               <span className="font-medium">85%</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between flex-wrap gap-2">
               <span className="text-gray-600">User Satisfaction</span>
               <span className="font-medium">4.7/5</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between flex-wrap gap-2">
               <span className="text-gray-600">On-time Arrival</span>
               <span className="font-medium">92%</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between flex-wrap gap-2">
               <span className="text-gray-600">Cancellation Rate</span>
               <span className="font-medium text-red-600">3.2%</span>
             </div>
@@ -410,15 +412,15 @@ const AdminAnalytics = () => {
               { from: 'Mall', to: 'Hotel', count: 156 },
               { from: 'Station', to: 'Office', count: 132 }
             ].map((route, index) => (
-              <div key={index} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-                <div className="flex items-center">
-                  <MapPin className="h-4 w-4 text-green-500 mr-2" />
-                  <span className="text-sm">{route.from}</span>
-                  <span className="mx-2">→</span>
-                  <MapPin className="h-4 w-4 text-red-500 mr-2" />
-                  <span className="text-sm">{route.to}</span>
+              <div key={index} className="flex flex-wrap items-center justify-between p-2 hover:bg-gray-50 rounded gap-2">
+                <div className="flex items-center min-w-0">
+                  <MapPin className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+                  <span className="text-sm truncate">{route.from}</span>
+                  <span className="mx-2 flex-shrink-0">→</span>
+                  <MapPin className="h-4 w-4 text-red-500 mr-2 flex-shrink-0" />
+                  <span className="text-sm truncate">{route.to}</span>
                 </div>
-                <span className="text-sm font-medium">{route.count} rides</span>
+                <span className="text-sm font-medium flex-shrink-0">{route.count} rides</span>
               </div>
             ))}
           </div>
@@ -426,9 +428,9 @@ const AdminAnalytics = () => {
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-6 overflow-x-auto">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">Recent Platform Activity</h3>
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-max w-full">
           {[
             { action: 'New rider registration', user: 'Rahul Sharma', time: '10 minutes ago', type: 'success' },
             { action: 'Booking completed', user: 'Priya Singh', time: '25 minutes ago', type: 'info' },
@@ -436,21 +438,21 @@ const AdminAnalytics = () => {
             { action: 'User account deactivated', user: 'Rohan Mehta', time: '2 hours ago', type: 'error' },
             { action: 'New cab approved', user: 'Driver Raj', time: '3 hours ago', type: 'success' }
           ].map((activity, index) => (
-            <div key={index} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50">
-              <div className="flex items-center">
-                <div className={`w-2 h-2 rounded-full mr-3 ${
+            <div key={index} className="flex flex-wrap items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50 gap-2">
+              <div className="flex items-center min-w-0">
+                <div className={`w-2 h-2 rounded-full mr-3 flex-shrink-0 ${
                   activity.type === 'success' ? 'bg-green-500' :
                   activity.type === 'info' ? 'bg-blue-500' :
                   activity.type === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
                 }`}></div>
-                <div>
-                  <p className="text-sm font-medium">{activity.action}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{activity.action}</p>
                   <p className="text-xs text-gray-500">
                     by {activity.user} {activity.amount && `• ${activity.amount}`}
                   </p>
                 </div>
               </div>
-              <span className="text-xs text-gray-400">{activity.time}</span>
+              <span className="text-xs text-gray-400 flex-shrink-0">{activity.time}</span>
             </div>
           ))}
         </div>

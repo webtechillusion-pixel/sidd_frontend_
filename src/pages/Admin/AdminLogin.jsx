@@ -45,7 +45,6 @@ const AdminLogin = () => {
     setErrors({});
 
     try {
-      // Use the login function from AdminContext
       const result = await login(email, password);
       
       if (result && result.success) {
@@ -54,7 +53,6 @@ const AdminLogin = () => {
           position: "top-center"
         });
         
-        // Navigate to admin dashboard
         navigate('/admin/dashboard');
       } else {
         toast.error(result?.error || 'Login failed. Please check your credentials.');
@@ -62,7 +60,6 @@ const AdminLogin = () => {
     } catch (error) {
       console.error('Admin login error:', error);
       
-      // Handle specific error cases
       if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else if (error.message?.includes('Network Error')) {
@@ -75,7 +72,6 @@ const AdminLogin = () => {
     }
   };
 
-  // Demo admin credentials (remove in production)
   const loadDemoCredentials = () => {
     setEmail('admin@cabbooking.com');
     setPassword('Admin@123');
@@ -201,7 +197,7 @@ const AdminLogin = () => {
             </div>
 
             {/* Options */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div className="flex items-center">
                 <input
                   id="remember-me"
@@ -262,7 +258,7 @@ const AdminLogin = () => {
 
           {/* Security Indicators */}
           <div className="mt-6 pt-6 border-t border-gray-700/50">
-            <div className="flex items-center justify-center space-x-4">
+            <div className="flex flex-wrap items-center justify-center gap-4">
               <div className="flex items-center">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                 <span className="text-xs text-gray-400">Encrypted</span>

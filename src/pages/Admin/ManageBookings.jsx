@@ -88,55 +88,55 @@ const ManageBookings = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Bookings</p>
-              <p className="text-2xl font-bold">{bookingStats?.bookings?.total || 0}</p>
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Total Bookings</p>
+              <p className="text-2xl font-bold truncate">{bookingStats?.bookings?.total || 0}</p>
             </div>
-            <Calendar className="h-8 w-8 text-blue-500" />
+            <Calendar className="h-8 w-8 text-blue-500 flex-shrink-0 ml-4" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Today's Bookings</p>
-              <p className="text-2xl font-bold">{bookingStats?.bookings?.today || 0}</p>
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Today's Bookings</p>
+              <p className="text-2xl font-bold truncate">{bookingStats?.bookings?.today || 0}</p>
             </div>
-            <Clock className="h-8 w-8 text-green-500" />
+            <Clock className="h-8 w-8 text-green-500 flex-shrink-0 ml-4" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Revenue</p>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Revenue</p>
+              <p className="text-2xl font-bold truncate">
                 {formatCurrency(bookingStats?.revenue?.totalRevenue || 0)}
               </p>
             </div>
-            <DollarSign className="h-8 w-8 text-purple-500" />
+            <DollarSign className="h-8 w-8 text-purple-500 flex-shrink-0 ml-4" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Commission</p>
-              <p className="text-2xl font-bold">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Commission</p>
+              <p className="text-2xl font-bold truncate">
                 {formatCurrency(bookingStats?.revenue?.commission || 0)}
               </p>
             </div>
-            <DollarSign className="h-8 w-8 text-orange-500" />
+            <DollarSign className="h-8 w-8 text-orange-500 flex-shrink-0 ml-4" />
           </div>
         </div>
       </div>
 
       {/* Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
@@ -187,8 +187,8 @@ const ManageBookings = () => {
           </div>
         </div>
         
-        <div className="flex justify-between items-center mt-4">
-          <form onSubmit={handleSearch} className="flex-1 mr-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+          <form onSubmit={handleSearch} className="w-full sm:flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
@@ -201,14 +201,14 @@ const ManageBookings = () => {
             </div>
           </form>
           
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 w-full sm:w-auto">
             <button
               onClick={handleDateFilter}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Apply Filters
             </button>
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+            <button className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center">
               <Download className="h-5 w-5" />
             </button>
           </div>
@@ -247,7 +247,7 @@ const ManageBookings = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {bookings.map((booking) => (
                     <tr key={booking._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-1">
                           <div className="text-sm font-medium text-gray-900">
                             #{booking._id.slice(-8).toUpperCase()}
@@ -260,31 +260,31 @@ const ManageBookings = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-2">
                           <div className="flex items-center">
-                            <User className="h-4 w-4 mr-2 text-gray-400" />
-                            <div>
-                              <div className="text-sm font-medium">{booking.userId?.name}</div>
-                              <div className="text-xs text-gray-500">{booking.userId?.phone}</div>
+                            <User className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium truncate">{booking.userId?.name}</div>
+                              <div className="text-xs text-gray-500 truncate">{booking.userId?.phone}</div>
                             </div>
                           </div>
                           {booking.riderId && (
                             <div className="flex items-center">
-                              <Car className="h-4 w-4 mr-2 text-gray-400" />
-                              <div>
-                                <div className="text-sm font-medium">{booking.riderId?.name}</div>
-                                <div className="text-xs text-gray-500">{booking.riderId?.phone}</div>
+                              <Car className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium truncate">{booking.riderId?.name}</div>
+                                <div className="text-xs text-gray-500 truncate">{booking.riderId?.phone}</div>
                               </div>
                             </div>
                           )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="space-y-2">
+                        <div className="space-y-2 min-w-[200px]">
                           <div className="flex items-start">
-                            <MapPin className="h-4 w-4 mr-2 text-green-500 mt-0.5" />
-                            <div className="text-sm">
+                            <MapPin className="h-4 w-4 mr-2 text-green-500 mt-0.5 flex-shrink-0" />
+                            <div className="text-sm min-w-0">
                               <div className="font-medium">Pickup</div>
                               <div className="text-gray-500 truncate max-w-xs">
                                 {booking.pickup?.addressText}
@@ -292,8 +292,8 @@ const ManageBookings = () => {
                             </div>
                           </div>
                           <div className="flex items-start">
-                            <MapPin className="h-4 w-4 mr-2 text-red-500 mt-0.5" />
-                            <div className="text-sm">
+                            <MapPin className="h-4 w-4 mr-2 text-red-500 mt-0.5 flex-shrink-0" />
+                            <div className="text-sm min-w-0">
                               <div className="font-medium">Drop</div>
                               <div className="text-gray-500 truncate max-w-xs">
                                 {booking.drop?.addressText}
@@ -309,13 +309,13 @@ const ManageBookings = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <StatusBadge status={booking.bookingStatus} />
                         <div className="mt-1 text-xs text-gray-500">
                           {booking.paymentType}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => handleViewDetails(booking)}
@@ -337,7 +337,7 @@ const ManageBookings = () => {
 
             {/* Pagination */}
             <div className="px-6 py-3 border-t border-gray-200">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-sm text-gray-700">
                   Showing {Math.min(bookings.length, 10)} of {bookings.length} bookings
                 </div>

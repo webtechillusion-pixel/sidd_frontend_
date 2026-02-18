@@ -157,49 +157,49 @@ const ManagePayouts = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Pending Payouts</p>
-              <p className="text-2xl font-bold text-yellow-600">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Pending Payouts</p>
+              <p className="text-2xl font-bold text-yellow-600 truncate">
                 {formatCurrency(summary.pendingTotal)}
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1 truncate">
                 {payouts.filter(p => p.payoutStatus === 'PENDING').length} riders waiting
               </p>
             </div>
-            <Clock className="h-8 w-8 text-yellow-500" />
+            <Clock className="h-8 w-8 text-yellow-500 flex-shrink-0 ml-4" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Paid</p>
-              <p className="text-2xl font-bold text-green-600">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Total Paid</p>
+              <p className="text-2xl font-bold text-green-600 truncate">
                 {formatCurrency(summary.paidTotal)}
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1 truncate">
                 {payouts.filter(p => p.payoutStatus === 'PAID').length} payouts processed
               </p>
             </div>
-            <CreditCard className="h-8 w-8 text-green-500" />
+            <CreditCard className="h-8 w-8 text-green-500 flex-shrink-0 ml-4" />
           </div>
         </div>
         
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Amount</p>
-              <p className="text-2xl font-bold text-blue-600">
+            <div className="min-w-0">
+              <p className="text-sm text-gray-500 truncate">Total Amount</p>
+              <p className="text-2xl font-bold text-blue-600 truncate">
                 {formatCurrency(summary.totalAmount)}
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1 truncate">
                 Overall payout amount
               </p>
             </div>
-            <BarChart className="h-8 w-8 text-blue-500" />
+            <BarChart className="h-8 w-8 text-blue-500 flex-shrink-0 ml-4" />
           </div>
         </div>
       </div>
@@ -207,7 +207,7 @@ const ManagePayouts = () => {
       {/* Bulk Actions */}
       {selectedPayouts.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
               <p className="font-medium text-blue-900">
                 {selectedPayouts.length} payouts selected
@@ -237,7 +237,7 @@ const ManagePayouts = () => {
 
       {/* Filters */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
@@ -283,8 +283,8 @@ const ManagePayouts = () => {
           </div>
         </div>
         
-        <div className="flex justify-between items-center mt-4">
-          <form onSubmit={handleSearch} className="flex-1 mr-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+          <form onSubmit={handleSearch} className="w-full sm:flex-1">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
@@ -297,14 +297,14 @@ const ManagePayouts = () => {
             </div>
           </form>
           
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 w-full sm:w-auto">
             <button
               onClick={handleDateFilter}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Apply Filters
             </button>
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+            <button className="flex-1 sm:flex-none px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
               <Download className="h-5 w-5" />
             </button>
           </div>
@@ -350,7 +350,7 @@ const ManagePayouts = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {payouts.map((payout) => (
                     <tr key={payout._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         {payout.payoutStatus === 'PENDING' && (
                           <input
                             type="checkbox"
@@ -359,7 +359,7 @@ const ManagePayouts = () => {
                           />
                         )}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-1">
                           <div className="text-sm font-medium text-gray-900">
                             Payout ID: {payout._id.slice(-8).toUpperCase()}
@@ -370,33 +370,33 @@ const ManagePayouts = () => {
                             </div>
                           )}
                           <div className="flex items-center text-sm text-gray-500">
-                            <Calendar className="h-4 w-4 mr-2" />
+                            <Calendar className="h-4 w-4 mr-2 flex-shrink-0" />
                             {new Date(payout.createdAt).toLocaleDateString()}
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         {payout.riderId && (
                           <div className="space-y-2">
                             <div className="flex items-center">
-                              <User className="h-4 w-4 mr-2 text-gray-400" />
-                              <div>
-                                <div className="text-sm font-medium">{payout.riderId.name}</div>
-                                <div className="text-xs text-gray-500">ID: {payout.riderId._id?.slice(-6)}</div>
+                              <User className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium truncate">{payout.riderId.name}</div>
+                                <div className="text-xs text-gray-500 truncate">ID: {payout.riderId._id?.slice(-6)}</div>
                               </div>
                             </div>
                             <div className="flex items-center text-sm text-gray-500">
-                              <Phone className="h-4 w-4 mr-2" />
+                              <Phone className="h-4 w-4 mr-2 flex-shrink-0" />
                               {payout.riderId.phone}
                             </div>
                             <div className="flex items-center text-sm text-gray-500">
-                              <Mail className="h-4 w-4 mr-2" />
+                              <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
                               {payout.riderId.email}
                             </div>
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="space-y-2">
                           <div className="flex justify-between">
                             <span className="text-sm text-gray-600">Total Fare:</span>
@@ -417,7 +417,7 @@ const ManagePayouts = () => {
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(payout.payoutStatus)}`}>
                           {payout.payoutStatus}
                         </span>
@@ -448,7 +448,7 @@ const ManagePayouts = () => {
 
             {/* Pagination */}
             <div className="px-6 py-3 border-t border-gray-200">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-sm text-gray-700">
                   Showing {Math.min(payouts.length, 10)} of {payouts.length} payouts
                 </div>
@@ -483,7 +483,7 @@ const ManagePayouts = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div className="flex items-start">
-              <div className="bg-green-100 p-2 rounded-lg mr-3">
+              <div className="bg-green-100 p-2 rounded-lg mr-3 flex-shrink-0">
                 <CreditCard className="h-5 w-5 text-green-600" />
               </div>
               <div>
@@ -495,7 +495,7 @@ const ManagePayouts = () => {
             </div>
             
             <div className="flex items-start">
-              <div className="bg-blue-100 p-2 rounded-lg mr-3">
+              <div className="bg-blue-100 p-2 rounded-lg mr-3 flex-shrink-0">
                 <FileText className="h-5 w-5 text-blue-600" />
               </div>
               <div>

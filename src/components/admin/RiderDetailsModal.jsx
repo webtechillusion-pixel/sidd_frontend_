@@ -51,22 +51,22 @@ const RiderDetailsModal = ({
             {/* Personal Information */}
             <div className="border border-gray-200 rounded-lg p-4">
               <h4 className="font-medium text-gray-900 mb-4">Personal Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-500">Full Name</label>
-                  <p className="mt-1 text-sm text-gray-900">{rider.name}</p>
+                  <p className="mt-1 text-sm text-gray-900 truncate">{rider.name}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-500">Email</label>
-                  <p className="mt-1 text-sm text-gray-900">{rider.email}</p>
+                  <p className="mt-1 text-sm text-gray-900 truncate">{rider.email}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-500">Phone</label>
                   <p className="mt-1 text-sm text-gray-900">{rider.phone}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-500">Rider ID</label>
-                  <p className="mt-1 text-sm text-gray-900">{rider._id}</p>
+                  <p className="mt-1 text-sm text-gray-900 truncate">{rider._id}</p>
                 </div>
               </div>
             </div>
@@ -74,14 +74,14 @@ const RiderDetailsModal = ({
             {/* KYC Information */}
             <div className="border border-gray-200 rounded-lg p-4">
               <h4 className="font-medium text-gray-900 mb-4">KYC Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-500">Aadhaar Number</label>
-                  <p className="mt-1 text-sm text-gray-900">{rider.aadhaarNumber}</p>
+                  <p className="mt-1 text-sm text-gray-900 truncate">{rider.aadhaarNumber}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-500">Driving License</label>
-                  <p className="mt-1 text-sm text-gray-900">{rider.drivingLicenseNumber}</p>
+                  <p className="mt-1 text-sm text-gray-900 truncate">{rider.drivingLicenseNumber}</p>
                 </div>
               </div>
             </div>
@@ -90,24 +90,24 @@ const RiderDetailsModal = ({
             <div className="border border-gray-200 rounded-lg p-4">
               <h4 className="font-medium text-gray-900 mb-4">Status Information</h4>
               <div className="space-y-3">
-                <div className="flex justify-between">
+                <div className="flex justify-between flex-wrap gap-2">
                   <span className="text-gray-600">Approval Status</span>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(rider.approvalStatus)}`}>
                     {rider.approvalStatus}
                   </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between flex-wrap gap-2">
                   <span className="text-gray-600">Availability</span>
                   <span className={`font-medium ${rider.isOnline ? 'text-green-600' : 'text-red-600'}`}>
                     {rider.isOnline ? 'Online' : 'Offline'}
                   </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between flex-wrap gap-2">
                   <span className="text-gray-600">Registration Date</span>
                   <span className="font-medium">{new Date(rider.createdAt).toLocaleDateString()}</span>
                 </div>
                 {rider.approvedAt && (
-                  <div className="flex justify-between">
+                  <div className="flex justify-between flex-wrap gap-2">
                     <span className="text-gray-600">Approved On</span>
                     <span className="font-medium">{new Date(rider.approvedAt).toLocaleDateString()}</span>
                   </div>
@@ -183,7 +183,7 @@ const RiderDetailsModal = ({
             {/* Other Documents */}
             <div className="border border-gray-200 rounded-lg p-4">
               <h4 className="font-medium text-gray-900 mb-3">Other Documents</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="aspect-video bg-gray-100 rounded flex items-center justify-center">
                   {rider.policeVerificationImage ? (
                     <img 
@@ -222,30 +222,30 @@ const RiderDetailsModal = ({
           <div className="space-y-4">
             <div className="border border-gray-200 rounded-lg p-4">
               <h4 className="font-medium text-gray-900 mb-4">Cab Details</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-500">Cab Number</label>
-                  <p className="mt-1 text-sm text-gray-900">{rider.cab.cabNumber}</p>
+                  <p className="mt-1 text-sm text-gray-900 truncate">{rider.cab.cabNumber}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-500">Cab Model</label>
-                  <p className="mt-1 text-sm text-gray-900">{rider.cab.cabModel}</p>
+                  <p className="mt-1 text-sm text-gray-900 truncate">{rider.cab.cabModel}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-500">Cab Type</label>
                   <p className="mt-1 text-sm text-gray-900">{rider.cab.cabType}</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-500">Seating Capacity</label>
                   <p className="mt-1 text-sm text-gray-900">{rider.cab.seatingCapacity} persons</p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-500">AC Available</label>
                   <p className={`mt-1 text-sm ${rider.cab.acAvailable ? 'text-green-600' : 'text-red-600'}`}>
                     {rider.cab.acAvailable ? 'Yes' : 'No'}
                   </p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-500">Approval Status</label>
                   <p className="mt-1">
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -264,7 +264,7 @@ const RiderDetailsModal = ({
             {rider.cab.images && rider.cab.images.length > 0 && (
               <div className="border border-gray-200 rounded-lg p-4">
                 <h4 className="font-medium text-gray-900 mb-4">Cab Images</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {rider.cab.images.map((image, index) => (
                     <div key={index} className="relative">
                       <img
@@ -272,7 +272,7 @@ const RiderDetailsModal = ({
                         alt={`Cab ${image.type}`}
                         className="w-full h-32 object-cover rounded-lg"
                       />
-                      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-b-lg">
+                      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-b-lg truncate">
                         {image.type}
                       </div>
                     </div>
@@ -290,7 +290,7 @@ const RiderDetailsModal = ({
       case 'performance':
         return (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="border border-gray-200 rounded-lg p-4">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-gray-900">{rider.overallRating || 0}</div>
@@ -333,25 +333,25 @@ const RiderDetailsModal = ({
             <div className="border border-gray-200 rounded-lg p-4">
               <h4 className="font-medium text-gray-900 mb-4">Earnings Summary</h4>
               <div className="space-y-3">
-                <div className="flex justify-between">
+                <div className="flex justify-between flex-wrap gap-2">
                   <span className="text-gray-600">Total Earnings</span>
                   <span className="font-bold text-green-600">
                     {formatCurrency(rider.earnings?.totalEarnings || 0)}
                   </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between flex-wrap gap-2">
                   <span className="text-gray-600">Pending Payout</span>
                   <span className="font-bold text-yellow-600">
                     {formatCurrency(rider.earnings?.pendingPayout || 0)}
                   </span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between flex-wrap gap-2">
                   <span className="text-gray-600">Commission Paid</span>
                   <span className="font-bold text-blue-600">
                     {formatCurrency(rider.earnings?.totalCommission || 0)}
                   </span>
                 </div>
-                <div className="flex justify-between border-t pt-2">
+                <div className="flex justify-between flex-wrap gap-2 border-t pt-2">
                   <span className="font-medium text-gray-900">Total Rides</span>
                   <span className="font-bold">{rider.earnings?.totalRides || 0}</span>
                 </div>
@@ -376,15 +376,15 @@ const RiderDetailsModal = ({
             <div className="sm:flex sm:items-start">
               <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                 <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  <div className="min-w-0">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900 truncate">
                       {rider.name} - Rider Details
                     </h3>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-gray-500 mt-1 truncate">
                       ID: {rider._id?.slice(-8).toUpperCase()}
                     </p>
                   </div>
-                  <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
+                  <button onClick={onClose} className="text-gray-400 hover:text-gray-500 flex-shrink-0 ml-4">
                     <X className="h-6 w-6" />
                   </button>
                 </div>
@@ -393,18 +393,18 @@ const RiderDetailsModal = ({
                 <div className="flex items-center space-x-4 mb-6">
                   {rider.photo ? (
                     <img
-                      className="h-16 w-16 rounded-full object-cover"
+                      className="h-16 w-16 rounded-full object-cover flex-shrink-0"
                       src={rider.photo}
                       alt={rider.name}
                     />
                   ) : (
-                    <div className="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center">
+                    <div className="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
                       <User className="h-8 w-8 text-gray-400" />
                     </div>
                   )}
-                  <div>
-                    <h4 className="text-xl font-bold text-gray-900">{rider.name}</h4>
-                    <div className="flex items-center space-x-2 mt-1">
+                  <div className="min-w-0">
+                    <h4 className="text-xl font-bold text-gray-900 truncate">{rider.name}</h4>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(rider.approvalStatus)}`}>
                         {rider.approvalStatus}
                       </span>
@@ -418,8 +418,8 @@ const RiderDetailsModal = ({
                 </div>
 
                 {/* Tabs */}
-                <div className="border-b border-gray-200">
-                  <nav className="-mb-px flex space-x-8 overflow-x-auto">
+                <div className="border-b border-gray-200 overflow-x-auto">
+                  <nav className="-mb-px flex space-x-8">
                     {tabs.map((tab) => (
                       <button
                         key={tab.id}
@@ -447,13 +447,13 @@ const RiderDetailsModal = ({
           </div>
           
           {/* Action Buttons */}
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse flex-col sm:flex-row gap-2">
             {rider.approvalStatus === 'PENDING' && (
               <>
                 <button
                   type="button"
                   onClick={onApprove}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:text-sm"
                 >
                   <CheckCircle className="h-5 w-5 mr-2" />
                   Approve Rider
@@ -461,7 +461,7 @@ const RiderDetailsModal = ({
                 <button
                   type="button"
                   onClick={onReject}
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
+                  className="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:text-sm"
                 >
                   <XCircle className="h-5 w-5 mr-2" />
                   Reject Rider
@@ -473,19 +473,18 @@ const RiderDetailsModal = ({
               <button
                 type="button"
                 onClick={onSuspend}
-                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-yellow-600 text-base font-medium text-white hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 sm:ml-3 sm:w-auto sm:text-sm"
+                className="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-yellow-600 text-base font-medium text-white hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 sm:ml-3 sm:text-sm"
               >
                 <AlertCircle className="h-5 w-5 mr-2" />
                 Suspend Rider
               </button>
             )}
             
-            {/* Show Approve button for suspended riders */}
             {rider.approvalStatus === 'SUSPENDED' && (
               <button
                 type="button"
                 onClick={onApprove}
-                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
+                className="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:text-sm"
               >
                 <CheckCircle className="h-5 w-5 mr-2" />
                 Approve Rider (Unsuspend)
@@ -495,7 +494,7 @@ const RiderDetailsModal = ({
             <button
               type="button"
               onClick={onClose}
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+              className="w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:text-sm"
             >
               Close
             </button>

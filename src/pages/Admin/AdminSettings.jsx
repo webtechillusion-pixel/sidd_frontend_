@@ -83,7 +83,6 @@ const AdminSettings = () => {
     setLoading(true);
     
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       switch (settingsType) {
@@ -243,7 +242,7 @@ const AdminSettings = () => {
             </div>
 
             <div className="border-t border-gray-200 pt-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h4 className="text-md font-medium text-gray-900">Maintenance Mode</h4>
                   <p className="text-sm text-gray-600">
@@ -401,14 +400,14 @@ const AdminSettings = () => {
             <h3 className="text-lg font-semibold text-gray-900">Notification Settings</h3>
             
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-gray-200 rounded-lg gap-4">
                 <div>
                   <h4 className="font-medium text-gray-900">Email Notifications</h4>
                   <p className="text-sm text-gray-600">Receive notifications via email</p>
                 </div>
                 <button
                   onClick={() => setNotificationSettings(prev => ({ ...prev, emailNotifications: !prev.emailNotifications }))}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full flex-shrink-0 ${
                     notificationSettings.emailNotifications ? 'bg-blue-600' : 'bg-gray-200'
                   }`}
                 >
@@ -418,14 +417,14 @@ const AdminSettings = () => {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-gray-200 rounded-lg gap-4">
                 <div>
                   <h4 className="font-medium text-gray-900">SMS Notifications</h4>
                   <p className="text-sm text-gray-600">Receive notifications via SMS</p>
                 </div>
                 <button
                   onClick={() => setNotificationSettings(prev => ({ ...prev, smsNotifications: !prev.smsNotifications }))}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full flex-shrink-0 ${
                     notificationSettings.smsNotifications ? 'bg-blue-600' : 'bg-gray-200'
                   }`}
                 >
@@ -435,14 +434,14 @@ const AdminSettings = () => {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-gray-200 rounded-lg gap-4">
                 <div>
                   <h4 className="font-medium text-gray-900">Push Notifications</h4>
                   <p className="text-sm text-gray-600">Receive push notifications</p>
                 </div>
                 <button
                   onClick={() => setNotificationSettings(prev => ({ ...prev, pushNotifications: !prev.pushNotifications }))}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full flex-shrink-0 ${
                     notificationSettings.pushNotifications ? 'bg-blue-600' : 'bg-gray-200'
                   }`}
                 >
@@ -513,14 +512,14 @@ const AdminSettings = () => {
             <h3 className="text-lg font-semibold text-gray-900">Security Settings</h3>
             
             <div className="space-y-6">
-              <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-gray-200 rounded-lg gap-4">
                 <div>
                   <h4 className="font-medium text-gray-900">Two-Factor Authentication</h4>
                   <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
                 </div>
                 <button
                   onClick={() => setSecuritySettings(prev => ({ ...prev, twoFactorAuth: !prev.twoFactorAuth }))}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full flex-shrink-0 ${
                     securitySettings.twoFactorAuth ? 'bg-green-600' : 'bg-gray-200'
                   }`}
                 >
@@ -580,7 +579,7 @@ const AdminSettings = () => {
               <div>
                 <h4 className="font-medium text-gray-900 mb-4">IP Whitelist</h4>
                 <div className="space-y-3">
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
                       className="flex-1 border border-gray-300 rounded-md px-3 py-2"
@@ -633,7 +632,7 @@ const AdminSettings = () => {
             <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
               {/* Profile Picture */}
               <div className="text-center">
-                <div className="relative">
+                <div className="relative inline-block">
                   {profileSettings.profilePicture ? (
                     <img
                       src={profileSettings.profilePicture}
@@ -662,7 +661,7 @@ const AdminSettings = () => {
               </div>
 
               {/* Profile Form */}
-              <div className="flex-1 space-y-6">
+              <div className="flex-1 space-y-6 w-full">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -759,7 +758,7 @@ const AdminSettings = () => {
               </div>
             </div>
 
-            <div className="flex justify-end space-x-3">
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
               <button
                 onClick={() => {
                   setProfileSettings({
@@ -801,8 +800,8 @@ const AdminSettings = () => {
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         {/* Tabs */}
-        <div className="border-b border-gray-200">
-          <nav className="flex overflow-x-auto">
+        <div className="border-b border-gray-200 overflow-x-auto">
+          <nav className="flex">
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -834,9 +833,9 @@ const AdminSettings = () => {
       </div>
 
       {/* System Information */}
-      <div className="bg-gray-50 rounded-lg border border-gray-200 p-6">
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 overflow-x-auto">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">System Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 min-w-max md:min-w-0">
           <div className="p-4 bg-white rounded-lg border border-gray-200">
             <p className="text-sm font-medium text-gray-900">Platform Version</p>
             <p className="text-2xl font-bold mt-2">2.1.0</p>
