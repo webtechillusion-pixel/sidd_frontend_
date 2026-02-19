@@ -6,8 +6,8 @@ import BookingWidget from './BookingWidget';
 const Hero = () => {
   const navigate = useNavigate();
 
-  const scrollToBooking = () => {
-    document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' });
+  const handleBookNow = () => {
+    navigate('/book');
   };
 
   return (
@@ -52,9 +52,9 @@ const Hero = () => {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-4">
+<div className="flex flex-wrap gap-4">
               <button
-                onClick={scrollToBooking}
+                onClick={handleBookNow}
                 className="px-6 py-3 bg-[#fb8500] hover:bg-[#ffb703] text-white font-semibold rounded-lg transition-colors"
               >
                 Book Now
