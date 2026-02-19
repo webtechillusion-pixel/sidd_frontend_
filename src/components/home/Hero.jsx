@@ -219,7 +219,7 @@ const MapSelectionModal = ({ isOpen, onClose, onSelect, initialLocation, type })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-slate-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-slate-700">
+      <div className="bg-slate-900 rounded-2xl w-full max-w-4xl max-h-[100vh] overflow-hidden border border-slate-700">
         {/* Header */}
         <div className="p-4 border-b border-slate-700 flex items-center justify-between">
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
