@@ -129,15 +129,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
+const logout = async () => {
     setLoading(true);
     try {
-      await authService.logout();
-      toast.success('Logged out successfully');
+      // Just call the API, don't navigate (component handles navigation)
+      await authService.logout(null);
     } catch (error) {
       console.error('Logout error:', error);
-      toast.error('Error during logout');
     } finally {
+      // Always clear state regardless of API result
       setUser(null);
       authService.clearAuthData();
       setLoading(false);

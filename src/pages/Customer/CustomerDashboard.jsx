@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 import {
   Home,
   LogOut,
@@ -39,6 +40,7 @@ import PaymentHistory from "./PaymentHistory";
 
 const CustomerDashboard = ({ initialView: initialViewProp }) => {
   const navigate = useNavigate();
+  const { logout: authLogout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState(initialViewProp || "overview");
   const [userData, setUserData] = useState(null);
@@ -578,14 +580,13 @@ const handleSubmitReview = async (reviewData) => {
   };
 
 const handleLogout = async () => {
-    try {
-      await authService.logout(navigate);
-    } catch (error) {
-      console.error("Logout error:", error);
-      localStorage.clear();
-      sessionStorage.clear();
-      navigate('/');
-    }
+    // Clear everything first
+    localStorage.clear();
+    sessionStorage.clear();
+    // Clear context state
+    authLogout();
+    // Hard redirect to home to ensure clean state
+    window.location.href = '/';
   };
 
   const renderActiveView = () => {

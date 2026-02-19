@@ -110,16 +110,18 @@ const Header = () => {
 
 const handleLogout = async () => {
     try {
+      // Clear all data first
+      localStorage.clear();
+      sessionStorage.clear();
+      // Call context logout
       await logout();
-      setUserData(null);
-      setIsUserMenuOpen(false);
-      setIsMenuOpen(false);
-      navigate('/');
+      // Hard redirect to home
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
       localStorage.clear();
       sessionStorage.clear();
-      navigate('/');
+      window.location.href = '/';
     }
   };
 

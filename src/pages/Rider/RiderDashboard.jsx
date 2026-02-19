@@ -586,8 +586,10 @@ const handleLogout = async () => {
         stopAllTracking();
         clearAllIntervals();
         
-        await authService.logout(navigate);
+        // Clear context state first
         authLogout();
+        // Then clear local data and navigate
+        await authService.logout(navigate);
         navigate('/login/rider');
       } catch (error) {
         console.error('Logout error:', error);
