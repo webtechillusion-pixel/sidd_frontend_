@@ -114,13 +114,12 @@ const handleLogout = async () => {
       setUserData(null);
       setIsUserMenuOpen(false);
       setIsMenuOpen(false);
-      // authService.logout() already handles redirect
+      navigate('/');
     } catch (error) {
       console.error('Logout error:', error);
-      // Fallback: clear and redirect
       localStorage.clear();
       sessionStorage.clear();
-      window.location.href = '/';
+      navigate('/');
     }
   };
 

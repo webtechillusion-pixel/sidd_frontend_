@@ -126,27 +126,31 @@ const authService = {
   },
 
 // Logout
-  async logout() {
+  async logout(navigate) {
     try {
-      // Get user role BEFORE clearing auth data
-      const user = this.getCurrentUserFromStorage();
-      
-      // Clear local data first
+      // Clear local data first - BEFORE making API call
       this.clearAuthData();
       
       // Make logout API call (optional - won't affect if fails)
-      await api.post('/api/auth/logout', {}, {
+      api.post('/api/auth/logout', {}, {
         timeout: 3000
       }).catch(() => {
         console.log('Logout API call completed');
       });
       
-      // Force a complete page reload to clear all state
-      window.location.replace('/');
+      // Use navigate instead of window.location
+      if (navigate) {
+        navigate('/');
+      } else {
+        window.location.href = '/';
+      }
     } catch (error) {
       console.error('Logout error:', error);
-      // Force redirect even if there's an error
-      window.location.replace('/');
+      if (navigate) {
+        navigate('/');
+      } else {
+        window.location.href = '/';
+      }
     }
   },
 
@@ -160,11 +164,10 @@ const authService = {
     sessionStorage.clear();
     
     // Clear all possible auth cookies
-    const cookies = ['token', 'user_token', 'auth_token', 'user_info', 'session_id', 'jwt'];
     const hostname = window.location.hostname;
+    const cookiesToClear = ['token', 'user_token', 'auth_token', 'user_info', 'session_id', 'jwt', 'connect.sid', 'session'];
     
-    cookies.forEach(cookieName => {
-      // Clear with domain
+    cookiesToClear.forEach(cookieName => {
       document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${hostname};`;
       document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;`;
       document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.${hostname};`;
@@ -179,6 +182,9 @@ const authService = {
         document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;`;
       }
     });
+    
+    // Also clear any stored state in memory (if needed)
+    console.log('All auth data cleared');
   },
 
   // Get current user from localStorage

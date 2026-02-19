@@ -579,14 +579,12 @@ const handleSubmitReview = async (reviewData) => {
 
 const handleLogout = async () => {
     try {
-      await authService.logout();
-      // authService.logout() already handles clearing data and redirecting
+      await authService.logout(navigate);
     } catch (error) {
       console.error("Logout error:", error);
-      // Fallback: clear everything manually
       localStorage.clear();
       sessionStorage.clear();
-      window.location.href = '/';
+      navigate('/');
     }
   };
 

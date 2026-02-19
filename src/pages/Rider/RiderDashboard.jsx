@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Dashboard } from './Dashboard';
@@ -21,6 +22,7 @@ export default function RiderDashboard() {
   const [online, setOnline] = useState(false);
   const [notifications, setNotifications] = useState(0);
   const { user, logout: authLogout } = useAuth();
+  const navigate = useNavigate();
   const { socket, isConnected, joinRiderRoom } = useSocket();
 
   const locationWatchIdRef = useRef(null);
@@ -578,18 +580,20 @@ export default function RiderDashboard() {
   //   }
   // };
 
-  const handleLogout = async () => {
+const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
       try {
         stopAllTracking();
         clearAllIntervals();
         
-        await authService.logout();
+        await authService.logout(navigate);
         authLogout();
-        window.location.href = '/login/rider';
+        navigate('/login/rider');
       } catch (error) {
         console.error('Logout error:', error);
-        showToast('Logout failed', 'error');
+        localStorage.clear();
+        sessionStorage.clear();
+        navigate('/login/rider');
       }
     }
   };
