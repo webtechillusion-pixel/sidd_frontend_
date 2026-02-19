@@ -102,12 +102,12 @@ const CustomerLogin = () => {
         response.credential
       );
 
-      console.log('✅ Google login successful:', result);
-      toast.success('Welcome! Redirecting to dashboard...');
+console.log('✅ Google login successful:', result);
+      toast.success('Welcome! Redirecting...');
       
       // Redirect after short delay
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/');
       }, 1000);
     } catch (error) {
       console.error('❌ Google login error:', error);
@@ -127,7 +127,7 @@ const CustomerLogin = () => {
         role: 'USER'
       });
 
-      navigate('/dashboard');
+      navigate('/');
     } catch (error) {
       console.error('Login error:', error);
       setIsLoading(false);

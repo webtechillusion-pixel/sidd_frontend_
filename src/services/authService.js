@@ -125,12 +125,11 @@ const authService = {
     }
   },
 
-  // Logout
+// Logout
   async logout() {
     try {
       // Get user role BEFORE clearing auth data
       const user = this.getCurrentUserFromStorage();
-      const userRole = user?.role;
       
       // Clear local data first
       this.clearAuthData();
@@ -142,12 +141,12 @@ const authService = {
         console.log('Logout API call completed');
       });
       
-      // Redirect to home page (not login)
-      window.location.href = '/';
+      // Force a complete page reload to clear all state
+      window.location.replace('/');
     } catch (error) {
       console.error('Logout error:', error);
-      // Still redirect to home even if API fails
-      window.location.href = '/';
+      // Force redirect even if there's an error
+      window.location.replace('/');
     }
   },
 

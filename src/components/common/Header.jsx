@@ -108,15 +108,19 @@ const Header = () => {
     return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
   };
 
-  const handleLogout = async () => {
+const handleLogout = async () => {
     try {
       await logout();
       setUserData(null);
       setIsUserMenuOpen(false);
       setIsMenuOpen(false);
-      navigate('/');
+      // authService.logout() already handles redirect
     } catch (error) {
       console.error('Logout error:', error);
+      // Fallback: clear and redirect
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = '/';
     }
   };
 

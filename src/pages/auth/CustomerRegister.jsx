@@ -107,12 +107,12 @@ const Register = () => {
         response.credential
       );
 
-      console.log('✅ Google signup successful:', result);
+console.log('✅ Google signup successful:', result);
       toast.success('Welcome! Account created successfully!');
       
       // Redirect after short delay
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/');
       }, 1000);
     } catch (error) {
       console.error('❌ Google signup error:', error);

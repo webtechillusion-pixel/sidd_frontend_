@@ -577,17 +577,16 @@ const handleSubmitReview = async (reviewData) => {
     }
   };
 
-  const handleLogout = async () => {
+const handleLogout = async () => {
     try {
       await authService.logout();
-      localStorage.clear();
-      toast.success("Logged out successfully!");
-      navigate("/login/customer");
+      // authService.logout() already handles clearing data and redirecting
     } catch (error) {
       console.error("Logout error:", error);
+      // Fallback: clear everything manually
       localStorage.clear();
-      toast.info("Logged out");
-      navigate("/login/customer");
+      sessionStorage.clear();
+      window.location.href = '/';
     }
   };
 
