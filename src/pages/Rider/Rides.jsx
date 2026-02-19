@@ -1,443 +1,1391 @@
-import React, { useState, useEffect } from 'react';
-import riderService from '../../services/riderService';
-import { 
-  FaRoute, 
-  FaExclamationTriangle, 
-  FaMapMarkerAlt, 
-  FaPhone, 
-  FaCheck, 
-  FaStop, 
-  FaTimes, 
-  FaStar,
+// pages/Rider/Rides.jsx - FIXED VERSION with database pricing
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
   FaCar,
+  FaMapMarkerAlt,
+  FaUser,
   FaClock,
-  FaUserCircle,
+  FaMoneyBill,
+  FaCheckCircle,
+  FaTimesCircle,
+  FaRoute,
+  FaPhone,
+  FaStar,
   FaCalendarAlt,
-  FaSyncAlt
-} from "react-icons/fa";
+  FaInfoCircle,
+  FaSpinner,
+  FaBell,
+  FaExclamationTriangle,
+  FaLocationArrow,
+  FaPlay,
+  FaFlag,
+  FaStop,
+  FaKey,
+  FaCheck,
+  FaArrowRight,
+  FaMap,
+  FaWallet,
+  FaCreditCard,
+  FaMoneyBillWave
+} from 'react-icons/fa';
+import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
+import riderService from '../../services/riderService';
+import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
-export function Rides({ 
-  activeRide, 
-  rideRequests, 
-  rideStatus, 
-  acceptRide, 
-  declineRide, 
-  updateRideStatus, 
-  handleEmergency,
-  profile,
-  showToast,
-  onPageLoad,
-  onManualRefresh   // ✅ Correct – just the prop name
-}) {
-  const [showOTPModal, setShowOTPModal] = useState(false);
-  const [otp, setOtp] = useState('');
-  const [showCompleteModal, setShowCompleteModal] = useState(false);
-  const [rideData, setRideData] = useState({ finalDistance: '', additionalCharges: '' });
+// Ride status steps for timeline
+const RIDE_STATUS_STEPS = [
+  { key: 'PENDING', label: 'Request Received', icon: FaBell, color: 'yellow' },
+  { key: 'ACCEPTED', label: 'Booking Accepted', icon: FaCheckCircle, color: 'green' },
+  { key: 'DRIVER_ASSIGNED', label: 'You are assigned', icon: FaCar, color: 'blue' },
+  { key: 'DRIVER_ARRIVED', label: 'Arrived at pickup', icon: FaMapMarkerAlt, color: 'purple' },
+  { key: 'TRIP_STARTED', label: 'Trip Started', icon: FaPlay, color: 'indigo' },
+  { key: 'TRIP_COMPLETED', label: 'Trip Completed', icon: FaFlag, color: 'green' }
+];
+
+
+
+const Rides = () => {
+  const { user } = useAuth();
+  const { socket, isConnected } = useSocket();
+  const navigate = useNavigate();
+  
+  // State management
+  const [availableBookings, setAvailableBookings] = useState([]);
+  const [activeBooking, setActiveBooking] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [otpInput, setOtpInput] = useState('');
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [rideCompletionData, setRideCompletionData] = useState({
+    actualDistance: 0,
+    additionalCharges: 0
+  });
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('available');
+  const [locationTracking, setLocationTracking] = useState(false);
+  const [watchId, setWatchId] = useState(null);
+  const [bookingRequests, setBookingRequests] = useState({});
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [vehiclePricing, setVehiclePricing] = useState({});
+  const [isLoadingPricing, setIsLoadingPricing] = useState(false);
+  
+  const mapRef = useRef(null);
+  const audioRef = useRef(null);
+  const locationTimeoutRef = useRef(null);
+
+  // Countdown Timer Component - Add this inside your Rides component before the return statement
+const CountdownTimer = ({ targetDate }) => {
+  const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
-    console.log('Rides Component - Ride Requests:', rideRequests);
-    console.log('Rides Component - Active Ride:', activeRide);
-    console.log('Rides Component - Ride Status:', rideStatus);
-  }, [rideRequests, activeRide, rideStatus]);
-
-  // Run onPageLoad once when component mounts
-  useEffect(() => {
-    if (onPageLoad) {
-      console.log('Rides component mounted - calling onPageLoad once');
-      onPageLoad();
-    }
-  }, []); // Empty dependency array – runs only once
-
-  const handleStartRide = () => setShowOTPModal(true);
-
- const handleOTPSubmit = async () => {
-  if (otp && activeRide) {
-    try {
-      console.log('Starting ride with ID:', activeRide.id, 'and OTP:', otp);
+    const calculateTimeLeft = () => {
+      const difference = new Date(targetDate) - new Date();
       
-      // ✅ Call parent's updateRideStatus with status 'ongoing' and the OTP
-      if (updateRideStatus) {
-        await updateRideStatus('ongoing', otp);
-        
-        // ✅ Only close modal and clear OTP if the parent call succeeded
-        setShowOTPModal(false);
-        setOtp('');
-        showToast('Ride started successfully!', 'success');
+      if (difference <= 0) {
+        return 'Pickup time has arrived!';
       }
-    } catch (error) {
-      console.error('Start ride error:', error);
-      showToast(
-        error.response?.data?.message || error.message || 'Failed to start ride',
-        'error'
-      );
-    }
-  } else {
-    showToast('Please enter OTP', 'error');
-  }
-};
 
-  const handleCompleteRide = () => setShowCompleteModal(true);
+      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((difference / 1000 / 60) % 60);
+      
+      if (days > 0) {
+        return `${days} day${days > 1 ? 's' : ''} ${hours} hour${hours > 1 ? 's' : ''}`;
+      } else if (hours > 0) {
+        return `${hours} hour${hours > 1 ? 's' : ''} ${minutes} minute${minutes > 1 ? 's' : ''}`;
+      } else {
+        return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+      }
+    };
 
-  const handleCompleteSubmit = () => {
-  if (rideData.finalDistance && activeRide) {
-    // ✅ Pass distance and additional charges to parent
-    updateRideStatus('completed', rideData.finalDistance, rideData.additionalCharges);
-    setShowCompleteModal(false);
-    setRideData({ finalDistance: '', additionalCharges: '' });
-  } else {
-    showToast('Please enter the final distance', 'error');
-  }
-};
+    setTimeLeft(calculateTimeLeft());
 
-  const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('en-IN', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 60000); // Update every minute
 
-  const calculateTimeLeft = (deadline) => {
-    const now = new Date();
-    const deadlineDate = new Date(deadline);
-    const secondsLeft = Math.floor((deadlineDate - now) / 1000);
-    if (secondsLeft <= 0) return 'Expired';
-    const minutes = Math.floor(secondsLeft / 60);
-    const seconds = secondsLeft % 60;
-    return `${minutes}m ${seconds}s`;
-  };
-
-  // Auto-refresh timer for countdown
-  useEffect(() => {
-    const timer = setInterval(() => {}, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [targetDate]);
 
   return (
-    <div className="space-y-6">
-      {/* Emergency SOS Button */}
-      <div className="flex justify-end">
-        <button
-          onClick={handleEmergency}
-          className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold flex items-center gap-2 transition-colors"
-        >
-          <FaExclamationTriangle />
-          Emergency SOS
-        </button>
-      </div>
+    <div className="text-2xl font-bold text-purple-400">
+      {timeLeft}
+    </div>
+  );
+};
 
-      {/* Active Ride Tracker */}
-      {activeRide && (
-        <div className="bg-white rounded-xl shadow-sm border p-6">
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <FaRoute className="text-blue-500" />
-            Active Ride Tracker
-          </h3>
-          
-          <div className="mb-4">
-            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-              rideStatus === 'pickup' ? 'bg-yellow-100 text-yellow-800' :
-              rideStatus === 'ongoing' ? 'bg-blue-100 text-blue-800' :
-              'bg-green-100 text-green-800'
-            }`}>
-              {rideStatus === 'pickup' ? 'Going to Pickup' :
-               rideStatus === 'ongoing' ? 'Ride in Progress' : 'Completed'}
-            </span>
-          </div>
 
-          {/* Passenger Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
-                  <FaUserCircle className="text-2xl text-teal-600" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-lg">{activeRide.passenger}</h4>
-                  <p className="text-sm text-gray-600 flex items-center gap-1">
-                    <FaStar className="text-yellow-500" />
-                    {activeRide.details?.user?.rating || 'No rating'}
-                  </p>
-                </div>
-              </div>
+  // Fetch vehicle pricing from database
+  const fetchVehiclePricing = useCallback(async () => {
+    setIsLoadingPricing(true);
+    try {
+      const response = await riderService.getVehiclePricing();
+      if (response.success) {
+        setVehiclePricing(response.data);
+        console.log('✅ Vehicle pricing loaded:', response.data);
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch vehicle pricing:', error);
+      toast.error('Failed to load pricing information');
+    } finally {
+      setIsLoadingPricing(false);
+    }
+  }, []);
+
+  // Initialize audio for notifications
+  useEffect(() => {
+    audioRef.current = new Audio('/sounds/notification.mp3');
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  // Get current location - memoized with useCallback
+  const getCurrentLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation not supported');
+      return null;
+    }
+
+    if (isGettingLocation) return; // Prevent multiple requests
+
+    setIsGettingLocation(true);
+    
+    // Clear any existing timeout
+    if (locationTimeoutRef.current) {
+      clearTimeout(locationTimeoutRef.current);
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const location = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        console.log('📍 Location obtained:', location);
+        setCurrentLocation(location);
+        setIsGettingLocation(false);
+        
+        // Update location in backend
+        riderService.updateLocation(location).catch(err => {
+          console.log('Location update failed:', err.message);
+        });
+      },
+      (error) => {
+        console.log('Location error:', error.message);
+        setIsGettingLocation(false);
+        
+        // Set a timeout to retry after 10 seconds
+        locationTimeoutRef.current = setTimeout(() => {
+          console.log('Retrying location fetch...');
+          getCurrentLocation();
+        }, 10000);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }, [isGettingLocation]);
+
+  // Start location tracking
+  const startLocationTracking = useCallback(() => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocation not supported');
+      return;
+    }
+
+    if (watchId) return; // Already tracking
+
+    const id = navigator.geolocation.watchPosition(
+      (position) => {
+        const location = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        setCurrentLocation(location);
+        
+        riderService.updateLocation(location).catch(err => {
+          console.log('Location update failed:', err.message);
+        });
+
+        // If active booking, emit location via socket
+        if (activeBooking && socket && isConnected) {
+          socket.emit('rider-location', {
+            riderId: user?.id,
+            location,
+            bookingId: activeBooking._id
+          });
+        }
+      },
+      (error) => {
+        console.log('Location tracking error:', error.message);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 15000
+      }
+    );
+
+    setWatchId(id);
+    setLocationTracking(true);
+    console.log('📍 Location tracking started');
+  }, [activeBooking, socket, isConnected, user, watchId]);
+
+  // Stop location tracking
+  const stopLocationTracking = useCallback(() => {
+    if (watchId) {
+      navigator.geolocation.clearWatch(watchId);
+      setWatchId(null);
+      setLocationTracking(false);
+      console.log('📍 Location tracking stopped');
+    }
+  }, [watchId]);
+
+  // Fetch available bookings
+  const fetchAvailableBookings = useCallback(async () => {
+    if (!currentLocation) {
+      getCurrentLocation();
+      return;
+    }
+
+    setIsRefreshing(true);
+    try {
+      console.log('🔍 Fetching available bookings with location:', currentLocation);
+      const response = await riderService.getAvailableBookings({
+        lat: currentLocation.lat,
+        lng: currentLocation.lng,
+        radius: 30
+      });
+      
+      if (response.success) {
+        const bookings = Array.isArray(response.data) ? response.data : [];
+        setAvailableBookings(bookings);
+        console.log(`📦 Found ${bookings.length} available bookings`);
+      }
+    } catch (error) {
+      console.error('❌ Fetch available bookings error:', error);
+      toast.error('Failed to fetch available bookings');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [currentLocation, getCurrentLocation]);
+
+  // Fetch active booking
+  const fetchActiveBooking = useCallback(async () => {
+    try {
+      console.log('🔍 Fetching active booking');
+      const response = await riderService.getActiveBooking();
+      
+      if (response.success && response.data) {
+        console.log('✅ Active booking found:', response.data);
+        setActiveBooking(response.data);
+        setActiveTab('active');
+        startLocationTracking();
+      } else {
+        console.log('ℹ️ No active booking found');
+        if (locationTracking) {
+          stopLocationTracking();
+        }
+      }
+    } catch (error) {
+      console.error('❌ Fetch active booking error:', error);
+    }
+  }, [startLocationTracking, stopLocationTracking, locationTracking]);
+
+  // Initial data fetch - runs once on mount
+  useEffect(() => {
+    console.log('🔄 Initializing Rides component');
+    fetchVehiclePricing();
+    getCurrentLocation();
+    fetchActiveBooking();
+    
+    return () => {
+      console.log('🧹 Cleaning up Rides component');
+      stopLocationTracking();
+      if (locationTimeoutRef.current) {
+        clearTimeout(locationTimeoutRef.current);
+      }
+    };
+  }, []); // Empty dependency array - runs only once
+
+  const formatScheduledDateTime = (scheduledAt) => {
+  if (!scheduledAt) return null;
+  
+  const date = new Date(scheduledAt);
+  return date.toLocaleString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+  const formatScheduledTime = (scheduledAt) => {
+  if (!scheduledAt) return null;
+ 
+  const date = new Date(scheduledAt);
+  const now = new Date();
+  const diffHours = (date - now) / (1000 * 60 * 60);
+  const diffDays = Math.ceil(diffHours / 24);
+ 
+  if (diffHours < 1) {
+    return 'Less than 1 hour';
+  } else if (diffHours < 24) {
+    return `In ${Math.round(diffHours)} hours`;
+  } else {
+    return `In ${diffDays} days`;
+  }
+};
+
+  // Fetch available bookings when location changes and tab is available
+  useEffect(() => {
+    if (currentLocation && activeTab === 'available') {
+      fetchAvailableBookings();
+    }
+  }, [currentLocation, activeTab, fetchAvailableBookings]);
+
+  // Socket event handlers
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    console.log('🔌 Socket connected, setting up listeners');
+
+    // Listen for new booking requests
+    socket.on('new-booking-request', (data) => {
+  console.log('🔥 New booking request received:', data);
+ 
+  // Play notification sound
+  if (audioRef.current) {
+    audioRef.current.play().catch(e => console.log('Audio play failed:', e));
+  }
+  // Show toast notification with appropriate message
+  const message = data.bookingType === 'SCHEDULED'
+    ? `New scheduled ride for ${new Date(data.scheduledAt).toLocaleString()}`
+    : 'New booking request received!';
+ 
+  toast.info(message, {
+    position: 'top-right',
+    autoClose: 5000,
+  });
+  // Add to available bookings
+  setAvailableBookings(prev => {
+    const exists = prev.some(b => b._id === data.bookingId);
+    if (!exists) {
+      const newBooking = {
+        _id: data.bookingId,
+        pickup: data.pickup,
+        drop: data.drop,
+        distanceKm: data.distanceKm,
+        estimatedFare: data.estimatedFare,
+        vehicleType: data.vehicleType,
+        bookingType: data.bookingType,
+        scheduledAt: data.scheduledAt,
+        userId: {
+          name: data.customerName || 'Customer'
+        },
+        expiresAt: data.expiresAt
+      };
+      return [...prev, newBooking];
+    }
+    return prev;
+  });
+});
+
+    // Listen for booking taken by another rider
+    socket.on('booking-taken', (data) => {
+      console.log('⚠️ Booking taken by another rider:', data);
+      setAvailableBookings(prev => prev.filter(b => b._id !== data.bookingId));
+      toast.info('This booking was accepted by another rider');
+    });
+
+    // Listen for booking updates
+    socket.on('booking-updated', (data) => {
+      console.log('📝 Booking updated:', data);
+      if (data.bookingId === activeBooking?._id) {
+        setActiveBooking(data.booking);
+        
+        switch(data.booking.bookingStatus) {
+          case 'DRIVER_ASSIGNED':
+            toast.success('Booking accepted! Head to pickup location.');
+            break;
+          case 'DRIVER_ARRIVED':
+            toast.info('You have arrived at pickup location');
+            break;
+          case 'TRIP_STARTED':
+            toast.success('Trip started! Safe drive!');
+            break;
+          case 'TRIP_COMPLETED':
+            toast.success('Trip completed successfully!');
+            setActiveBooking(null);
+            setActiveTab('available');
+            stopLocationTracking();
+            break;
+          default:
+            break;
+        }
+      }
+    });
+
+    return () => {
+      console.log('🧹 Cleaning up socket listeners');
+      socket.off('new-booking-request');
+      socket.off('booking-taken');
+      socket.off('booking-updated');
+    };
+  }, [socket, isConnected, activeBooking, stopLocationTracking]);
+
+  // Handle accept booking
+  const handleAcceptBooking = async (booking) => {
+    setIsLoading(true);
+    try {
+      console.log('✅ Accepting booking:', booking._id);
+      const response = await riderService.acceptBooking(booking._id);
+      
+      if (response.success) {
+        toast.success('Booking accepted successfully!');
+        
+        // Remove from available bookings
+        setAvailableBookings(prev => prev.filter(b => b._id !== booking._id));
+        
+        // Set as active booking
+        setActiveBooking(response.data.booking || response.data);
+        setActiveTab('active');
+        
+        // Start location tracking
+        startLocationTracking();
+      }
+    } catch (error) {
+      console.error('❌ Accept booking error:', error);
+      toast.error(error.response?.data?.message || 'Failed to accept booking');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle reject booking
+  const handleRejectBooking = async (bookingId) => {
+    try {
+      console.log('❌ Rejecting booking:', bookingId);
+      await riderService.rejectBooking(bookingId);
+      setAvailableBookings(prev => prev.filter(b => b._id !== bookingId));
+      toast.info('Booking rejected');
+    } catch (error) {
+      console.error('❌ Reject booking error:', error);
+      toast.error('Failed to reject booking');
+    }
+  };
+
+  // Handle driver arrived
+  const handleDriverArrived = async () => {
+    if (!activeBooking) return;
+
+    setIsLoading(true);
+    try {
+      const response = await riderService.updateTripStatus({
+        bookingId: activeBooking._id,
+        status: 'DRIVER_ARRIVED'
+      });
+
+      if (response.success) {
+        toast.success('Arrival status updated');
+        setActiveBooking(response.data);
+      }
+    } catch (error) {
+      console.error('❌ Driver arrived error:', error);
+      toast.error('Failed to update status');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle start ride with OTP
+  const handleStartRide = async () => {
+    if (!selectedBooking || !otpInput) {
+      toast.warning('Please enter OTP');
+      return;
+    }
+
+    if (otpInput.length !== 6) {
+      toast.warning('OTP must be 6 digits');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await riderService.startRide(selectedBooking._id, otpInput);
+      
+      if (response.success) {
+        toast.success('Ride started successfully!');
+        setShowOtpModal(false);
+        setOtpInput('');
+        setActiveBooking(response.data);
+        setSelectedBooking(null);
+      }
+    } catch (error) {
+      console.error('❌ Start ride error:', error);
+      toast.error(error.response?.data?.message || 'Invalid OTP');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle complete ride
+  const handleCompleteRide = async () => {
+    if (!activeBooking) return;
+
+    const pricing = vehiclePricing[activeBooking.vehicleType];
+    if (!pricing) {
+      toast.error('Pricing information not available');
+      return;
+    }
+
+    const estimatedDistance = activeBooking.distanceKm || 0;
+    if (rideCompletionData.actualDistance < estimatedDistance) {
+      toast.warning('Actual distance cannot be less than estimated distance');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await riderService.completeRide(activeBooking._id, rideCompletionData);
+      
+      if (response.success) {
+        // Show different messages based on payment method
+        if (response.data.earnings.paymentMethod === 'CASH') {
+          toast.success(
+            <div>
+              <p className="font-bold">Ride Completed! 💰</p>
+              <p>Collect ₹{response.data.earnings.finalFare} from customer</p>
+              <p className="text-sm">Your earnings: ₹{response.data.earnings.riderEarning}</p>
+            </div>,
+            { autoClose: 8000 }
+          );
+        } else {
+          toast.success(
+            <div>
+              <p className="font-bold">Ride Completed! 🎉</p>
+              <p>Your earnings: ₹{response.data.earnings.riderEarning}</p>
+              <p className="text-sm">Will be credited within 7 days</p>
+            </div>,
+            { autoClose: 8000 }
+          );
+        }
+        
+        setShowCompletionModal(false);
+        setActiveBooking(null);
+        setActiveTab('available');
+        setRideCompletionData({ actualDistance: 0, additionalCharges: 0 });
+        stopLocationTracking();
+      }
+    } catch (error) {
+      console.error('❌ Complete ride error:', error);
+      toast.error('Failed to complete ride');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
+  // Format time remaining
+  const getTimeRemaining = (expiresAt) => {
+    if (!expiresAt) return null;
+    
+    const now = new Date();
+    const expiry = new Date(expiresAt);
+    const diff = expiry - now;
+    
+    if (diff <= 0) return null;
+    
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    
+    if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`;
+    }
+    return `${seconds}s`;
+  };
+
+  // Get payment method icon
+  const getPaymentIcon = (method) => {
+    switch(method) {
+      case 'CASH':
+        return <FaMoneyBillWave className="text-green-400" />;
+      case 'RAZORPAY':
+      case 'ONLINE':
+        return <FaCreditCard className="text-blue-400" />;
+      case 'WALLET':
+        return <FaWallet className="text-purple-400" />;
+      default:
+        return <FaMoneyBill className="text-gray-400" />;
+    }
+  };
+
+  // Calculate fare based on actual distance and vehicle type using database pricing
+  const calculateFare = (vehicleType, actualDistance, additionalCharges = 0) => {
+    const pricing = vehiclePricing[vehicleType];
+    if (!pricing) {
+      console.error('Pricing not found for vehicle type:', vehicleType);
+      return {
+        baseFare: 0,
+        perKmRate: 0,
+        distanceFare: 0,
+        subtotal: 0,
+        totalFare: 0,
+        commission: 0,
+        riderEarning: 0,
+        commissionPercent: 0
+      };
+    }
+    
+    const baseFare = pricing.baseFare;
+    const perKmRate = pricing.pricePerKm;
+    const commissionPercent = pricing.adminCommissionPercent || 25; // Default to 25% if not set
+    
+    const distanceFare = actualDistance * perKmRate;
+    const subtotal = baseFare + distanceFare;
+    const totalFare = subtotal + additionalCharges;
+    const commission = Math.round(totalFare * commissionPercent / 100);
+    const riderEarning = totalFare - commission;
+    
+    return {
+      baseFare,
+      perKmRate,
+      distanceFare: Math.round(distanceFare),
+      subtotal: Math.round(subtotal),
+      totalFare: Math.round(totalFare),
+      commission,
+      riderEarning: Math.round(riderEarning),
+      commissionPercent
+    };
+  };
+
+  return (
+    <div className="h-full flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-teal-600/20 to-blue-600/20 border-b border-slate-700 p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl flex items-center justify-center">
+              <FaCar className="text-white text-lg" />
             </div>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-semibold mb-2">Trip Info</h4>
-              <div className="space-y-1">
-                <p className="text-sm"><span className="font-medium">Distance:</span> {activeRide.distance} km</p>
-                <p className="text-sm"><span className="font-medium">Fare:</span> ₹{Number(activeRide.fare || 0).toFixed(2)}</p>
-                <p className="text-sm"><span className="font-medium">Trip Type:</span> {activeRide.details?.tripType || 'ONE_WAY'}</p>
-                {activeRide.details?.bookingType && (
-                  <p className="text-sm"><span className="font-medium">Booking Type:</span> {activeRide.details.bookingType}</p>
-                )}
-              </div>
+            <div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-blue-400 bg-clip-text text-transparent">
+                Rides Management
+              </h1>
+              <p className="text-sm text-slate-400">
+                {locationTracking ? '🔴 Live tracking active' : '⚫ Location tracking off'}
+              </p>
             </div>
           </div>
 
-          {/* Route Details */}
-          <div className="bg-blue-50 p-4 rounded-lg mb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <div>
-                  <p className="font-medium">Pickup</p>
-                  <p className="text-sm text-gray-600">{activeRide.pickup}</p>
-                </div>
-              </div>
-              <FaRoute className="text-blue-500" />
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <div className="text-right">
-                  <p className="font-medium">Dropoff</p>
-                  <p className="text-sm text-gray-600">{activeRide.dropoff}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Ride Actions */}
-          <div className="flex gap-3">
-            {rideStatus === 'pickup' && (
-              <button
-                onClick={handleStartRide}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors"
-              >
-                <FaCheck />
-                Start Ride
-              </button>
-            )}
-            {rideStatus === 'ongoing' && (
-              <button
-                onClick={handleCompleteRide}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors"
-              >
-                <FaStop />
-                Complete Ride
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Ride Request Panel */}
-      {rideRequests.length > 0 && profile?.isOnline && (
-        <div className="bg-white rounded-xl shadow-sm border p-3 sm:p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-base sm:text-lg font-semibold">
-              Incoming Ride Requests ({rideRequests.length})
-            </h3>
+          {/* Tab Navigation */}
+          <div className="flex gap-2">
             <button
-              onClick={onManualRefresh}   // ✅ Use the prop function
-              className="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+              onClick={() => setActiveTab('available')}
+              className={`px-4 py-2 rounded-xl font-semibold transition-all ${
+                activeTab === 'available'
+                  ? 'bg-gradient-to-r from-teal-600 to-blue-600 text-white'
+                  : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+              }`}
             >
-              Refresh
+              Available Rides 
+              {availableBookings.length > 0 && (
+                <span className="ml-2 bg-red-500 text-white px-2 py-0.5 rounded-full text-xs">
+                  {availableBookings.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('active')}
+              className={`px-4 py-2 rounded-xl font-semibold transition-all ${
+                activeTab === 'active'
+                  ? 'bg-gradient-to-r from-teal-600 to-blue-600 text-white'
+                  : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              Current Ride 
+              {activeBooking && (
+                <span className="ml-2 bg-green-500 text-white px-2 py-0.5 rounded-full text-xs animate-pulse">
+                  ACTIVE
+                </span>
+              )}
             </button>
           </div>
-          <div className="space-y-3 sm:space-y-4">
-            {rideRequests.map((request) => (
-              <div key={request.id} className="border rounded-lg p-3 sm:p-4 hover:border-blue-300 transition-colors">
-                {/* ... rest of the request card ... */}
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 gap-2">
-                  <div>
-                    <h4 className="font-semibold text-base sm:text-lg">{request.passenger}</h4>
-                    <div className="flex items-center gap-1 text-yellow-500">
-                      <FaStar />
-                      <span className="text-sm">{request.rating}</span>
-                    </div>
-                  </div>
-                  <div className="text-left sm:text-right">
-                    <p className="text-xl sm:text-2xl font-bold text-green-600">₹{Number(request.fare || 0).toFixed(2)}</p>
-                    <p className="text-sm text-gray-500">{request.distance}</p>
-                  </div>
-                </div>
-                
-                <div className="bg-gray-50 p-2 sm:p-3 rounded-lg mb-3">
-                  <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="truncate max-w-[120px] sm:max-w-[150px]">{request.pickup}</span>
-                    </div>
-                    <FaRoute className="text-gray-400 mx-2" />
-                    <div className="flex items-center gap-2">
-                      <span className="truncate max-w-[120px] sm:max-w-[150px]">{request.dropoff}</span>
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Booking Type Indicator */}
-                {request.details?.bookingType && (
-                  <div className="mb-3">
-                    {request.details.bookingType === 'SCHEDULED' && request.details.scheduledTime ? (
-                      <div className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg border border-purple-100">
-                        <FaCalendarAlt className="text-purple-500" />
+          {/* Refresh Button - only show in available tab */}
+          {activeTab === 'available' && (
+            <button
+              onClick={fetchAvailableBookings}
+              disabled={isRefreshing}
+              className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700 rounded-xl text-white transition-all flex items-center gap-2 disabled:opacity-50"
+            >
+              <FaSpinner className={`${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-4 overflow-y-auto">
+        {/* Available Rides Tab */}
+        {activeTab === 'available' && (
+          <div className="space-y-4">
+            {/* Available Rides Header */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">
+                Available Rides Near You
+              </h2>
+              <p className="text-sm text-slate-400">
+                {availableBookings.length} ride{availableBookings.length !== 1 ? 's' : ''} available
+              </p>
+            </div>
+
+            {/* Available Rides List */}
+            {isRefreshing && availableBookings.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <FaSpinner className="animate-spin text-4xl text-teal-400" />
+              </div>
+            ) : availableBookings.length === 0 ? (
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-12 text-center">
+                <FaCar className="text-5xl text-slate-600 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-2">No Rides Available</h3>
+                <p className="text-slate-400 mb-4">
+                  Stay online and we'll notify you when new rides are available
+                </p>
+                <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
+                  <div className={`w-2 h-2 rounded-full ${locationTracking ? 'bg-green-400 animate-pulse' : 'bg-yellow-400'}`} />
+                  <span>{locationTracking ? 'Tracking active' : 'Waiting for location...'}</span>
+                </div>
+              </div>
+            ) : (
+              availableBookings.map((booking) => {
+                const timeRemaining = getTimeRemaining(booking.expiresAt);
+                
+                return (
+                  <div
+                    key={booking._id}
+                    className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 hover:border-teal-500/50 transition-all"
+                  >
+                    {/* Ride Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-r from-teal-600/20 to-blue-600/20 rounded-xl flex items-center justify-center">
+                          <FaCar className="text-2xl text-teal-400" />
+                        </div>
                         <div>
-                          <span className="text-sm font-medium text-purple-700">Scheduled Ride</span>
-                          <p className="text-xs text-purple-600 mt-1">
-                            Pickup: {formatTime(request.details.scheduledTime)}
+                          <h3 className="text-lg font-semibold text-white">
+                            {booking.vehicleType || 'Cab'} Ride
+                          </h3>
+                          <p className="text-sm text-slate-400">
+                            {booking.distanceKm ? booking.distanceKm.toFixed(1) : '?'} km • {formatCurrency(booking.estimatedFare || 0)}
                           </p>
                         </div>
                       </div>
-                    ) : request.details.bookingType === 'IMMEDIATE' ? (
-                      <div className="flex items-center gap-2 p-2 bg-green-50 rounded-lg border border-green-100">
-                        <FaClock className="text-green-500" />
-                        <span className="text-sm font-medium text-green-700">Immediate Ride</span>
+                      
+                      {/* Timer */}
+                      {timeRemaining && booking.bookingType === 'IMMEDIATE' ? (
+  <div className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+    <span className="text-yellow-400 text-sm font-semibold">
+      {timeRemaining}
+    </span>
+  </div>
+) : booking.bookingType === 'SCHEDULED' && (
+  <div className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-lg">
+    <span className="text-purple-400 text-sm font-semibold">
+      {Math.round((new Date(booking.expiresAt) - new Date()) / (1000 * 60))}m to respond
+    </span>
+  </div>
+)}
+                    </div>
+
+                    {/* Pickup & Drop */}
+                    <div className="space-y-3 mb-4">
+                      <div className="flex items-start gap-3">
+                        <FaMapMarkerAlt className="text-blue-400 mt-1 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-slate-400">PICKUP</p>
+                          <p className="text-sm text-white">
+                            {booking.pickup?.addressText || 'Pickup location'}
+                          </p>
+                          {booking.pickup?.lat && booking.pickup?.lng && (
+                            <p className="text-xs text-slate-500 mt-1">
+                              {booking.pickup.lat.toFixed(4)}, {booking.pickup.lng.toFixed(4)}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    ) : null}
-                  </div>
-                )}
+                      <div className="flex items-start gap-3">
+                        <FaMapMarkerAlt className="text-red-400 mt-1 flex-shrink-0" />
+                        <div>
+                          <p className="text-xs text-slate-400">DROP</p>
+                          <p className="text-sm text-white">
+                            {booking.drop?.addressText || 'Drop location'}
+                          </p>
+                          {booking.drop?.lat && booking.drop?.lng && (
+                            <p className="text-xs text-slate-500 mt-1">
+                              {booking.drop.lat.toFixed(4)}, {booking.drop.lng.toFixed(4)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-                {/* Trip Type Badge */}
-                {request.details?.tripType && request.details.tripType === 'ROUND_TRIP' && (
-                  <div className="mb-3">
-                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded border border-orange-200">
-                      <FaSyncAlt className="text-xs" /> Round Trip
-                    </span>
-                  </div>
-                )}
+                    {/* Customer Info */}
+                    {booking.userId && (
+                      <div className="flex items-center gap-3 mb-4 p-3 bg-slate-700/30 rounded-lg">
+                        <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
+                          <FaUser className="text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white">
+                            {booking.userId.name || 'Customer'}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-slate-400">
+                            <FaStar className="text-yellow-400" />
+                            <span>{booking.userId.rating || 4.5}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  <button
-                    onClick={() => acceptRide(request.id)}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 sm:py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
-                  >
-                    <FaCheck />
-                    Accept
-                  </button>
-                  <button
-                    onClick={() => declineRide(request.id)}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 sm:py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors text-sm sm:text-base"
-                  >
-                    <FaTimes />
-                    Decline
-                  </button>
-                </div>
+{booking.bookingType === 'SCHEDULED' && (
+  <div className="mb-4 p-3 bg-purple-500/20 border border-purple-500/30 rounded-lg">
+    <div className="flex items-center gap-2 text-purple-400 mb-1">
+      <FaCalendarAlt className="text-sm" />
+      <span className="text-xs font-semibold">SCHEDULED RIDE</span>
+    </div>
+    <p className="text-sm text-white">
+      {new Date(booking.scheduledAt).toLocaleString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}
+    </p>
+    <p className="text-xs text-purple-300 mt-1">
+      {formatScheduledTime(booking.scheduledAt)}
+    </p>
+  </div>
+)}
 
-                {request.details?.acceptanceDeadline && (
-                  <div className="mt-3 text-center">
-                    <p className="text-sm text-gray-600">
-                      Respond within: <span className="font-semibold text-red-600">
-                        {calculateTimeLeft(request.details.acceptanceDeadline)}
-                      </span>
-                    </p>
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => handleAcceptBooking(booking)}
+                        disabled={isLoading}
+                        className="flex-1 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isLoading ? <FaSpinner className="animate-spin" /> : <FaCheckCircle />}
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleRejectBooking(booking._id)}
+                        disabled={isLoading}
+                        className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        <FaTimesCircle />
+                        Reject
+                      </button>
+                    </div>
                   </div>
-                )}
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* Active Ride Tab */}
+        {/* Active Ride Tab */}
+{activeTab === 'active' && activeBooking && (
+  <div className="space-y-4">
+    {/* Active Ride Header */}
+    <div className="bg-gradient-to-r from-teal-600/20 to-blue-600/20 rounded-xl border border-teal-500/30 p-6">
+      <h2 className="text-xl font-bold text-white mb-2">Current Ride</h2>
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+        <span className="text-sm text-slate-300">
+          Status: {activeBooking.bookingStatus?.replace(/_/g, ' ') || 'ACTIVE'}
+        </span>
+      </div>
+      
+      {/* Show scheduled time if this is a scheduled booking */}
+      {activeBooking.bookingType === 'SCHEDULED' && activeBooking.scheduledAt && (
+        <div className="mt-3 p-3 bg-purple-500/20 border border-purple-500/30 rounded-lg">
+          <div className="flex items-center gap-2 text-purple-400 mb-1">
+            <FaCalendarAlt className="text-sm" />
+            <span className="text-xs font-semibold">SCHEDULED RIDE</span>
+          </div>
+          <p className="text-sm text-white">
+            {formatScheduledDateTime(activeBooking.scheduledAt)}
+          </p>
+          <p className="text-xs text-purple-300 mt-1">
+            Please be at the pickup location on time
+          </p>
+        </div>
+      )}
+    </div>
+
+    {/* Ride Status Timeline */}
+    <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
+      <h3 className="text-white font-semibold mb-4">Ride Progress</h3>
+      <div className="space-y-3">
+        {RIDE_STATUS_STEPS.map((step, index) => {
+          const currentStatus = activeBooking.bookingStatus || 'DRIVER_ASSIGNED';
+          const stepIndex = RIDE_STATUS_STEPS.findIndex(s => s.key === currentStatus);
+          const isCompleted = index < stepIndex;
+          const isCurrent = index === stepIndex;
+          
+          return (
+            <div key={step.key} className="flex items-center gap-3">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                isCompleted 
+                  ? 'bg-green-500/20 text-green-400' 
+                  : isCurrent
+                    ? 'bg-blue-500/20 text-blue-400 animate-pulse'
+                    : 'bg-slate-700 text-slate-500'
+              }`}>
+                <step.icon className="text-sm" />
               </div>
-            ))}
+              <div className="flex-1">
+                <p className={`text-sm font-medium ${
+                  isCompleted ? 'text-green-400' : isCurrent ? 'text-blue-400' : 'text-slate-500'
+                }`}>
+                  {step.label}
+                </p>
+              </div>
+              {isCurrent && (
+                <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">
+                  Current
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+
+    {/* Ride Details */}
+    <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
+      <h3 className="text-white font-semibold mb-4">Ride Details</h3>
+      
+      {/* Pickup & Drop */}
+      <div className="space-y-3 mb-4">
+        <div className="flex items-start gap-3">
+          <FaMapMarkerAlt className="text-blue-400 mt-1 flex-shrink-0" />
+          <div>
+            <p className="text-xs text-slate-400">PICKUP</p>
+            <p className="text-sm text-white">
+              {activeBooking.pickup?.addressText || 'Pickup location'}
+            </p>
           </div>
+        </div>
+        <div className="flex items-start gap-3">
+          <FaMapMarkerAlt className="text-red-400 mt-1 flex-shrink-0" />
+          <div>
+            <p className="text-xs text-slate-400">DROP</p>
+            <p className="text-sm text-white">
+              {activeBooking.drop?.addressText || 'Drop location'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Show countdown for scheduled rides */}
+      {activeBooking.bookingType === 'SCHEDULED' && activeBooking.scheduledAt && (
+        <div className="mb-4 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+          <h4 className="text-purple-400 font-medium mb-2 flex items-center gap-2">
+            <FaClock className="text-sm" />
+            Time Until Pickup
+          </h4>
+          <CountdownTimer targetDate={activeBooking.scheduledAt} />
         </div>
       )}
 
-      {/* No Ride Requests Message */}
-      {rideRequests.length === 0 && profile?.isOnline && (
-        <div className="bg-white rounded-xl shadow-sm border p-6 sm:p-8 text-center">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FaRoute className="text-blue-500 text-xl sm:text-2xl" />
+      {/* Customer Info */}
+      {activeBooking.userId && (
+        <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg mb-4">
+          <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
+            <FaUser className="text-white text-xl" />
           </div>
-          <h3 className="text-base sm:text-lg font-semibold mb-2">No Ride Requests Available</h3>
-          <p className="text-gray-600 mb-4 text-sm sm:text-base">
-            We'll notify you as soon as ride requests come in your area.
-          </p>
-          <div className="text-xs sm:text-sm text-gray-500">
-            <p>Make sure your location is enabled and you're in a busy area.</p>
+          <div className="flex-1">
+            <p className="text-white font-medium">{activeBooking.userId.name || 'Customer'}</p>
+            <p className="text-sm text-slate-400">Customer</p>
           </div>
+          {activeBooking.userId.phone && (
+            <a 
+              href={`tel:${activeBooking.userId.phone}`}
+              className="p-2 bg-teal-600/20 hover:bg-teal-600/30 rounded-lg text-teal-400 transition-all"
+            >
+              <FaPhone />
+            </a>
+          )}
         </div>
       )}
 
-      {/* Rider Offline Message */}
-      {!profile?.isOnline && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 sm:p-6 text-center">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FaCar className="text-yellow-500 text-xl sm:text-2xl" />
-          </div>
-          <h3 className="text-base sm:text-lg font-semibold mb-2 text-yellow-800">You're Offline</h3>
-          <p className="text-yellow-700 mb-4 text-sm sm:text-base">
-            Go online to start receiving ride requests and earning.
-          </p>
+      {/* Fare Info */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-slate-700/30 rounded-lg p-3">
+          <p className="text-xs text-slate-400">Distance</p>
+          <p className="text-lg font-semibold text-white">{activeBooking.distanceKm || 0} km</p>
+        </div>
+        <div className="bg-slate-700/30 rounded-lg p-3">
+          <p className="text-xs text-slate-400">Estimated Fare</p>
+          <p className="text-lg font-semibold text-teal-400">{formatCurrency(activeBooking.estimatedFare || 0)}</p>
+        </div>
+      </div>
+
+      {/* OTP Display - Only show for immediate rides or when it's time */}
+      {activeBooking.otp && activeBooking.bookingType === 'IMMEDIATE' && 
+       activeBooking.bookingStatus !== 'TRIP_STARTED' && 
+       activeBooking.bookingStatus !== 'TRIP_COMPLETED' && (
+        <div className="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 rounded-lg p-4 mb-4">
+          <p className="text-xs text-yellow-400 mb-1">Customer OTP</p>
+          <p className="text-3xl font-bold text-yellow-400 tracking-wider">{activeBooking.otp}</p>
+          <p className="text-xs text-slate-400 mt-1">Share this with customer to start ride</p>
         </div>
       )}
 
-      {/* Ride Statistics */}
-      {profile && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          <div className="bg-white rounded-xl shadow-sm border p-4 sm:p-6 text-center hover:shadow-md transition-shadow">
-            <FaCar className="text-2xl sm:text-3xl text-blue-500 mx-auto mb-3" />
-            <h3 className="text-lg sm:text-xl font-bold">{profile.completedRides || 0}</h3>
-            <p className="text-gray-600 text-sm sm:text-base">Total Rides</p>
+      {/* Action Buttons based on status */}
+      <div className="space-y-3">
+        {activeBooking.bookingStatus === 'DRIVER_ASSIGNED' && (
+          <button
+            onClick={handleDriverArrived}
+            disabled={isLoading}
+            className="w-full py-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+          >
+            {isLoading ? <FaSpinner className="animate-spin" /> : <FaMapMarkerAlt />}
+            I've Arrived at Pickup
+          </button>
+        )}
+
+        {activeBooking.bookingStatus === 'DRIVER_ARRIVED' && (
+          <button
+            onClick={() => {
+              setSelectedBooking(activeBooking);
+              setShowOtpModal(true);
+            }}
+            disabled={isLoading}
+            className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+          >
+            <FaKey />
+            Verify OTP & Start Ride
+          </button>
+        )}
+
+        {activeBooking.bookingStatus === 'TRIP_STARTED' && (
+          <button
+            onClick={() => setShowCompletionModal(true)}
+            className="w-full py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+          >
+            <FaFlag />
+            Complete Ride
+          </button>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+
+        {/* No Active Ride State */}
+        {activeTab === 'active' && !activeBooking && (
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-12 text-center">
+            <FaCar className="text-5xl text-slate-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-white mb-2">No Active Ride</h3>
+            <p className="text-slate-400 mb-4">
+              You don't have any active rides at the moment
+            </p>
+            <button
+              onClick={() => setActiveTab('available')}
+              className="px-6 py-3 bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white rounded-xl font-semibold"
+            >
+              View Available Rides
+            </button>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border p-4 sm:p-6 text-center hover:shadow-md transition-shadow">
-            <FaClock className="text-2xl sm:text-3xl text-orange-500 mx-auto mb-3" />
-            <h3 className="text-lg sm:text-xl font-bold">{profile.overallRating || 0}</h3>
-            <p className="text-gray-600 text-sm sm:text-base">Rating</p>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm border p-4 sm:p-6 text-center hover:shadow-md transition-shadow sm:col-span-2 lg:col-span-1">
-            <FaMapMarkerAlt className="text-2xl sm:text-3xl text-green-500 mx-auto mb-3" />
-            <h3 className="text-lg sm:text-xl font-bold">{profile.totalRatings || 0}</h3>
-            <p className="text-gray-600 text-sm sm:text-base">Total Ratings</p>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* OTP Modal */}
-      {showOTPModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Enter OTP to Start Ride</h3>
-            <p className="text-gray-600 mb-4">Ask customer for the 6-digit OTP to verify and start the ride.</p>
+      {showOtpModal && selectedBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-slate-800 rounded-2xl w-full max-w-md p-6 border border-slate-700">
+            <h3 className="text-xl font-bold text-white mb-4">Enter OTP to Start Ride</h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Ask the customer for the 6-digit OTP to start the ride
+            </p>
+            
+            <div className="mb-4 p-3 bg-slate-700/30 rounded-lg">
+              <p className="text-xs text-slate-400">Customer Name</p>
+              <p className="text-white font-medium">{selectedBooking.userId?.name || 'Customer'}</p>
+            </div>
+
             <input
               type="text"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
+              value={otpInput}
+              onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="Enter 6-digit OTP"
-              className="w-full p-3 border rounded-lg mb-4 text-center text-lg font-mono tracking-widest"
-              maxLength={6}
+              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white text-center text-2xl tracking-widest font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+              maxLength="6"
+              autoFocus
             />
+
             <div className="flex gap-3">
-              <button onClick={handleOTPSubmit} className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold transition-colors">Verify & Start</button>
-              <button onClick={() => setShowOTPModal(false)} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold transition-colors">Cancel</button>
+              <button
+                onClick={() => {
+                  setShowOtpModal(false);
+                  setOtpInput('');
+                  setSelectedBooking(null);
+                }}
+                className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleStartRide}
+                disabled={otpInput.length !== 6 || isLoading}
+                className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isLoading ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                Verify & Start
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Complete Ride Modal */}
-      {showCompleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Complete Ride Details</h3>
-            <div className="space-y-3 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Final Distance (km)</label>
-                <input
-                  type="number"
-                  value={rideData.finalDistance}
-                  onChange={(e) => setRideData({...rideData, finalDistance: e.target.value})}
-                  placeholder="Enter distance"
-                  className="w-full p-3 border rounded-lg"
-                  step="0.1"
-                />
+      {/* Ride Completion Modal - FIXED WITH DATABASE PRICING */}
+      {showCompletionModal && activeBooking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-slate-800 rounded-2xl w-full max-w-md p-6 border border-slate-700">
+            <h3 className="text-xl font-bold text-white mb-4">Complete Ride</h3>
+            
+            {isLoadingPricing ? (
+              <div className="flex justify-center py-8">
+                <FaSpinner className="animate-spin text-4xl text-teal-400" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Additional Charges (₹)</label>
-                <input
-                  type="number"
-                  value={rideData.additionalCharges}
-                  onChange={(e) => setRideData({...rideData, additionalCharges: e.target.value})}
-                  placeholder="Enter additional charges"
-                  className="w-full p-3 border rounded-lg"
-                />
-              </div>
-            </div>
+            ) : (
+              (() => {
+                const pricing = vehiclePricing[activeBooking.vehicleType];
+                if (!pricing) {
+                  return (
+                    <div className="text-center py-8">
+                      <p className="text-red-400">Pricing information not available</p>
+                    </div>
+                  );
+                }
+                
+                const estimatedDistance = activeBooking.distanceKm || 0;
+                const actualDistance = rideCompletionData.actualDistance || estimatedDistance;
+                const additionalCharges = rideCompletionData.additionalCharges || 0;
+                
+                // Calculate fares using database pricing
+                const baseFare = pricing.baseFare;
+                const perKmRate = pricing.pricePerKm;
+                const commissionPercent = pricing.adminCommissionPercent || 25;
+                
+                const distanceFare = actualDistance * perKmRate;
+                const subtotal = baseFare + distanceFare;
+                const totalFare = subtotal + additionalCharges;
+                const commission = Math.round(totalFare * commissionPercent / 100);
+                const riderEarning = totalFare - commission;
+                
+                return (
+                  <div className="space-y-4 mb-6">
+                    {/* Distance Input */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-2">
+                        Actual Distance (km)
+                      </label>
+                      <input
+                        type="number"
+                        value={rideCompletionData.actualDistance}
+                        onChange={(e) => setRideCompletionData({
+                          ...rideCompletionData,
+                          actualDistance: parseFloat(e.target.value) || 0
+                        })}
+                        step="0.1"
+                        min={estimatedDistance}
+                        className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter actual distance"
+                        autoFocus
+                      />
+                      <p className="text-xs text-slate-500 mt-1">
+                        Estimated: {estimatedDistance.toFixed(2)} km
+                      </p>
+                    </div>
+
+                    {/* Additional Charges */}
+                    <div>
+                      <label className="block text-sm font-medium text-slate-400 mb-2">
+                        Additional Charges (₹)
+                      </label>
+                      <input
+                        type="number"
+                        value={rideCompletionData.additionalCharges}
+                        onChange={(e) => setRideCompletionData({
+                          ...rideCompletionData,
+                          additionalCharges: parseFloat(e.target.value) || 0
+                        })}
+                        min="0"
+                        step="10"
+                        className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Toll, parking, etc."
+                      />
+                    </div>
+
+                    {/* Fare Breakdown from Database */}
+                    <div className="bg-slate-700/30 rounded-lg p-4">
+                      <h4 className="text-white font-medium mb-3">Fare Breakdown</h4>
+                      
+                      <div className="space-y-2">
+                        {/* Vehicle Type & Rate */}
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-400">Vehicle Type:</span>
+                          <span className="text-white font-medium">{activeBooking.vehicleType}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-400">Rate per km:</span>
+                          <span className="text-white font-bold">₹{perKmRate}</span>
+                        </div>
+                        
+                        {/* Base Fare */}
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-400">Base Fare:</span>
+                          <span className="text-white">₹{baseFare}</span>
+                        </div>
+                        
+                        {/* Distance Fare */}
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-400">Distance Fare:</span>
+                          <span className="text-white">
+                            {actualDistance.toFixed(1)} km × ₹{perKmRate} = ₹{Math.round(distanceFare)}
+                          </span>
+                        </div>
+                        
+                        {/* Additional Charges */}
+                        {additionalCharges > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-slate-400">Additional Charges:</span>
+                            <span className="text-white">+ ₹{additionalCharges}</span>
+                          </div>
+                        )}
+                        
+                        {/* Divider */}
+                        <div className="border-t border-slate-600 my-2"></div>
+                        
+                        {/* Subtotal */}
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-400">Subtotal:</span>
+                          <span className="text-white">₹{Math.round(subtotal)}</span>
+                        </div>
+                        
+                        {/* Total Fare (what customer pays) */}
+                        <div className="flex justify-between font-semibold">
+                          <span className="text-slate-300">💰 TOTAL FARE (Customer pays):</span>
+                          <span className="text-teal-400 text-xl">₹{Math.round(totalFare)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Payment Method Specific Info */}
+                    {activeBooking.paymentMethod === 'CASH' ? (
+                      <div className="bg-yellow-600/20 border border-yellow-500/30 rounded-lg p-4">
+                        <h4 className="text-yellow-400 font-medium mb-2 flex items-center gap-2">
+                          <FaMoneyBillWave /> Cash Payment
+                        </h4>
+                        <div className="space-y-2 text-sm">
+                          <p className="text-slate-300">
+                            <span className="text-slate-400">Collect from customer:</span>{' '}
+                            <span className="text-white font-bold">₹{Math.round(totalFare)}</span>
+                          </p>
+                          <p className="text-slate-300">
+                            <span className="text-slate-400">Company commission ({commissionPercent}%):</span>{' '}
+                            <span className="text-yellow-400">₹{commission}</span>
+                          </p>
+                          <p className="text-slate-300">
+                            <span className="text-slate-400">Your earnings:</span>{' '}
+                            <span className="text-green-400 font-bold">₹{Math.round(riderEarning)}</span>
+                          </p>
+                          <p className="text-xs text-yellow-400 mt-2">
+                            ⏰ Please remit ₹{commission} to company within 3 days
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-4">
+                        <h4 className="text-blue-400 font-medium mb-2 flex items-center gap-2">
+                          <FaCreditCard /> Online Payment
+                        </h4>
+                        <div className="space-y-2 text-sm">
+                          <p className="text-slate-300">
+                            <span className="text-slate-400">Total fare:</span>{' '}
+                            <span className="text-white">₹{Math.round(totalFare)}</span>
+                          </p>
+                          <p className="text-slate-300">
+                            <span className="text-slate-400">Company commission ({commissionPercent}%):</span>{' '}
+                            <span className="text-blue-400">₹{commission}</span>
+                          </p>
+                          <p className="text-slate-300">
+                            <span className="text-slate-400">Your earnings:</span>{' '}
+                            <span className="text-green-400 font-bold">₹{Math.round(riderEarning)}</span>
+                          </p>
+                          <p className="text-xs text-blue-400 mt-2">
+                            ⏰ Amount will be credited to your account within 7 days
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
+            )}
+
+            {/* Action Buttons */}
             <div className="flex gap-3">
-              <button onClick={handleCompleteSubmit} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors">Complete Ride</button>
-              <button onClick={() => setShowCompleteModal(false)} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold transition-colors">Cancel</button>
+              <button
+                onClick={() => setShowCompletionModal(false)}
+                className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCompleteRide}
+                disabled={!rideCompletionData.actualDistance || rideCompletionData.actualDistance < (activeBooking?.distanceKm || 0) || isLoading || isLoadingPricing}
+                className="flex-1 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isLoading ? <FaSpinner className="animate-spin" /> : <FaCheck />}
+                Complete Ride
+              </button>
             </div>
           </div>
         </div>
       )}
     </div>
   );
-}
+};
+
+export default Rides;
