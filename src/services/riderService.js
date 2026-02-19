@@ -1,256 +1,312 @@
+// services/riderService.js
 import api from './api';
 
 const riderService = {
-  // ================= PROFILE =================
+  // ================= PROFILE MANAGEMENT =================
+  
+  /**
+   * Get rider profile
+   */
   getProfile: async () => {
     try {
-      const res = await api.get('/api/riders/profile');
-      return res.data;
-    } catch (err) {
-      console.error('Get rider profile error:', err);
-      throw err;
+      const response = await api.get('/api/riders/profile');
+      return response.data;
+    } catch (error) {
+      console.error('Get rider profile error:', error);
+      throw error;
     }
   },
 
-  // Add to riderService.js
-getBookingStatus: async (bookingId) => {
+  /**
+   * Update rider profile
+   * @param {Object} data - { name, phone }
+   */
+  updateProfile: async (data) => {
+    try {
+      const response = await api.put('/api/riders/profile', data);
+      return response.data;
+    } catch (error) {
+      console.error('Update rider profile error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update rider location
+   * @param {Object} location - { lat, lng }
+   */
+  updateLocation: async (location) => {
+    try {
+      const response = await api.put('/api/riders/location', location);
+      return response.data;
+    } catch (error) {
+      // Silently fail location updates to avoid console spam
+      if (error.code !== 'ERR_NETWORK') {
+        console.error('Update location error:', error);
+      }
+      throw error;
+    }
+  },
+
+  /**
+   * Toggle online status
+   * @param {boolean} isOnline 
+   * @param {string} socketId 
+   */
+  toggleOnlineStatus: async (isOnline, socketId = null) => {
+    try {
+      const response = await api.put('/api/riders/online-status', { 
+        isOnline, 
+        socketId 
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Toggle online status error:', error);
+      throw error;
+    }
+  },
+
+  // ================= BOOKING MANAGEMENT =================
+
+  /**
+   * Get available booking requests
+   * @param {Object} params - { lat, lng, radius }
+   */
+  // In riderService.js, ensure getAvailableBookings works correctly
+getAvailableBookings: async (params = {}) => {
   try {
-    const res = await api.get(`/api/bookings/${bookingId}`);
-    return res.data;
-  } catch (err) {
-    console.error('Get booking status error:', err);
-    throw err;
+    const response = await api.get('/api/riders/available-bookings', { params });
+    
+    // Log the response for debugging
+    console.log('Available bookings response:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Get available bookings error:', error);
+    throw error;
   }
 },
 
-  // ================= LOCATION =================
-
-  // ================= LOCATION TRACKING =================
-startLocationTracking: (onUpdate) => {
-  if (!navigator.geolocation) {
-    console.error("Geolocation not supported");
-    return null;
-  }
-
-  const watchId = navigator.geolocation.watchPosition(
-    (position) => {
-      const location = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
-      };
-
-      // backend update
-      riderService.updateLocation(location).catch(err => {
-        console.log('Location update failed:', err.message);
-      });
-
-      // optional callback for UI
-      if (onUpdate) onUpdate(location);
-    },
-    (error) => {
-      console.log("Location tracking error:", error.message);
-      // Don't throw error, just log it
-    },
-    {
-      enableHighAccuracy: false, // Changed to false for better battery life
-      maximumAge: 30000, // Allow 30 second old location
-      timeout: 15000 // Increased timeout to 15 seconds
-    }
-  );
-
-  return watchId;
-},
-
-stopLocationTracking: (watchId) => {
-  if (watchId && navigator.geolocation) {
-    navigator.geolocation.clearWatch(watchId);
-  }
-},
-
-  updateLocation: async (data) => {
-    try {
-      const res = await api.put('/api/riders/location', data);
-      return res.data;
-    } catch (err) {
-      // Silently fail location updates to avoid spam
-      if (err.code !== 'ERR_NETWORK') {
-        console.error('Update location error:', err);
-      }
-      throw err;
-    }
-  },
-
-  toggleOnlineStatus: async (data) => {
-    try {
-      const res = await api.put('/api/riders/online-status', data);
-      return res.data;
-    } catch (err) {
-      console.error('Toggle online status error:', err);
-      throw err;
-    }
-  },
-
-  // ================= BOOKINGS =================
-  getAvailableBookings: async ({ lat = 28.61, lng = 77.20 } = {}) => {
-    try {
-      console.log('🔍 Fetching available bookings with params:', { lat, lng });
-      
-      const res = await api.get('/api/bookings/rider/available', {
-        params: { lat, lng, radius: 10 }
-      });
-      
-      console.log('✅ Available bookings response:', res.data);
-      return res.data;
-    } catch (err) {
-      console.error('❌ Available bookings error:', {
-        status: err.response?.status,
-        message: err.response?.data?.message || err.message,
-        data: err.response?.data
-      });
-      
-      // Return empty result instead of throwing to prevent UI crashes
-      if (err.response?.status === 500) {
-        console.warn('⚠️ Server error - returning empty bookings list');
-        return {
-          success: true,
-          data: [],
-          message: 'Server temporarily unavailable'
-        };
-      }
-      
-      throw err;
-    }
-  },
-
+  /**
+   * Accept a booking request
+   * @param {string} bookingId 
+   */
   acceptBooking: async (bookingId) => {
     try {
-      const res = await api.post('/api/riders/bookings/accept', {
-        bookingId
-      });
-      return res.data;
-    } catch (err) {
-      console.error('Accept booking error:', err);
-      throw err;
+      console.log('Accepting booking:', bookingId);
+      const response = await api.post('/api/riders/bookings/accept', { bookingId });
+      return response.data;
+    } catch (error) {
+      console.error('Accept booking error:', error);
+      throw error;
     }
   },
 
+  /**
+   * Reject a booking request
+   * @param {string} bookingId 
+   */
   rejectBooking: async (bookingId) => {
     try {
-      const res = await api.post(`/api/riders/bookings/${bookingId}/reject`);
-      return res.data;
-    } catch (err) {
-      console.error('Reject booking error:', err);
-      throw err;
+      const response = await api.post(`/api/riders/bookings/${bookingId}/reject`);
+      return response.data;
+    } catch (error) {
+      console.error('Reject booking error:', error);
+      throw error;
     }
   },
 
-  updateTripStatus: async (bookingId, status, otp = null, actualDistance = null, additionalCharges = 0) => {
+  /**
+   * Get active booking (current ride)
+   */
+  getActiveBooking: async () => {
     try {
-      const res = await api.post('/api/riders/bookings/update-status', {
-        bookingId,
-        status,
-        otp,
-        actualDistance,
-        additionalCharges
-      });
-      return res.data;
-    } catch (err) {
-      console.error('Update trip status error:', err);
-      throw err;
+      const response = await api.get('/api/riders/active-booking');
+      return response.data;
+    } catch (error) {
+      console.error('Get active booking error:', error);
+      throw error;
     }
   },
 
-    // ================= RIDES =================
-  startRide: async (rideId, otp) => {
+  /**
+   * Update trip status
+   * @param {Object} data - { bookingId, status, otp, actualDistance, additionalCharges }
+   */
+  updateTripStatus: async (data) => {
     try {
-      const res = await api.post(`/api/riders/bookings/${rideId}/start`, { otp });
-      return res.data;
-    } catch (err) {
-      console.error('Start ride error:', err);
-      throw err;
+      const response = await api.post('/api/riders/bookings/update-status', data);
+      return response.data;
+    } catch (error) {
+      console.error('Update trip status error:', error);
+      throw error;
     }
   },
 
+  /**
+   * Start ride with OTP verification
+   * @param {string} bookingId 
+   * @param {string} otp 
+   */
+  startRide: async (bookingId, otp) => {
+    try {
+      const response = await api.post(`/api/riders/bookings/${bookingId}/start`, { otp });
+      return response.data;
+    } catch (error) {
+      console.error('Start ride error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Complete ride
+   * @param {string} bookingId 
+   * @param {Object} data - { finalDistance, additionalCharges }
+   */
+  completeRide: async (bookingId, data) => {
+    try {
+      const response = await api.post(`/api/riders/bookings/${bookingId}/complete`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Complete ride error:', error);
+      throw error;
+    }
+  },
 
   // ================= EARNINGS =================
+
+  /**
+   * Get rider earnings
+   * @param {Object} params - { startDate, endDate, page, limit }
+   */
   getEarnings: async (params = {}) => {
     try {
-      const res = await api.get('/api/riders/earnings', { params });
-      return res.data;
-    } catch (err) {
-      console.error('Get earnings error:', err);
-      throw err;
+      const response = await api.get('/api/riders/earnings', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Get earnings error:', error);
+      throw error;
     }
   },
 
   // ================= RATINGS =================
-  getRatings: async () => {
+
+  /**
+   * Get rider ratings
+   * @param {Object} params - { page, limit }
+   */
+  getRatings: async (params = {}) => {
     try {
-      const res = await api.get('/api/riders/ratings');
-      return res.data;
-    } catch (err) {
-      console.error('Get ratings error:', err);
-      throw err;
+      const response = await api.get('/api/riders/ratings', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Get ratings error:', error);
+      throw error;
     }
   },
 
   // ================= NOTIFICATIONS =================
+
+  /**
+   * Get rider notifications
+   * @param {Object} params - { page, limit, unreadOnly }
+   */
   getNotifications: async (params = {}) => {
     try {
-      const res = await api.get('/api/riders/notifications', { params });
-      return res.data;
-    } catch (err) {
-      console.error('Get notifications error:', err);
-      throw err;
+      const response = await api.get('/api/riders/notifications', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Get notifications error:', error);
+      throw error;
     }
   },
 
-// ================= CAB MANAGEMENT =================
-  updateCabDetails: async (data) => {
+  /**
+   * Mark notification as read
+   * @param {string} notificationId 
+   */
+  markNotificationRead: async (notificationId) => {
     try {
-      const res = await api.put('/api/riders/cab', data);
-      return res.data;
-    } catch (err) {
-      console.error('Update cab details error:', err);
-      throw err;
+      const response = await api.put(`/api/riders/notifications/${notificationId}/read`);
+      return response.data;
+    } catch (error) {
+      console.error('Mark notification read error:', error);
+      throw error;
     }
   },
 
-  // ================= DOCUMENTS =================
-  updateDocuments: async (data, files) => {
+  /**
+   * Mark all notifications as read
+   */
+  markAllNotificationsRead: async () => {
     try {
-      const formData = new FormData();
-      
-      // Add text fields
-      if (data.aadhaarNumber) formData.append('aadhaarNumber', data.aadhaarNumber);
-      if (data.drivingLicenseNumber) formData.append('drivingLicenseNumber', data.drivingLicenseNumber);
-      if (data.homeAddress) formData.append('homeAddress', JSON.stringify(data.homeAddress));
-      
-      // Add files
-      if (files.aadhaarFront) formData.append('aadhaarFront', files.aadhaarFront);
-      if (files.aadhaarBack) formData.append('aadhaarBack', files.aadhaarBack);
-      if (files.drivingLicenseFront) formData.append('drivingLicenseFront', files.drivingLicenseFront);
-      if (files.drivingLicenseBack) formData.append('drivingLicenseBack', files.drivingLicenseBack);
-      if (files.policeVerification) formData.append('policeVerification', files.policeVerification);
+      const response = await api.put('/api/riders/notifications/read-all');
+      return response.data;
+    } catch (error) {
+      console.error('Mark all notifications read error:', error);
+      throw error;
+    }
+  },
 
-      const res = await api.put('/api/riders/documents', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+  // ================= CAB MANAGEMENT =================
+
+  /**
+   * Update cab details
+   * @param {FormData} formData 
+   */
+  updateCabDetails: async (formData) => {
+    try {
+      const response = await api.put('/api/riders/cab', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
-      return res.data;
-    } catch (err) {
-      console.error('Update documents error:', err);
-      throw err;
+      return response.data;
+    } catch (error) {
+      console.error('Update cab details error:', error);
+      throw error;
     }
   },
 
   // ================= NEARBY CUSTOMERS =================
+
+  /**
+   * Get nearby customers
+   * @param {Object} params - { lat, lng, radius }
+   */
   getNearbyCustomers: async (params = {}) => {
     try {
-      const res = await api.get('/api/riders/nearby-customers', { params });
-      return res.data;
-    } catch (err) {
-      console.error('Get nearby customers error:', err);
-      throw err;
+      const response = await api.get('/api/riders/nearby-customers', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Get nearby customers error:', error);
+      throw error;
+    }
+  },
+  
+
+  getVehiclePricing: async () => {
+    try {
+      const response = await api.get('/api/pricing/vehicle-types');
+      return response.data;
+    } catch (error) {
+      console.error('Get vehicle pricing error:', error);
+      throw error;
+    }
+  },
+  // ================= DEBUG =================
+
+  /**
+   * Debug booking status
+   * @param {string} bookingId 
+   */
+  debugBooking: async (bookingId) => {
+    try {
+      const response = await api.get(`/api/riders/bookings/${bookingId}/debug`);
+      return response.data;
+    } catch (error) {
+      console.error('Debug booking error:', error);
+      throw error;
     }
   }
 };
