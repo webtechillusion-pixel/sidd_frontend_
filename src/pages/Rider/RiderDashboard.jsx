@@ -6,6 +6,7 @@ import { Earnings } from './Earnings';
 import { Rides } from './Rides';
 import { Navigation } from './Navigation';
 import { Profile } from './Profile';
+import { Documents } from './Documents';
 import { Toast } from './Toast';
 import RiderLiveTracking from '../../components/RiderLiveTracking';
 import RiderSupport from '../../components/RiderSupport';
@@ -767,8 +768,16 @@ const manualFetchBookings = useCallback(() => {
             onManualRefresh={manualFetchBookings}
           />
         );
-      case "navigation":
+case "navigation":
         return <Navigation updateLocation={updateLocation} showToast={showToast} />;
+      case "documents":
+        return (
+          <Documents 
+            cab={profileData.cab}
+            rider={profileData}
+            showToast={showToast}
+          />
+        );
       case "profile":
         return (
           <Profile 

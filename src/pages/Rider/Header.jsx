@@ -24,7 +24,7 @@ export function Header({
   handleLogout,
   toggleOnlineStatus 
 }) {
-  const menuItems = [
+const menuItems = [
     ["dashboard", "Dashboard", FaHome],
     ["rides", "Rides", FaCar],
     ["earnings", "Earnings", FaMoneyBill],
@@ -33,7 +33,7 @@ export function Header({
     // ["schedule", "Schedule", FaCalendarAlt],
     // ["vehicle", "Vehicle", FaWrench],
     // ["communication", "Messages", FaComments],
-    // ["documents", "Documents", FaFileAlt],
+    ["documents", "Documents", FaFileAlt],
     ["profile", "Profile", FaUser],
   ];
 

@@ -205,13 +205,40 @@ stopLocationTracking: (watchId) => {
     }
   },
 
-  // ================= CAB MANAGEMENT =================
+// ================= CAB MANAGEMENT =================
   updateCabDetails: async (data) => {
     try {
       const res = await api.put('/api/riders/cab', data);
       return res.data;
     } catch (err) {
       console.error('Update cab details error:', err);
+      throw err;
+    }
+  },
+
+  // ================= DOCUMENTS =================
+  updateDocuments: async (data, files) => {
+    try {
+      const formData = new FormData();
+      
+      // Add text fields
+      if (data.aadhaarNumber) formData.append('aadhaarNumber', data.aadhaarNumber);
+      if (data.drivingLicenseNumber) formData.append('drivingLicenseNumber', data.drivingLicenseNumber);
+      if (data.homeAddress) formData.append('homeAddress', JSON.stringify(data.homeAddress));
+      
+      // Add files
+      if (files.aadhaarFront) formData.append('aadhaarFront', files.aadhaarFront);
+      if (files.aadhaarBack) formData.append('aadhaarBack', files.aadhaarBack);
+      if (files.drivingLicenseFront) formData.append('drivingLicenseFront', files.drivingLicenseFront);
+      if (files.drivingLicenseBack) formData.append('drivingLicenseBack', files.drivingLicenseBack);
+      if (files.policeVerification) formData.append('policeVerification', files.policeVerification);
+
+      const res = await api.put('/api/riders/documents', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      return res.data;
+    } catch (err) {
+      console.error('Update documents error:', err);
       throw err;
     }
   },

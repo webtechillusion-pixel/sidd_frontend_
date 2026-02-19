@@ -13,6 +13,11 @@ import { toast } from 'react-toastify';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
+const SERVICE_TYPES = [
+  { id: 'OUTSTATION', label: 'Outstation', icon: '🗺️', description: 'Inter-city travel' },
+  { id: 'LOCAL_RENTAL', label: 'Local Rental', icon: '🚗', description: 'Hourly/Daily rental' },
+];
+
 const TRIP_TYPES = [
   { id: 'ONE_WAY', label: 'One Way', icon: ArrowRightLeft },
   { id: 'ROUND_TRIP', label: 'Round Trip', icon: ArrowRightLeft },
@@ -73,7 +78,8 @@ const BookingWidget = () => {
   const { user } = useAuth();
   const { socket, isConnected, joinBookingRoom, joinUserRoom } = useSocket();
 
-  const [step, setStep] = useState(1); // 1: Location, 2: Vehicle, 3: Status
+const [step, setStep] = useState(1); // 1: Location, 2: Vehicle, 3: Status
+  const [serviceType, setServiceType] = useState('OUTSTATION');
   const [pickupLocation, setPickupLocation] = useState({ text: '', lat: null, lng: null });
   const [dropLocation, setDropLocation] = useState({ text: '', lat: null, lng: null });
   const [passengers, setPassengers] = useState(1);
@@ -108,7 +114,7 @@ const BookingWidget = () => {
   const [loadingCabs, setLoadingCabs] = useState(false);
   const [cabTypes, setCabTypes] = useState([]);
 
-  const mapRef = useRef(null);
+const mapRef = useRef(null);
   const searchInputRef = useRef(null);
   const autocompleteRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -117,6 +123,36 @@ const BookingWidget = () => {
   const pickupMarkerRef = useRef(null);
   const dropMarkerRef = useRef(null);
   const pollingIntervalRef = useRef(null);
+
+  // --- Get user location on mount ---
+  useEffect(() => {
+    const getUserLocation = async () => {
+      if (!navigator.geolocation) return;
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 });
+        });
+        const { latitude, longitude } = position.coords;
+        const address = await reverseGeocode(latitude, longitude);
+        if (address) {
+          setPickupLocation({ text: address, lat: latitude, lng: longitude });
+          setManualInput(prev => ({ ...prev, pickup: address }));
+          
+          // Check if user is from specific location (Bhaarta/Bharat)
+          const locationLower = address.toLowerCase();
+          const redirectCities = ['bhaarta', 'bharat', 'delhi', 'mumbai', 'bangalore', 'hyderabad', 'chennai', 'kolkata', 'pune', 'jaipur'];
+          const isFromRedirectCity = redirectCities.some(city => locationLower.includes(city));
+          
+          if (isFromRedirectCity && user) {
+            console.log('User from supported city:', address);
+          }
+        }
+      } catch (error) {
+        console.log('Unable to get user location:', error);
+      }
+    };
+    getUserLocation();
+  }, []);
 
   // --- Map functions ---
   useEffect(() => {
@@ -561,9 +597,27 @@ const BookingWidget = () => {
     }
   };
 
-  // --- Step 1: Trip details ---
+// --- Step 1: Trip details ---
   const renderStep1 = () => (
     <div className="space-y-4">
+      {/* Service Type Selection */}
+      <div className="grid grid-cols-2 gap-2">
+        {SERVICE_TYPES.map((type) => (
+          <button
+            key={type.id}
+            onClick={() => setServiceType(type.id)}
+            className={`py-2 px-2 rounded-lg font-medium text-xs flex items-center justify-center gap-1 ${
+              serviceType === type.id 
+                ? 'bg-[#fb8500] text-white' 
+                : 'bg-gray-100 text-[#023047] hover:bg-gray-200'
+            }`}
+          >
+            <span>{type.icon}</span>
+            <span>{type.label}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-2 gap-2">
         {TRIP_TYPES.map((type) => (
           <button

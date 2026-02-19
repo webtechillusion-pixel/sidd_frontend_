@@ -28,11 +28,12 @@ export function Sidebar({
   handleLogout,
   onOpenSupport
 }) {
-  const menuItems = [
+const menuItems = [
     ["dashboard", "Dashboard", FaHome, "Overview & Stats"],
     ["rides", "Rides", FaCar, "Active & Requests"],
     ["earnings", "Earnings", FaMoneyBill, "Income & Payments"],
     ["navigation", "Navigation", FaRoute, "GPS & Routes"],
+    ["documents", "Documents", FaFileAlt, "Upload Documents"],
     ["profile", "Profile", FaUser, "Account Settings"],
   ];
 
