@@ -4,8 +4,8 @@ import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Dashboard } from './Dashboard';
 import { Earnings } from './Earnings';
-import { Rides } from './Rides';
-import { Navigation } from './Navigation';
+import  Rides  from './Rides';
+import  Navigation  from './Navigation';
 import { Profile } from './Profile';
 import { Documents } from './Documents';
 import { Toast } from './Toast';
@@ -229,10 +229,7 @@ export default function RiderDashboard() {
   }, [socket, isConnected, user, profileData.approvalStatus]);
 
   const stopAllTracking = () => {
-    if (locationWatchIdRef.current) {
-      riderService.stopLocationTracking(locationWatchIdRef.current);
-      locationWatchIdRef.current = null;
-    }
+    stopLocationTracking();
   };
 
   const clearAllIntervals = () => {
@@ -309,21 +306,47 @@ export default function RiderDashboard() {
 
   
   const startLocationTracking = () => {
-    if (locationWatchIdRef.current) return;
-    if (!navigator.geolocation) return;
-    
-    locationWatchIdRef.current = riderService.startLocationTracking((location) => {
-      console.log('Location updated in real-time:', location);
-    });
-    
-    // Remove automatic interval fetching - only fetch on demand
-    clearAllIntervals();
+    if (locationWatchIdRef.current) return; // Already tracking
+    if (!navigator.geolocation) {
+      console.error('Geolocation is not supported by this browser.');
+      showToast('Geolocation not supported. Cannot track location.', 'error');
+      return;
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const now = Date.now();
+        if (now - lastLocationUpdateRef.current < 10000) return; // Throttle: Update every 10 seconds
+
+        const { latitude, longitude } = position.coords;
+        console.log('Location updated in real-time:', { latitude, longitude });
+        updateLocation(latitude, longitude); // Send to backend
+        lastLocationUpdateRef.current = now;
+      },
+      (error) => {
+        console.error('Location tracking error:', error);
+        if (error.code === error.PERMISSION_DENIED) {
+          showToast('Location permission denied. Enable in browser settings.', 'error');
+        } else {
+          showToast('Failed to get location.', 'error');
+        }
+      },
+      {
+        enableHighAccuracy: true, // Better accuracy for ridesharing
+        timeout: 10000,          // 10s timeout
+        maximumAge: 0            // No cached positions
+      }
+    );
+
+    locationWatchIdRef.current = watchId;
+    console.log('Started location tracking with watch ID:', watchId);
   };
 
   const stopLocationTracking = () => {
     if (locationWatchIdRef.current) {
-      riderService.stopLocationTracking(locationWatchIdRef.current);
+      navigator.geolocation.clearWatch(locationWatchIdRef.current);
       locationWatchIdRef.current = null;
+      console.log('Stopped location tracking');
     }
     clearAllIntervals();
   };
@@ -333,7 +356,7 @@ export default function RiderDashboard() {
       const newStatus = !onlineStatusRef.current;
       onlineStatusRef.current = newStatus;
       
-      const response = await riderService.toggleOnlineStatus({ isOnline: newStatus });
+      const response = await riderService.toggleOnlineStatus(newStatus);
       
       if (response.success && isMountedRef.current) {
         setOnline(newStatus);
@@ -347,7 +370,17 @@ export default function RiderDashboard() {
         showToast(`You are now ${newStatus ? 'online' : 'offline'}`, newStatus ? 'success' : 'info');
         
         if (newStatus) {
-          startLocationTracking();
+          // Check geolocation permission before starting
+          if (navigator.permissions) {
+            navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+              if (result.state === 'prompt' || result.state === 'denied') {
+                showToast('Please enable location permissions for real-time tracking.', 'info');
+              }
+              startLocationTracking();
+            });
+          } else {
+            startLocationTracking();
+          }
           // Remove automatic fetching when going online
         } else {
           stopLocationTracking();
