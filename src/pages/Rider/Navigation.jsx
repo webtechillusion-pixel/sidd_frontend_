@@ -1,35 +1,22 @@
-// components/home/Hero.jsx
+// pages/Rider/Navigation.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  ChevronRight, 
-  Star, 
-  MapPin, 
-  Users, 
-  Car, 
-  Shield, 
-  Clock, 
-  CreditCard,
-  Navigation,
-  Calendar,
-  ChevronDown,
-  Search,
-  X,
-  Loader,
-  Map,
-  Crosshair,
-  Check,
-  CalendarClock
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import {
+  FaMapMarkerAlt,
+  FaCrosshairs,
+  FaLocationArrow,
+  FaSatellite,
+  FaMap,
+  FaExclamationTriangle,
+  FaSpinner
+} from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import bookingService from '../../services/bookingService';
+import riderService from '../../services/riderService';
 import { toast } from 'react-toastify';
 import {
   GoogleMap,
   LoadScript,
   Marker,
-  useJsApiLoader,
-  Autocomplete
+  useJsApiLoader
 } from '@react-google-maps/api';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -37,8 +24,8 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 // Map container styles
 const mapContainerStyle = {
   width: '100%',
-  height: '400px',
-  borderRadius: '0.75rem'
+  height: '100%',
+  minHeight: '600px'
 };
 
 // Default center (India)
@@ -51,274 +38,504 @@ const defaultCenter = {
 const mapOptions = {
   disableDefaultUI: false,
   zoomControl: true,
-  mapTypeControl: false,
-  streetViewControl: false,
-  rotateControl: false,
+  mapTypeControl: true,
+  scaleControl: true,
+  streetViewControl: true,
+  rotateControl: true,
   fullscreenControl: true,
-  mapTypeId: 'roadmap'
+  mapTypeId: 'roadmap',
+  mapTypeControlOptions: {
+    style: 1,
+    position: 3
+  }
 };
 
 // Libraries to load
 const libraries = ['places'];
 
-// Vehicle types with icons and details
-const VEHICLE_TYPES = [
-  { 
-    id: 'HATCHBACK', 
-    name: 'Hatchback', 
-    icon: '🚗', 
-    capacity: 4, 
-    luggage: 2,
-    description: 'Perfect for city commutes',
-    image: '/images/hatchback.png'
-  },
-  { 
-    id: 'SEDAN', 
-    name: 'Sedan', 
-    icon: '🚘', 
-    capacity: 4, 
-    luggage: 3,
-    description: 'Comfortable for long drives',
-    image: '/images/sedan.png'
-  },
-  { 
-    id: 'SUV', 
-    name: 'SUV', 
-    icon: '🚙', 
-    capacity: 7, 
-    luggage: 4,
-    description: 'Spacious for groups',
-    image: '/images/suv.png'
-  },
-  { 
-    id: 'PREMIUM', 
-    name: 'Premium', 
-    icon: '🚖', 
-    capacity: 4, 
-    luggage: 3,
-    description: 'Luxury travel experience',
-    image: '/images/premium.png'
-  }
-];
-
-// Map Selection Modal Component
-const MapSelectionModal = ({ isOpen, onClose, onSelect, initialLocation, type }) => {
-  const [map, setMap] = useState(null);
-  const [markerPosition, setMarkerPosition] = useState(initialLocation || defaultCenter);
-  const [searchInput, setSearchInput] = useState('');
+const Navigation = () => {
+  const { user } = useAuth();
+  
+  // State management
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [mapType, setMapType] = useState('roadmap');
   const [isLoading, setIsLoading] = useState(false);
-  const [address, setAddress] = useState('');
-  const [autocomplete, setAutocomplete] = useState(null);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [locationError, setLocationError] = useState(null);
+  const [markerPosition, setMarkerPosition] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
   
   const mapRef = useRef(null);
-  const searchBoxRef = useRef(null);
+  const markerRef = useRef(null);
+  const locationTimeoutRef = useRef(null);
+  const watchIdRef = useRef(null);
 
-  const { isLoaded } = useJsApiLoader({
-    id: 'map-modal-script',
+  // Load Google Maps
+  const { isLoaded, loadError } = useJsApiLoader({
+    id: 'google-map-script',
     googleMapsApiKey: GOOGLE_MAPS_API_KEY,
     libraries
   });
 
+  // Initialize map
   const onMapLoad = useCallback((map) => {
     mapRef.current = map;
-    setMap(map);
   }, []);
 
+  // Handle map click to set location
   const onMapClick = useCallback((event) => {
     const lat = event.latLng.lat();
     const lng = event.latLng.lng();
+    
+    setSelectedLocation({ lat, lng });
     setMarkerPosition({ lat, lng });
-    getAddressFromCoords(lat, lng);
+    setLocationError(null); // Clear any location errors
+    
+    // Reverse geocode to get address (optional)
+    if (window.google) {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          console.log('Selected address:', results[0].formatted_address);
+        }
+      });
+    }
   }, []);
 
-  const onMarkerDragEnd = useCallback((event) => {
-    const lat = event.latLng.lat();
-    const lng = event.latLng.lng();
-    setMarkerPosition({ lat, lng });
-    getAddressFromCoords(lat, lng);
-  }, []);
+  // Try multiple geolocation methods
+  const getCurrentLocation = useCallback(() => {
+    setIsGettingLocation(true);
+    setLocationError(null);
+    
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser');
+      setIsGettingLocation(false);
+      return;
+    }
 
-  const getAddressFromCoords = async (lat, lng) => {
-    try {
-      const response = await bookingService.reverseGeocode(lat, lng);
-      if (response.success) {
-        setAddress(response.data.addressText);
+    // Clear any existing timeout
+    if (locationTimeoutRef.current) {
+      clearTimeout(locationTimeoutRef.current);
+    }
+
+    // Set a timeout for the location request
+    locationTimeoutRef.current = setTimeout(() => {
+      // If we're still trying after 15 seconds, try with lower accuracy
+      if (isGettingLocation) {
+        console.log('📍 High accuracy timeout, trying with lower accuracy...');
+        getLocationWithLowAccuracy();
       }
+    }, 15000);
+
+    // First attempt: high accuracy
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        handleLocationSuccess(position);
+      },
+      (error) => {
+        console.log('High accuracy failed:', error.message);
+        // If high accuracy fails, try with low accuracy
+        getLocationWithLowAccuracy();
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }, []);
+
+  // Low accuracy fallback
+  const getLocationWithLowAccuracy = useCallback(() => {
+    console.log('📍 Trying with low accuracy...');
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        handleLocationSuccess(position);
+      },
+      (error) => {
+        console.error('Low accuracy also failed:', error.message);
+        handleLocationError(error);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 60000 // Accept cached locations up to 1 minute old
+      }
+    );
+  }, []);
+
+  // Handle successful location
+  const handleLocationSuccess = async (position) => {
+    const location = {
+      lat: position.coords.latitude,
+      lng: position.coords.longitude
+    };
+    
+    console.log('📍 Location obtained:', location);
+    
+    // Clear timeout
+    if (locationTimeoutRef.current) {
+      clearTimeout(locationTimeoutRef.current);
+    }
+    
+    setCurrentLocation(location);
+    setMarkerPosition(location);
+    setSelectedLocation(location);
+    setLocationError(null);
+    setRetryCount(0);
+    
+    // Center map on current location
+    if (mapRef.current) {
+      mapRef.current.panTo(location);
+      mapRef.current.setZoom(16);
+    }
+
+    // Update location in backend
+    try {
+      await riderService.updateLocation(location);
+      toast.success('Location updated successfully');
     } catch (error) {
-      console.error('Reverse geocode error:', error);
+      console.error('Failed to update location:', error);
+      toast.error('Failed to update location in server');
+    } finally {
+      setIsGettingLocation(false);
     }
   };
 
-  const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error('Geolocation not supported');
+  // Handle location error
+  const handleLocationError = (error) => {
+    let message = 'Failed to get location';
+    switch(error.code) {
+      case error.PERMISSION_DENIED:
+        message = 'Location permission denied. Please enable location access in your browser settings.';
+        break;
+      case error.POSITION_UNAVAILABLE:
+        message = 'Location information unavailable. Please check your GPS signal.';
+        break;
+      case error.TIMEOUT:
+        message = 'Location request timed out. Please try again.';
+        break;
+    }
+    
+    setLocationError(message);
+    toast.error(message);
+    setIsGettingLocation(false);
+    
+    // If we haven't retried too many times, try again
+    if (retryCount < 2) {
+      setRetryCount(prev => prev + 1);
+      setTimeout(() => {
+        console.log(`Retry attempt ${retryCount + 1}...`);
+        getCurrentLocation();
+      }, 2000);
+    }
+  };
+
+  // Update location to server (manual update)
+  const updateLocationToServer = useCallback(async () => {
+    if (!selectedLocation) {
+      toast.warning('Please select a location on map first');
       return;
     }
 
     setIsLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        const newLocation = { lat: latitude, lng: longitude };
-        
-        setMarkerPosition(newLocation);
-        if (mapRef.current) {
-          mapRef.current.panTo(newLocation);
-          mapRef.current.setZoom(16);
-        }
-        
-        await getAddressFromCoords(latitude, longitude);
-        setIsLoading(false);
+    try {
+      await riderService.updateLocation(selectedLocation);
+      setCurrentLocation(selectedLocation);
+      toast.success('Location updated to server');
+    } catch (error) {
+      console.error('Failed to update location:', error);
+      toast.error('Failed to update location');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedLocation]);
+
+  // Handle map type change
+  const handleMapTypeChange = () => {
+    setMapType(prev => prev === 'roadmap' ? 'satellite' : 'roadmap');
+    if (mapRef.current) {
+      mapRef.current.setMapTypeId(mapType === 'roadmap' ? 'satellite' : 'roadmap');
+    }
+  };
+
+  // Start watching position for continuous updates (optional)
+  const startWatchingPosition = useCallback(() => {
+    if (!navigator.geolocation) return;
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        const location = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        console.log('📍 Position updated:', location);
+        setCurrentLocation(location);
       },
       (error) => {
-        toast.error('Failed to get location');
-        setIsLoading(false);
+        console.log('Watch position error:', error.message);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 30000,
+        timeout: 15000
       }
     );
-  };
+  }, []);
 
-  const onPlaceSelect = (place) => {
-    if (place && place.geometry) {
-      const location = {
-        lat: place.geometry.location.lat(),
-        lng: place.geometry.location.lng()
-      };
-      setMarkerPosition(location);
-      setAddress(place.formatted_address);
-      setSearchInput(place.formatted_address);
-      
-      if (mapRef.current) {
-        mapRef.current.panTo(location);
-        mapRef.current.setZoom(16);
+  // Stop watching position
+  const stopWatchingPosition = useCallback(() => {
+    if (watchIdRef.current) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+  }, []);
+
+  // Get location on component mount
+  useEffect(() => {
+    getCurrentLocation();
+    
+    return () => {
+      if (locationTimeoutRef.current) {
+        clearTimeout(locationTimeoutRef.current);
       }
-    }
-  };
+      stopWatchingPosition();
+    };
+  }, []);
 
-  const handleConfirm = () => {
-    onSelect({
-      lat: markerPosition.lat,
-      lng: markerPosition.lng,
-      address: address,
-      placeId: null
-    });
-    onClose();
-  };
+  // Show loading state
+  if (loadError) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="text-center p-8 bg-red-500/10 rounded-xl border border-red-500/30">
+          <FaExclamationTriangle className="text-5xl text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-white mb-2">Failed to load Google Maps</h2>
+          <p className="text-slate-400">Please check your API key and try again</p>
+        </div>
+      </div>
+    );
+  }
 
-  const onAutocompleteLoad = (autocompleteInstance) => {
-    setAutocomplete(autocompleteInstance);
-  };
-
-  const onPlaceChanged = () => {
-    if (autocomplete) {
-      const place = autocomplete.getPlace();
-      onPlaceSelect(place);
-    }
-  };
-
-  if (!isOpen) return null;
+  if (!isLoaded) {
+    return (
+      <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading Google Maps...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="bg-slate-900 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-slate-700">
-        {/* Header */}
-        <div className="p-4 border-b border-slate-700 flex items-center justify-between">
-          <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <Map className="text-blue-400" />
-            Select {type === 'pickup' ? 'Pickup' : 'Drop'} Location
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
-          >
-            <X className="h-5 w-5 text-gray-400" />
-          </button>
-        </div>
-
-        {/* Search Bar */}
-        <div className="p-4 border-b border-slate-700">
-          {isLoaded && (
-            <Autocomplete
-              onLoad={onAutocompleteLoad}
-              onPlaceChanged={onPlaceChanged}
-            >
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                <input
-                  type="text"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Search for a location..."
-                  className="w-full pl-10 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </Autocomplete>
-          )}
-        </div>
-
-        {/* Map */}
-        <div className="p-4">
-          {isLoaded ? (
-            <GoogleMap
-              mapContainerStyle={mapContainerStyle}
-              center={markerPosition}
-              zoom={14}
-              options={mapOptions}
-              onClick={onMapClick}
-              onLoad={onMapLoad}
-            >
-              <Marker
-                position={markerPosition}
-                draggable={true}
-                onDragEnd={onMarkerDragEnd}
-                icon={{
-                  url: type === 'pickup' 
-                    ? 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png'
-                    : 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
-                  scaledSize: new window.google.maps.Size(40, 40)
-                }}
-              />
-            </GoogleMap>
-          ) : (
-            <div className="h-[400px] flex items-center justify-center bg-slate-800 rounded-xl">
-              <Loader className="h-8 w-8 animate-spin text-blue-400" />
+    <div className="h-full flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-teal-600/20 to-blue-600/20 border-b border-slate-700 p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl flex items-center justify-center">
+              <FaLocationArrow className="text-white text-lg" />
             </div>
-          )}
-        </div>
-
-        {/* Selected Address */}
-        {address && (
-          <div className="px-4 pb-2">
-            <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
-              <p className="text-sm text-gray-400">Selected Location:</p>
-              <p className="text-white text-sm">{address}</p>
+            <div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-blue-400 bg-clip-text text-transparent">
+                Location Manager
+              </h1>
+              <p className="text-sm text-slate-400">
+                {currentLocation ? '📍 Location active' : '⚫ Location pending'}
+              </p>
             </div>
           </div>
-        )}
 
-        {/* Footer */}
-        <div className="p-4 border-t border-slate-700 flex items-center justify-between">
+          {/* Map Type Toggle */}
           <button
-            onClick={getCurrentLocation}
-            disabled={isLoading}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-white transition-all flex items-center gap-2 disabled:opacity-50"
+            onClick={handleMapTypeChange}
+            className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700 rounded-xl text-white transition-all flex items-center gap-2"
           >
-            <Crosshair className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Use My Location
+            {mapType === 'roadmap' ? <FaSatellite /> : <FaMap />}
+            <span>{mapType === 'roadmap' ? 'Satellite' : 'Map'}</span>
           </button>
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="px-6 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-white transition-all"
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 p-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
+          {/* Left Panel - Controls */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Current Location Card */}
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-4">
+              <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                <FaMapMarkerAlt className="text-teal-400" />
+                Current Location
+              </h3>
+              
+              {/* Location Error Message */}
+              {locationError && (
+                <div className="mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                  <p className="text-sm text-red-400 flex items-center gap-2">
+                    <FaExclamationTriangle />
+                    {locationError}
+                  </p>
+                </div>
+              )}
+              
+              {/* Get Current Location Button */}
+              <button
+                onClick={getCurrentLocation}
+                disabled={isGettingLocation}
+                className="w-full mb-4 px-4 py-3 bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 rounded-xl text-white font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isGettingLocation ? (
+                  <>
+                    <FaSpinner className="animate-spin" />
+                    <span>Getting Location...</span>
+                  </>
+                ) : (
+                  <>
+                    <FaCrosshairs />
+                    <span>Get My Current Location</span>
+                  </>
+                )}
+              </button>
+
+              {/* Location Coordinates */}
+              {currentLocation && (
+                <div className="space-y-2 mb-4 p-3 bg-slate-700/30 rounded-lg">
+                  <p className="text-sm text-slate-300">
+                    <span className="text-slate-400">Latitude:</span><br />
+                    <span className="font-mono text-teal-400">{currentLocation.lat.toFixed(6)}</span>
+                  </p>
+                  <p className="text-sm text-slate-300">
+                    <span className="text-slate-400">Longitude:</span><br />
+                    <span className="font-mono text-teal-400">{currentLocation.lng.toFixed(6)}</span>
+                  </p>
+                </div>
+              )}
+
+              {/* Manual Location Tips */}
+              <div className="text-xs text-slate-500 mt-2">
+                <p>💡 Tips:</p>
+                <ul className="list-disc list-inside">
+                  <li>Ensure GPS is enabled</li>
+                  <li>Check browser permissions</li>
+                  <li>Try moving to an open area</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Selected Location Card */}
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-4">
+              <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+                <FaMapMarkerAlt className="text-blue-400" />
+                Selected Location
+              </h3>
+              
+              {selectedLocation ? (
+                <div className="space-y-3">
+                  <div className="p-3 bg-slate-700/30 rounded-lg">
+                    <p className="text-sm text-slate-300">
+                      <span className="text-slate-400">Latitude:</span><br />
+                      <span className="font-mono text-blue-400">{selectedLocation.lat.toFixed(6)}</span>
+                    </p>
+                    <p className="text-sm text-slate-300 mt-2">
+                      <span className="text-slate-400">Longitude:</span><br />
+                      <span className="font-mono text-blue-400">{selectedLocation.lng.toFixed(6)}</span>
+                    </p>
+                  </div>
+
+                  {/* Update Location Button */}
+                  <button
+                    onClick={updateLocationToServer}
+                    disabled={isLoading}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-xl text-white font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? <FaSpinner className="animate-spin" /> : <FaLocationArrow />}
+                    <span>Update Location to Server</span>
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm text-slate-400 text-center py-4">
+                  Click on the map to select a location
+                </p>
+              )}
+            </div>
+
+            {/* Instructions */}
+            <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-4">
+              <h3 className="text-white font-semibold mb-2">How to use:</h3>
+              <ul className="text-sm text-slate-400 space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-400">1.</span>
+                  <span>Click "Get My Current Location" to get your device location</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-400">2.</span>
+                  <span>Click anywhere on map to select a different location</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-teal-400">3.</span>
+                  <span>Click "Update Location to Server" to save the selected location</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Right Panel - Map */}
+          <div className="lg:col-span-3 bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 overflow-hidden">
+            <GoogleMap
+              mapContainerStyle={mapContainerStyle}
+              center={currentLocation || defaultCenter}
+              zoom={15}
+              options={{
+                ...mapOptions,
+                mapTypeId: mapType
+              }}
+              onLoad={onMapLoad}
+              onClick={onMapClick}
             >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirm}
-              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all flex items-center gap-2"
-            >
-              <Check className="h-4 w-4" />
-              Confirm Location
-            </button>
+              {/* Current Location Marker (Blue) */}
+              {currentLocation && window.google && (
+                <Marker
+                  position={currentLocation}
+                  icon={{
+                    url: 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+                    scaledSize: new window.google.maps.Size(40, 40)
+                  }}
+                />
+              )}
+
+              {/* Selected Location Marker (Red) - if different from current */}
+              {selectedLocation && 
+               (!currentLocation || 
+                selectedLocation.lat !== currentLocation.lat || 
+                selectedLocation.lng !== currentLocation.lng) && 
+               window.google && (
+                <Marker
+                  position={selectedLocation}
+                  icon={{
+                    url: 'http://maps.google.com/mapfiles/ms/icons/red-dot.png',
+                    scaledSize: new window.google.maps.Size(40, 40)
+                  }}
+                />
+              )}
+            </GoogleMap>
+          </div>
+        </div>
+      </div>
+
+      {/* Status Bar */}
+      <div className="bg-slate-800/50 border-t border-slate-700 p-3">
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${currentLocation ? 'bg-green-400' : 'bg-yellow-400'}`} />
+            <span className="text-slate-300">
+              {currentLocation ? 'Location available' : (isGettingLocation ? 'Getting location...' : 'Location unavailable')}
+            </span>
+          </div>
+          <div className="text-slate-400">
+            {locationError ? '⚠️ Location error' : 'Click on map to select location • Click button to update'}
           </div>
         </div>
       </div>
@@ -326,810 +543,4 @@ const MapSelectionModal = ({ isOpen, onClose, onSelect, initialLocation, type })
   );
 };
 
-const Hero = () => {
-  const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
-  
-  // Booking form state
-  const [bookingStep, setBookingStep] = useState(1);
-  const [pickup, setPickup] = useState('');
-  const [drop, setDrop] = useState('');
-  const [pickupSuggestions, setPickupSuggestions] = useState([]);
-  const [dropSuggestions, setDropSuggestions] = useState([]);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [tripType, setTripType] = useState('one-way');
-  const [bookingType, setBookingType] = useState('IMMEDIATE'); // 'IMMEDIATE' or 'SCHEDULED'
-  const [scheduledDate, setScheduledDate] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('');
-  const [fareDetails, setFareDetails] = useState(null);
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const [pickupLocation, setPickupLocation] = useState(null);
-  const [dropLocation, setDropLocation] = useState(null);
-  
-  // Map modal state
-  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  const [mapSelectionType, setMapSelectionType] = useState(null);
-  
-  // Refs for search
-  const pickupTimeoutRef = useRef(null);
-  const dropTimeoutRef = useRef(null);
-
-  // Features array
-  const features = [
-    {
-      icon: <Shield className="h-8 w-8" />,
-      title: "Safe & Secure",
-      description: "Verified drivers and insured vehicles"
-    },
-    {
-      icon: <Clock className="h-8 w-8" />,
-      title: "24/7 Available",
-      description: "Book anytime, anywhere"
-    },
-    {
-      icon: <CreditCard className="h-8 w-8" />,
-      title: "Transparent Pricing",
-      description: "No hidden charges"
-    },
-    {
-      icon: <MapPin className="h-8 w-8" />,
-      title: "Wide Coverage",
-      description: "50+ cities across India"
-    }
-  ];
-
-  // Handle place search
-  const searchPlaces = async (input, type) => {
-    if (!input || input.length < 3) return;
-    
-    try {
-      const response = await bookingService.searchPlaces(input);
-      if (type === 'pickup') {
-        setPickupSuggestions(response.data || []);
-      } else {
-        setDropSuggestions(response.data || []);
-      }
-    } catch (error) {
-      console.error('Search error:', error);
-    }
-  };
-
-  // Handle pickup input change
-  const handlePickupChange = (e) => {
-    const value = e.target.value;
-    setPickup(value);
-    
-    if (pickupTimeoutRef.current) {
-      clearTimeout(pickupTimeoutRef.current);
-    }
-    
-    pickupTimeoutRef.current = setTimeout(() => {
-      searchPlaces(value, 'pickup');
-    }, 500);
-  };
-
-  // Handle drop input change
-  const handleDropChange = (e) => {
-    const value = e.target.value;
-    setDrop(value);
-    
-    if (dropTimeoutRef.current) {
-      clearTimeout(dropTimeoutRef.current);
-    }
-    
-    dropTimeoutRef.current = setTimeout(() => {
-      searchPlaces(value, 'drop');
-    }, 500);
-  };
-
-  // Open map modal
-  const openMapModal = (type) => {
-    setMapSelectionType(type);
-    setIsMapModalOpen(true);
-  };
-
-  // Handle map selection
-  const handleMapSelect = (location) => {
-    if (mapSelectionType === 'pickup') {
-      setPickup(location.address);
-      setPickupLocation({
-        lat: location.lat,
-        lng: location.lng,
-        addressText: location.address,
-        placeId: location.placeId
-      });
-      setPickupSuggestions([]);
-    } else {
-      setDrop(location.address);
-      setDropLocation({
-        lat: location.lat,
-        lng: location.lng,
-        addressText: location.address,
-        placeId: location.placeId
-      });
-      setDropSuggestions([]);
-    }
-
-    // If both locations are selected, calculate fare
-    if ((mapSelectionType === 'pickup' && dropLocation) || 
-        (mapSelectionType === 'drop' && pickupLocation)) {
-      calculateFare();
-    }
-  };
-
-  // Select place from suggestions
-  const selectPlace = async (place, type) => {
-    try {
-      const details = await bookingService.getPlaceDetails(place.placeId);
-      
-      if (type === 'pickup') {
-        setPickup(place.description);
-        setPickupLocation(details.data);
-        setPickupSuggestions([]);
-      } else {
-        setDrop(place.description);
-        setDropLocation(details.data);
-        setDropSuggestions([]);
-      }
-
-      // If both locations are selected, calculate fare
-      if ((type === 'pickup' && dropLocation) || (type === 'drop' && pickupLocation)) {
-        calculateFare();
-      }
-    } catch (error) {
-      console.error('Error selecting place:', error);
-      toast.error('Failed to get location details');
-    }
-  };
-
-  // Calculate fare
-  const calculateFare = async () => {
-    if (!pickupLocation || !dropLocation || !selectedVehicle) {
-      toast.warning('Please select pickup, drop, and vehicle type');
-      return;
-    }
-
-    setIsCalculating(true);
-    try {
-      const response = await bookingService.calculateFare({
-        pickup: {
-          coordinates: [pickupLocation.lng, pickupLocation.lat],
-          address: pickup
-        },
-        drop: {
-          coordinates: [dropLocation.lng, dropLocation.lat],
-          address: drop
-        },
-        vehicleType: selectedVehicle.id,
-        tripType: tripType === 'round-trip' ? 'ROUND_TRIP' : 'ONE_WAY'
-      });
-
-      if (response.success) {
-        setFareDetails(response.data);
-        setBookingStep(3);
-      }
-    } catch (error) {
-      console.error('Fare calculation error:', error);
-      toast.error('Failed to calculate fare');
-    } finally {
-      setIsCalculating(false);
-    }
-  };
-
-  // Handle booking submission
-  const handleBooking = async () => {
-    if (!isAuthenticated) {
-      toast.info('Please login to book a ride');
-      navigate('/login/customer');
-      return;
-    }
-
-    if (!pickupLocation || !dropLocation || !selectedVehicle) {
-      toast.error('Please complete all booking details');
-      return;
-    }
-
-    if (!fareDetails) {
-      toast.error('Please calculate fare first');
-      return;
-    }
-
-    // Validate scheduled booking
-    if (bookingType === 'SCHEDULED') {
-      if (!scheduledDate || !scheduledTime) {
-        toast.error('Please select date and time for scheduled booking');
-        return;
-      }
-      
-      const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
-      const now = new Date();
-      
-      if (scheduledDateTime < now) {
-        toast.error('Scheduled time must be in the future');
-        return;
-      }
-    }
-
-    setIsSearching(true);
-    try {
-      const bookingData = {
-        pickup: {
-          addressText: pickup,
-          lat: pickupLocation.lat,
-          lng: pickupLocation.lng,
-          coordinates: [pickupLocation.lng, pickupLocation.lat],
-          contactName: user?.name || '',
-          contactPhone: user?.phone || ''
-        },
-        drop: {
-          addressText: drop,
-          lat: dropLocation.lat,
-          lng: dropLocation.lng,
-          coordinates: [dropLocation.lng, dropLocation.lat]
-        },
-        vehicleType: selectedVehicle.id,
-        bookingType: bookingType,
-        scheduledAt: bookingType === 'SCHEDULED' ? `${scheduledDate}T${scheduledTime}:00` : null,
-        paymentMethod: 'CASH',
-        distanceKm: fareDetails.distanceKm,
-        estimatedFare: fareDetails.estimatedFare
-      };
-
-      const response = await bookingService.createBooking(bookingData);
-      
-      if (response.success) {
-        const successMessage = bookingType === 'SCHEDULED' 
-          ? 'Scheduled booking created! Searching for drivers...'
-          : 'Booking created! Searching for nearby drivers...';
-        
-        toast.success(successMessage);
-        
-        // Store booking ID
-        localStorage.setItem('currentBookingId', response.data.booking._id);
-        
-        // Navigate to tracking page
-        navigate(`/booking-tracking/${response.data.booking._id}`, {
-          state: { 
-            booking: response.data.booking,
-            status: bookingType === 'SCHEDULED' ? 'SCHEDULED' : 'SEARCHING_DRIVER',
-            bookingType: bookingType
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Booking error:', error);
-      toast.error(error.response?.data?.message || 'Failed to create booking');
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Get current location
-  const getCurrentLocation = (type) => {
-    if (!navigator.geolocation) {
-      toast.error('Geolocation not supported');
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        
-        try {
-          const response = await bookingService.reverseGeocode(latitude, longitude);
-          
-          if (type === 'pickup') {
-            setPickup(response.data.addressText);
-            setPickupLocation(response.data);
-          } else {
-            setDrop(response.data.addressText);
-            setDropLocation(response.data);
-          }
-        } catch (error) {
-          console.error('Reverse geocode error:', error);
-          toast.error('Failed to get address');
-        }
-      },
-      (error) => {
-        toast.error('Failed to get location');
-        console.error(error);
-      }
-    );
-  };
-
-  return (
-    <section className="relative min-h-screen flex items-center overflow-hidden">
-      {/* Background Image */}
-      <div className="absolute inset-0">
-        <img
-          src="/images/hero_img.png"
-          alt="Travel Background"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-blue-800/80 to-purple-900/70"></div>
-      </div>
-
-      {/* Map Selection Modal */}
-      <MapSelectionModal
-        isOpen={isMapModalOpen}
-        onClose={() => setIsMapModalOpen(false)}
-        onSelect={handleMapSelect}
-        initialLocation={mapSelectionType === 'pickup' ? pickupLocation : dropLocation}
-        type={mapSelectionType}
-      />
-
-      {/* Content */}
-      <div className="container mx-auto px-4 relative z-10 py-20">
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
-          
-          {/* Left Column - Main Content */}
-          <div className="text-white">
-            <div className="mb-6">
-              <div className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full mb-4">
-                <span className="text-sm font-semibold">SINCE 2015</span>
-              </div>
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-                Your Journey, 
-                <span className="block text-blue-300 mt-2">Our Responsibility</span>
-              </h1>
-              <p className="text-xl text-gray-200 mb-8 max-w-xl">
-                Experience hassle-free travel with our premium cab services. 
-                From city rides to outstation tours, we ensure comfort, safety, 
-                and punctuality in every journey.
-              </p>
-            </div>
-
-            {/* Trust Stats */}
-            <div className="flex flex-wrap gap-8 mb-10">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-300">10K+</div>
-                <div className="text-sm text-gray-300">Happy Customers</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-300">4.8</div>
-                <div className="text-sm text-gray-300 flex items-center gap-1">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  Rating
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-300">99%</div>
-                <div className="text-sm text-gray-300">On-time Service</div>
-              </div>
-            </div>
-
-            {/* Features Grid */}
-            <div className="grid grid-cols-2 gap-4">
-              {features.map((feature, index) => (
-                <div 
-                  key={index}
-                  className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105"
-                >
-                  <div className="text-blue-300 mb-4">
-                    {feature.icon}
-                  </div>
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    {feature.title}
-                  </h3>
-                  <p className="text-sm text-gray-300">
-                    {feature.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Column - Booking Form */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-6 border border-white/20">
-            <h2 className="text-2xl font-bold text-white mb-6">Book Your Ride</h2>
-            
-            {/* Booking Type Selector - IMMEDIATE vs SCHEDULED */}
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => {
-                  setBookingType('IMMEDIATE');
-                  setScheduledDate('');
-                  setScheduledTime('');
-                }}
-                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                  bookingType === 'IMMEDIATE'
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
-                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                }`}
-              >
-                <Clock className="inline-block mr-2 h-4 w-4" />
-                Now
-              </button>
-              <button
-                onClick={() => setBookingType('SCHEDULED')}
-                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                  bookingType === 'SCHEDULED'
-                    ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white'
-                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                }`}
-              >
-                <CalendarClock className="inline-block mr-2 h-4 w-4" />
-                Schedule
-              </button>
-            </div>
-
-            {/* Trip Type Selector */}
-            <div className="flex gap-2 mb-6">
-              <button
-                onClick={() => setTripType('one-way')}
-                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                  tripType === 'one-way'
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
-                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                }`}
-              >
-                One Way
-              </button>
-              <button
-                onClick={() => setTripType('round-trip')}
-                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                  tripType === 'round-trip'
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
-                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                }`}
-              >
-                Round Trip
-              </button>
-            </div>
-
-            {/* Step 1: Location Selection */}
-            {bookingStep === 1 && (
-              <div className="space-y-4">
-                {/* Pickup Location */}
-                <div className="relative">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Pickup Location
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-400 h-5 w-5" />
-                    <input
-                      type="text"
-                      value={pickup}
-                      onChange={handlePickupChange}
-                      placeholder="Enter pickup location"
-                      className="w-full pl-10 pr-20 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
-                      <button
-                        onClick={() => openMapModal('pickup')}
-                        className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-blue-400 transition-colors"
-                        title="Select on map"
-                      >
-                        <Map className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => getCurrentLocation('pickup')}
-                        className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-blue-400 transition-colors"
-                        title="Use my location"
-                      >
-                        <Crosshair className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* Suggestions */}
-                  {pickupSuggestions.length > 0 && (
-                    <div className="absolute z-20 mt-1 w-full bg-slate-800 rounded-xl border border-slate-700 shadow-xl max-h-60 overflow-y-auto">
-                      {pickupSuggestions.map((place, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => selectPlace(place, 'pickup')}
-                          className="w-full text-left px-4 py-3 hover:bg-slate-700 text-white text-sm border-b border-slate-700 last:border-0"
-                        >
-                          {place.description}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Drop Location */}
-                <div className="relative">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Drop Location
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-red-400 h-5 w-5" />
-                    <input
-                      type="text"
-                      value={drop}
-                      onChange={handleDropChange}
-                      placeholder="Enter drop location"
-                      className="w-full pl-10 pr-20 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
-                      <button
-                        onClick={() => openMapModal('drop')}
-                        className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
-                        title="Select on map"
-                      >
-                        <Map className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => getCurrentLocation('drop')}
-                        className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
-                        title="Use my location"
-                      >
-                        <Crosshair className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* Suggestions */}
-                  {dropSuggestions.length > 0 && (
-                    <div className="absolute z-20 mt-1 w-full bg-slate-800 rounded-xl border border-slate-700 shadow-xl max-h-60 overflow-y-auto">
-                      {dropSuggestions.map((place, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => selectPlace(place, 'drop')}
-                          className="w-full text-left px-4 py-3 hover:bg-slate-700 text-white text-sm border-b border-slate-700 last:border-0"
-                        >
-                          {place.description}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Schedule (Only for SCHEDULED bookings) */}
-                {bookingType === 'SCHEDULED' && (
-                  <div className="grid grid-cols-2 gap-3 mt-4 p-4 bg-purple-900/20 rounded-xl border border-purple-500/30">
-                    <div>
-                      <label className="block text-sm font-medium text-purple-300 mb-2">
-                        Pick Date
-                      </label>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-5 w-5" />
-                        <input
-                          type="date"
-                          min={new Date().toISOString().split('T')[0]}
-                          value={scheduledDate}
-                          onChange={(e) => setScheduledDate(e.target.value)}
-                          className="w-full pl-10 pr-3 py-3 bg-purple-900/30 border border-purple-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-purple-300 mb-2">
-                        Pick Time
-                      </label>
-                      <div className="relative">
-                        <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-5 w-5" />
-                        <input
-                          type="time"
-                          value={scheduledTime}
-                          onChange={(e) => setScheduledTime(e.target.value)}
-                          className="w-full pl-10 pr-3 py-3 bg-purple-900/30 border border-purple-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  onClick={() => setBookingStep(2)}
-                  disabled={!pickup || !drop}
-                  className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Select Vehicle
-                </button>
-              </div>
-            )}
-
-            {/* Step 2: Vehicle Selection */}
-            {bookingStep === 2 && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  Select Vehicle Type
-                </h3>
-                
-                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                  {VEHICLE_TYPES.map((vehicle) => (
-                    <button
-                      key={vehicle.id}
-                      onClick={() => setSelectedVehicle(vehicle)}
-                      className={`w-full p-4 rounded-xl border-2 transition-all ${
-                        selectedVehicle?.id === vehicle.id
-                          ? 'border-blue-500 bg-blue-500/20'
-                          : 'border-white/10 bg-white/5 hover:bg-white/10'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="text-4xl">{vehicle.icon}</div>
-                        <div className="flex-1 text-left">
-                          <h4 className="text-white font-semibold">{vehicle.name}</h4>
-                          <p className="text-sm text-gray-400">{vehicle.description}</p>
-                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
-                            <span className="flex items-center gap-1">
-                              <Users className="h-3 w-3" /> {vehicle.capacity} seats
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Car className="h-3 w-3" /> {vehicle.luggage} luggage
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setBookingStep(1)}
-                    className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all"
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={calculateFare}
-                    disabled={!selectedVehicle || isCalculating}
-                    className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50"
-                  >
-                    {isCalculating ? (
-                      <Loader className="h-5 w-5 animate-spin mx-auto" />
-                    ) : (
-                      'Calculate Fare'
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Fare Details & Confirm */}
-            {bookingStep === 3 && fareDetails && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  Fare Details
-                </h3>
-
-                {/* Booking Type Badge */}
-                <div className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${
-                  bookingType === 'SCHEDULED' 
-                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' 
-                    : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                }`}>
-                  {bookingType === 'SCHEDULED' ? (
-                    <>📅 Scheduled for {new Date(`${scheduledDate}T${scheduledTime}`).toLocaleString()}</>
-                  ) : (
-                    <>⚡ Immediate Ride</>
-                  )}
-                </div>
-
-                {/* Route Summary */}
-                <div className="bg-white/5 rounded-xl p-4 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-blue-400 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-400">Pickup</p>
-                      <p className="text-sm text-white">{pickup}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-red-400 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-400">Drop</p>
-                      <p className="text-sm text-white">{drop}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Fare Breakdown */}
-                <div className="bg-white/5 rounded-xl p-4 space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Distance</span>
-                    <span className="text-white">{fareDetails.distanceKm} km</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Base Fare</span>
-                    <span className="text-white">₹{fareDetails.baseFare}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Distance Fare</span>
-                    <span className="text-white">
-                      ₹{fareDetails.pricePerKm} × {fareDetails.distanceKm} km
-                    </span>
-                  </div>
-                  <div className="border-t border-white/10 pt-3 flex justify-between font-semibold">
-                    <span className="text-gray-300">Total Fare</span>
-                    <span className="text-blue-400 text-xl">₹{fareDetails.estimatedFare}</span>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setBookingStep(2)}
-                    className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all"
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={handleBooking}
-                    disabled={isSearching}
-                    className="flex-1 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {isSearching ? (
-                      <>
-                        <Loader className="h-5 w-5 animate-spin" />
-                        {bookingType === 'SCHEDULED' ? 'Scheduling...' : 'Booking...'}
-                      </>
-                    ) : (
-                      <>
-                        {bookingType === 'SCHEDULED' ? 'Schedule Ride' : 'Confirm Booking'}
-                        <ChevronRight className="h-5 w-5" />
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {!isAuthenticated && (
-                  <p className="text-sm text-yellow-400 text-center mt-2">
-                    You'll need to login to confirm your booking
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Bottom Services Preview */}
-        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-gradient-to-r from-blue-600/30 to-blue-700/30 rounded-2xl p-6 backdrop-blur-sm border border-white/10">
-            <h3 className="text-xl font-bold text-white mb-3">One-Way Trips</h3>
-            <p className="text-gray-300 mb-4">Travel between any two cities with fixed pricing</p>
-            <button 
-              onClick={() => {
-                setTripType('one-way');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="text-blue-300 text-sm font-medium hover:text-blue-200"
-            >
-              Book now →
-            </button>
-          </div>
-          
-          <div className="bg-gradient-to-r from-purple-600/30 to-purple-700/30 rounded-2xl p-6 backdrop-blur-sm border border-white/10">
-            <h3 className="text-xl font-bold text-white mb-3">Round Trips</h3>
-            <p className="text-gray-300 mb-4">Complete packages with return journey included</p>
-            <button 
-              onClick={() => {
-                setTripType('round-trip');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="text-purple-300 text-sm font-medium hover:text-purple-200"
-            >
-              Book now →
-            </button>
-          </div>
-          
-          <div className="bg-gradient-to-r from-indigo-600/30 to-indigo-700/30 rounded-2xl p-6 backdrop-blur-sm border border-white/10">
-            <h3 className="text-xl font-bold text-white mb-3">Corporate Travel</h3>
-            <p className="text-gray-300 mb-4">Business travel solutions with billing support</p>
-            <button 
-              onClick={() => {
-                setTripType('one-way');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="text-indigo-300 text-sm font-medium hover:text-indigo-200"
-            >
-              Book now →
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-        <ChevronRight className="h-8 w-8 text-white rotate-90" />
-      </div>
-    </section>
-  );
-};
-
-export default Hero;
+export default Navigation;
