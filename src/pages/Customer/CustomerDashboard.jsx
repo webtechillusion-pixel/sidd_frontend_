@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useSocket } from "../../context/SocketContext";
 import {
   Home,
   LogOut,
@@ -40,7 +41,9 @@ import PaymentHistory from "./PaymentHistory";
 
 const CustomerDashboard = ({ initialView: initialViewProp }) => {
   const navigate = useNavigate();
-  const { logout: authLogout } = useAuth();
+  const location = useLocation();
+  const { logout: authLogout, user } = useAuth();
+  const { socket, isConnected, joinUserRoom } = useSocket();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeView, setActiveView] = useState(initialViewProp || "overview");
   const [userData, setUserData] = useState(null);
@@ -68,6 +71,9 @@ const CustomerDashboard = ({ initialView: initialViewProp }) => {
   const [isFetchingAdditional, setIsFetchingAdditional] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const fetchAdditionalDataRef = useRef(null);
+  const [ratingData, setRatingData] = useState({ rideId: null, driverId: null, driverName: '', rating: 5, review: '' });
 
   // Statistics data
   const [statistics, setStatistics] = useState({
@@ -113,6 +119,24 @@ const CustomerDashboard = ({ initialView: initialViewProp }) => {
       document.head.removeChild(style);
     };
   }, []);
+
+  // Scroll to payment section if redirected from ride tracking
+  useEffect(() => {
+    if (location.state?.view) {
+      setActiveView(location.state.view);
+      // Clear the state after setting view
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
+
+  // Recalculate statistics when bookingHistory changes
+  useEffect(() => {
+    console.log('Booking history updated, length:', bookingHistory?.length);
+    if (bookingHistory && bookingHistory.length > 0) {
+      console.log('Recalculating statistics with bookingHistory:', bookingHistory.length);
+      calculateStatistics(bookingHistory);
+    }
+  }, [bookingHistory]);
 
   // Fetch all user data
   useEffect(() => {
@@ -250,8 +274,7 @@ const CustomerDashboard = ({ initialView: initialViewProp }) => {
   }, []);
 
   // Fetch additional data
-
-  const fetchAdditionalData = async () => {
+  const fetchAdditionalData = useCallback(async () => {
     try {
       setIsFetchingAdditional(true);
 
@@ -261,7 +284,18 @@ const CustomerDashboard = ({ initialView: initialViewProp }) => {
           page: 1,
           limit: 100,
         });
-        const bookingsData = response.data?.data || [];
+        console.log('Bookings response:', response);
+        
+        // Handle different response formats
+        let bookingsData = [];
+        if (response.data?.data) {
+          bookingsData = response.data.data;
+        } else if (response.data) {
+          bookingsData = response.data;
+        } else if (Array.isArray(response)) {
+          bookingsData = response;
+        }
+        
         setBookingHistory(bookingsData);
         calculateStatistics(bookingsData);
 
@@ -315,7 +349,12 @@ const CustomerDashboard = ({ initialView: initialViewProp }) => {
     } finally {
       setIsFetchingAdditional(false);
     }
-  };
+  }, [userData?.walletBalance, userData?.loyaltyPoints, userData?.membershipTier]);
+
+  // Update ref when fetchAdditionalData changes
+  useEffect(() => {
+    fetchAdditionalDataRef.current = fetchAdditionalData;
+  }, [fetchAdditionalData]);
 
   // Calculate statistics from booking history
   const calculateStatistics = (bookings) => {
@@ -323,18 +362,29 @@ const CustomerDashboard = ({ initialView: initialViewProp }) => {
       setStatistics({
         monthlyRides: 0,
         monthlySpending: 0,
+        todayRides: 0,
+        todaySpending: 0,
         averageRating: 0,
         carbonSaved: "0 kg",
         averageFare: "₹0",
         rideFrequency: "0 rides/week",
         totalDistance: "0 km",
+        completedRides: 0,
+        totalRides: 0
       });
       return;
     }
 
     const now = new Date();
+    const today = now.toISOString().split('T')[0];
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
+
+    // Filter for today
+    const todayBookings = bookings.filter((booking) => {
+      const bookingDate = new Date(booking.createdAt || booking.date || now);
+      return bookingDate.toISOString().split('T')[0] === today;
+    });
 
     // Filter for current month
     const monthlyBookings = bookings.filter((booking) => {
@@ -345,26 +395,32 @@ const CustomerDashboard = ({ initialView: initialViewProp }) => {
       );
     });
 
-    // Calculate total spending
-    const monthlySpending = monthlyBookings.reduce((sum, booking) => {
-      const fare = parseFloat(
-        booking.fare?.replace(/[^0-9.]/g, "") || booking.amount || 0,
-      );
+    // Today's spending
+    const todaySpending = todayBookings.reduce((sum, booking) => {
+      const fare = parseFloat(booking.finalFare || booking.estimatedFare || 0);
       return sum + fare;
     }, 0);
 
-    // Calculate average rating
-    const averageRating =
-      bookings.length > 0
-        ? (
-            bookings.reduce((sum, booking) => sum + (booking.rating || 0), 0) /
-            bookings.length
-          ).toFixed(1)
-        : 0;
+    // Calculate total spending using finalFare (actual fare after ride)
+    const monthlySpending = monthlyBookings.reduce((sum, booking) => {
+      const fare = parseFloat(booking.finalFare || booking.estimatedFare || 0);
+      return sum + fare;
+    }, 0);
+
+    // Calculate total spending for all time
+    const totalSpending = bookings.reduce((sum, booking) => {
+      const fare = parseFloat(booking.finalFare || booking.estimatedFare || 0);
+      return sum + fare;
+    }, 0);
+
+    // Completed rides
+    const completedRides = bookings.filter(b => 
+      ['COMPLETED', 'TRIP_COMPLETED', 'PAYMENT_DONE'].includes(b.bookingStatus)
+    ).length;
 
     // Calculate total distance
     const totalDistance = bookings.reduce(
-      (sum, booking) => sum + (booking.distance || 50),
+      (sum, booking) => sum + (booking.distanceKm || booking.actualDistanceKm || 0),
       0,
     );
 
@@ -378,7 +434,7 @@ const CustomerDashboard = ({ initialView: initialViewProp }) => {
     // Calculate ride frequency (per week)
     const firstBookingDate = new Date(
       Math.min(
-        ...bookings.map((b) => new Date(b.date || b.createdAt).getTime()),
+        ...bookings.map((b) => new Date(b.createdAt || b.date || now).getTime()),
       ),
     );
     const weeks = Math.max(
@@ -387,14 +443,31 @@ const CustomerDashboard = ({ initialView: initialViewProp }) => {
     );
     const rideFrequency = (bookings.length / (weeks || 1)).toFixed(1);
 
+    // Calculate average rating from completed bookings
+    const completedBookingsForRating = bookings.filter(b => 
+      ['COMPLETED', 'TRIP_COMPLETED', 'PAYMENT_DONE'].includes(b.bookingStatus)
+    );
+    const totalRating = completedBookingsForRating.reduce((sum, b) => sum + (b.userRating || 0), 0);
+    const avgRating = completedBookingsForRating.length > 0 
+      ? (totalRating / completedBookingsForRating.length).toFixed(1) 
+      : 0;
+
     setStatistics({
+      todayRides: todayBookings.length,
+      todaySpending: Math.round(todaySpending),
       monthlyRides: monthlyBookings.length,
       monthlySpending: Math.round(monthlySpending),
-      averageRating,
+      totalSpent: Math.round(totalSpending),
+      averageRating: avgRating,
       carbonSaved: `${carbonSaved} kg`,
       averageFare: `₹${Math.round(averageFare)}`,
       rideFrequency: `${rideFrequency} rides/week`,
       totalDistance: `${Math.round(totalDistance)} km`,
+      completedRides: completedRides,
+      totalRides: bookings.length,
+      walletBalance: userData?.walletBalance || 0,
+      loyaltyPoints: userData?.loyaltyPoints || 0,
+      membershipTier: userData?.membershipTier || 'Silver'
     });
   };
 
@@ -530,25 +603,60 @@ const handleSaveLocation = async (locationData) => {
   // Submit review
  
 const handleSubmitReview = async (reviewData) => {
+  // Open rating modal instead of directly submitting
+  setRatingData({
+    rideId: reviewData.rideId || reviewData.bookingId,
+    driverId: reviewData.driverId,
+    driverName: reviewData.driverName || 'Driver',
+    rating: 5,
+    review: ''
+  });
+  setShowRatingModal(true);
+};
+
+const submitRating = async () => {
   try {
-    if (!reviewData.bookingId) {
+    const bookingId = ratingData.rideId;
+    if (!bookingId) {
       throw new Error('Booking ID is required');
     }
     
+    console.log('Submitting rating:', { bookingId, rating: ratingData.rating, comment: ratingData.review });
+    
     const response = await customerService.rateRider(
-      reviewData.bookingId,
-      reviewData.rating.overall,
-      reviewData.review
+      bookingId,
+      ratingData.rating,
+      ratingData.review
     );
     
-    toast.success('Review submitted successfully!');
-    return response.data;
-  } catch (error) {
-    console.error('Failed to submit review:', error);
-    toast.error('Failed to submit review');
-    throw error;
-  }
-};
+    console.log('Rating response:', response);
+    
+    if (response?.success || response?.status === 200 || response?.status === 201 || response?.message) {
+      toast.success('Review submitted successfully!');
+      setShowRatingModal(false);
+      
+      // Refresh bookings to show updated rating
+      if (typeof fetchUserBookings === 'function') {
+        fetchUserBookings();
+      }
+    } else {
+      throw new Error(response?.message || 'Failed to submit review');
+    }
+    
+    return response;
+    } catch (error) {
+      console.error('Failed to submit review:', error);
+      
+      if (error.message?.includes('not implemented')) {
+        toast.error('Rating feature not configured. Please contact support.');
+      } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network')) {
+        toast.error('Network error. Please check your connection.');
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to submit review');
+      }
+      throw error;
+    }
+  };
 
   // Create support ticket (stub function)
   const handleCreateSupportTicket = async (ticketData) => {
@@ -580,13 +688,37 @@ const handleSubmitReview = async (reviewData) => {
   };
 
 const handleLogout = async () => {
-    // Clear everything first
-    localStorage.clear();
-    sessionStorage.clear();
-    // Clear context state
-    authLogout();
-    // Hard redirect to home to ensure clean state
-    window.location.href = '/';
+    if (window.confirm('Are you sure you want to logout?')) {
+      const token = localStorage.getItem('token');
+      
+      // Try to call logout API (non-blocking)
+      if (token) {
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/auth/logout`, {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }).catch(() => {});
+      }
+      
+      // Clear ALL storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Clear cookies
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      });
+      
+      // Call auth logout
+      try {
+        authLogout();
+      } catch (e) { console.log('Auth logout error:', e); }
+      
+      // Force redirect to login
+      window.location.href = '/login';
+    }
   };
 
   const renderActiveView = () => {
@@ -595,7 +727,7 @@ const handleLogout = async () => {
         return (
           <Overview
             upcomingRides={bookingHistory.filter(
-              (b) => b.status === "upcoming" || b.status === "confirmed",
+              (b) => ['PENDING', 'CONFIRMED', 'ASSIGNED', 'DRIVER_ASSIGNED', 'ARRIVED', 'DRIVER_ARRIVED', 'ONGOING', 'TRIP_STARTED'].includes(b.bookingStatus)
             )}
             recentActivity={[]}
             statistics={statistics}
@@ -674,7 +806,7 @@ const handleLogout = async () => {
         return (
           <Overview
             upcomingRides={bookingHistory.filter(
-              (b) => b.status === "upcoming" || b.status === "confirmed",
+              (b) => ['PENDING', 'CONFIRMED', 'ASSIGNED', 'DRIVER_ASSIGNED', 'ARRIVED', 'DRIVER_ARRIVED', 'ONGOING', 'TRIP_STARTED'].includes(b.bookingStatus)
             )}
             recentActivity={[]}
             statistics={statistics}
@@ -688,6 +820,87 @@ const handleLogout = async () => {
         );
     }
   };
+
+  // Socket listener for real-time ride updates
+  useEffect(() => {
+    if (!socket || !isConnected || !user?._id) return;
+
+    // Join user room for real-time updates
+    joinUserRoom(user._id);
+    console.log('📡 CustomerDashboard: Joined user room:', user._id);
+
+    const handleRiderAssigned = (data) => {
+      console.log('🎯 Socket: Rider assigned received:', data);
+      toast.success(`Driver ${data.riderName || 'assigned'} has accepted your ride!`);
+      if (fetchAdditionalDataRef.current) {
+        fetchAdditionalDataRef.current();
+      }
+    };
+
+    const handleDriverArrived = (data) => {
+      console.log('🎯 Socket: Driver arrived:', data);
+      toast.info('Driver has arrived at pickup location');
+      if (fetchAdditionalDataRef.current) {
+        fetchAdditionalDataRef.current();
+      }
+    };
+
+    const handleTripStarted = (data) => {
+      console.log('🎯 Socket: Trip started:', data);
+      toast.info('Trip started! Enjoy your ride.');
+      if (fetchAdditionalDataRef.current) {
+        fetchAdditionalDataRef.current();
+      }
+    };
+
+    const handleTripCompleted = (data) => {
+      console.log('🎯 Socket: Trip completed:', data);
+      toast.success('Trip completed! Redirecting to payment...');
+      if (fetchAdditionalDataRef.current) {
+        fetchAdditionalDataRef.current();
+      }
+    };
+
+    const handleBookingCancelled = (data) => {
+      console.log('🎯 Socket: Booking cancelled:', data);
+      toast.error('Booking was cancelled');
+      if (fetchAdditionalDataRef.current) {
+        fetchAdditionalDataRef.current();
+      }
+    };
+
+    const handleStatusChanged = (data) => {
+      console.log('🎯 Socket: Status changed:', data);
+      if (data.status === 'DRIVER_ASSIGNED') {
+        toast.success('Driver assigned! Driver is on the way.');
+      } else if (data.status === 'DRIVER_ARRIVED') {
+        toast.info('Driver has arrived at pickup location');
+      } else if (data.status === 'TRIP_STARTED') {
+        toast.info('Trip started! Enjoy your ride.');
+      } else if (data.status === 'TRIP_COMPLETED') {
+        toast.success('Trip completed!');
+      }
+      if (fetchAdditionalDataRef.current) {
+        fetchAdditionalDataRef.current();
+      }
+    };
+
+    socket.on('rider-assigned', handleRiderAssigned);
+    socket.on('driver-arrived', handleDriverArrived);
+    socket.on('trip-started', handleTripStarted);
+    socket.on('trip-completed', handleTripCompleted);
+    socket.on('booking-cancelled', handleBookingCancelled);
+    socket.on('trip-status-changed', handleStatusChanged);
+
+    return () => {
+      socket.off('rider-assigned', handleRiderAssigned);
+      socket.off('driver-arrived', handleDriverArrived);
+      socket.off('trip-started', handleTripStarted);
+      socket.off('trip-completed', handleTripCompleted);
+      socket.off('booking-cancelled', handleBookingCancelled);
+      socket.off('trip-status-changed', handleStatusChanged);
+    };
+  }, [socket, isConnected, user?._id, joinUserRoom]);
 
   if (loading) {
     return (
@@ -1036,6 +1249,57 @@ const handleLogout = async () => {
         >
           <Phone className="h-6 w-6" />
         </button>
+      )}
+
+      {/* Rating Modal */}
+      {showRatingModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold mb-4">Rate Your Ride</h3>
+            <p className="text-gray-600 mb-4">How was your ride with {ratingData.driverName}?</p>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setRatingData({ ...ratingData, rating: star })}
+                    className={`text-3xl ${ratingData.rating >= star ? 'text-yellow-400' : 'text-gray-300'}`}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Review (Optional)</label>
+              <textarea
+                value={ratingData.review}
+                onChange={(e) => setRatingData({ ...ratingData, review: e.target.value })}
+                placeholder="Share your experience..."
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowRatingModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitRating}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

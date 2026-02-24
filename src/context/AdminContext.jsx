@@ -22,193 +22,175 @@ export const AdminProvider = ({ children }) => {
 
   // Load admin from localStorage on mount
   useEffect(() => {
-    const storedAdmin = localStorage.getItem('admin');
-    const token = localStorage.getItem('adminToken');
-    
-    if (storedAdmin && token) {
+    const loadAdmin = () => {
       try {
-        setAdmin(JSON.parse(storedAdmin));
+        const storedAdmin = localStorage.getItem('admin');
+        const token = localStorage.getItem('adminToken');
+        
+        if (storedAdmin && token) {
+          try {
+            const parsedAdmin = JSON.parse(storedAdmin);
+            // Validate admin object has required fields
+            if (parsedAdmin && typeof parsedAdmin === 'object' && parsedAdmin._id) {
+              setAdmin(parsedAdmin);
+            } else {
+              localStorage.removeItem('admin');
+              localStorage.removeItem('adminToken');
+            }
+          } catch (parseError) {
+            localStorage.removeItem('admin');
+            localStorage.removeItem('adminToken');
+          }
+        }
       } catch (error) {
-        localStorage.removeItem('admin');
-        localStorage.removeItem('adminToken');
+        // Silent fail
+      } finally {
+        setLoading(false);
       }
-    }
-    setLoading(false);
+    };
+
+    loadAdmin();
   }, []);
 
   // Admin Login
-const login = async (email, password) => {
-  try {
-    setLoading(true);
-    console.log('Admin login attempt:', email);
-    
-    // Call the adminService.login
-    const response = await adminService.login({ 
-      email,
-      password, 
-      role: 'ADMIN' 
-    });
-    
-    console.log('Full Admin login response:', response);
-    
-    
-    // The actual data is in response.data
-    const responseData = response.data;
-    console.log('Response data:', responseData);
-    
-    // Check if the request was successful (status 200-299)
-    if (response.status >= 200 && response.status < 300) {
-      // Extract user data based on backend response structure
-      let adminData = null;
+  const login = async (email, password) => {
+    try {
+      setLoading(true);
       
-      // Try different response structures
-      if (responseData.data?.user) {
-        adminData = responseData.data.user;
-      } else if (responseData?.user) {
-        adminData = responseData.user;
-      } else if (responseData.data) {
-        adminData = responseData.data;
+      // Call the adminService.login
+      const response = await adminService.login({ 
+        email,
+        password, 
+        role: 'ADMIN' 
+      });
+      
+      // The actual data is in response.data
+      const responseData = response.data;
+      
+      // Check if the request was successful (status 200-299)
+      if (response.status >= 200 && response.status < 300) {
+        // Extract user data based on backend response structure
+        let adminData = null;
+        
+        // Try different response structures
+        if (responseData?.data?.user) {
+          adminData = responseData.data.user;
+        } else if (responseData?.dataData?.user) {
+          adminData = responseData.dataData.user;
+        } else if (responseData?.data) {
+          adminData = responseData.data;
+        } else {
+          adminData = responseData;
+        }
+        
+        if (!adminData) {
+          toast.error('No admin data received from server');
+          return { success: false, error: 'No admin data received' };
+        }
+        
+        // Validate that this is an admin user
+        if (adminData.role !== 'ADMIN') {
+          toast.error('Access denied: User is not an administrator');
+          return { success: false, error: 'User is not an administrator' };
+        }
+        
+        // Store admin data
+        setAdmin(adminData);
+        localStorage.setItem('admin', JSON.stringify(adminData));
+        
+        // Store admin token for API requests
+        if (responseData?.data?.token || responseData?.token) {
+          const token = responseData.data?.token || responseData.token;
+          localStorage.setItem('adminToken', token);
+        }
+        
+        toast.success('Welcome back, Administrator!');
+        
+        // Return success immediately
+        return { 
+          success: true, 
+          data: adminData
+        };
       } else {
-        adminData = responseData;
+        const errorMsg = responseData?.message || 'Login failed';
+        toast.error(errorMsg);
+        return { success: false, error: errorMsg };
       }
+    } catch (error) {
+      // Extract error message
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          'Login failed. Please try again.';
       
-      console.log('Extracted admin data:', adminData);
+      toast.error(errorMessage);
       
-      if (!adminData) {
-        console.error('No admin data received from server');
-        toast.error('No admin data received from server');
-        return { success: false, error: 'No admin data received' };
-      }
-      
-      // Validate that this is an admin user
-      if (adminData.role !== 'ADMIN') {
-        console.error('User is not an admin:', adminData.role);
-        toast.error('Access denied: User is not an administrator');
-        return { success: false, error: 'User is not an administrator' };
-      }
-      
-      // Store admin data
-      setAdmin(adminData);
-      localStorage.setItem('admin', JSON.stringify(adminData));
-      
-      console.log('Admin login successful - Admin stored in state and localStorage');
-      console.log('Current admin state after set:', adminData);
-      
-      toast.success('Welcome back, Administrator!');
-      
-      // Return success immediately
       return { 
-        success: true, 
-        data: adminData
+        success: false, 
+        error: errorMessage 
       };
-    } else {
-      const errorMsg = responseData?.message || 'Login failed';
-      console.error('Admin login failed with status:', response.status);
-      toast.error(errorMsg);
-      return { success: false, error: errorMsg };
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Admin login error:', error);
-    
-    // Extract error message
-    const errorMessage = error.response?.data?.message || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        'Login failed. Please try again.';
-    
-    console.error('Error details:', errorMessage);
-    toast.error(errorMessage);
-    
-    return { 
-      success: false, 
-      error: errorMessage 
-    };
-  } finally {
-    setLoading(false);
-    console.log('Admin login process completed');
-  }
-};
+  };
 
   // Admin Logout
   const logout = async () => {
-  try {
-    // Call backend logout
     try {
-      await adminService.logout();
-    } catch (error) {
-      console.warn('Backend logout failed, clearing frontend only:', error.message);
-    }
-    
-    // Clear admin state
-    setAdmin(null);
-    
-    // Clear all localStorage items related to admin
-    localStorage.removeItem('admin');
-    localStorage.removeItem('adminToken');
-    
-    // Clear any other potential admin-related items
-    localStorage.removeItem('admin_last_login');
-    localStorage.removeItem('admin_permissions');
-    localStorage.removeItem('admin_session');
-    
-    // Clear sessionStorage as well
-    sessionStorage.clear();
-    
-    // Clear all auth cookies
-    clearAllCookies();
-    
-    toast.success('Logged out successfully');
-    
-    // Navigate to admin login page
-    navigate('/admin/login');
-    
-    // Force a page reload to ensure all state is cleared
-    window.location.reload();
-    
-  } catch (error) {
-    console.error('Logout error:', error);
-    toast.error('Error during logout');
-  }
-};
-
-const clearAllCookies = () => {
-  // Get all cookies
-  const cookies = document.cookie.split(';');
-  
-  // Clear each cookie
-  cookies.forEach(cookie => {
-    const eqPos = cookie.indexOf('=');
-    const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-    
-    // Clear all auth-related cookies
-    if (name.includes('token') || name.includes('auth') || name.includes('session') || 
-        name.includes('admin') || name.includes('user')) {
-      
-      // Clear cookie for current domain
-      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
-      
-      // Also try to clear for subdomains
-      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
-      
-      // Clear for localhost as well
-      if (window.location.hostname === 'localhost') {
-        document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=localhost`;
+      // Call backend logout
+      try {
+        await adminService.logout();
+      } catch (e) {
+        // Silent fail for logout
       }
+      
+      // Clear admin state
+      setAdmin(null);
+      
+      // Clear all localStorage items related to admin
+      localStorage.removeItem('admin');
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('admin_last_login');
+      localStorage.removeItem('admin_permissions');
+      localStorage.removeItem('admin_session');
+      
+      // Clear sessionStorage as well
+      sessionStorage.clear();
+      
+      // Clear all auth cookies
+      const cookies = document.cookie.split(';');
+      cookies.forEach(cookie => {
+        const eqPos = cookie.indexOf('=');
+        const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+        if (name.includes('token') || name.includes('auth') || name.includes('session') || 
+            name.includes('admin') || name.includes('user')) {
+          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+          document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
+        }
+      });
+      
+      toast.success('Logged out successfully');
+      
+      // Navigate to admin login page
+      navigate('/admin/login');
+      
+      // Force a page reload to ensure all state is cleared
+      window.location.reload();
+      
+    } catch (error) {
+      toast.error('Error during logout');
     }
-  });
-  
-  console.log('All cookies cleared');
-};
+  };
 
   // Load Dashboard Stats
   const loadDashboardStats = async () => {
     try {
       const response = await adminService.getDashboardStats();
       if (response.success) {
-        setStats(response.data.stats);
+        setStats(response.data?.stats);
       }
     } catch (error) {
-      console.error('Failed to load dashboard stats:', error);
+      // Silent fail
     }
   };
 
@@ -217,11 +199,10 @@ const clearAllCookies = () => {
     try {
       const response = await adminService.getRiders(params);
       if (response.success) {
-        setRiders(response.data.riders);
-        return response.data.pagination;
+        setRiders(response.data?.riders || []);
+        return response.data?.pagination;
       }
     } catch (error) {
-      console.error('Failed to load riders:', error);
       toast.error('Failed to load riders');
     }
     return null;
@@ -232,15 +213,14 @@ const clearAllCookies = () => {
     try {
       const response = await adminService.getBookings(params);
       if (response.success) {
-        setBookings(response.data.bookings);
+        setBookings(response.data?.bookings || []);
         return {
-          bookings: response.data.bookings,
-          stats: response.data.stats,
-          pagination: response.data.pagination
+          bookings: response.data?.bookings || [],
+          stats: response.data?.stats,
+          pagination: response.data?.pagination
         };
       }
     } catch (error) {
-      console.error('Failed to load bookings:', error);
       toast.error('Failed to load bookings');
     }
     return null;
@@ -251,15 +231,14 @@ const clearAllCookies = () => {
     try {
       const response = await adminService.getUsers(params);
       if (response.success) {
-        setUsers(response.data.users);
+        setUsers(response.data?.users || []);
         return {
-          users: response.data.users,
-          stats: response.data.stats,
-          pagination: response.data.pagination
+          users: response.data?.users || [],
+          stats: response.data?.stats,
+          pagination: response.data?.pagination
         };
       }
     } catch (error) {
-      console.error('Failed to load users:', error);
       toast.error('Failed to load users');
     }
     return null;
@@ -270,11 +249,10 @@ const clearAllCookies = () => {
     try {
       const response = await adminService.getCabs(params);
       if (response.success) {
-        setCabs(response.data.cabs);
-        return response.data.pagination;
+        setCabs(response.data?.cabs || []);
+        return response.data?.pagination;
       }
     } catch (error) {
-      console.error('Failed to load cabs:', error);
       toast.error('Failed to load cabs');
     }
     return null;
@@ -285,15 +263,14 @@ const clearAllCookies = () => {
     try {
       const response = await adminService.getPayouts(params);
       if (response.success) {
-        setPayouts(response.data.payouts);
+        setPayouts(response.data?.payouts || []);
         return {
-          payouts: response.data.payouts,
-          summary: response.data.summary,
-          pagination: response.data.pagination
+          payouts: response.data?.payouts || [],
+          summary: response.data?.summary,
+          pagination: response.data?.pagination
         };
       }
     } catch (error) {
-      console.error('Failed to load payouts:', error);
       toast.error('Failed to load payouts');
     }
     return null;
@@ -304,10 +281,9 @@ const clearAllCookies = () => {
     try {
       const response = await adminService.getPricing();
       if (response.success) {
-        setPricing(response.data);
+        setPricing(response.data || []);
       }
     } catch (error) {
-      console.error('Failed to load pricing:', error);
       toast.error('Failed to load pricing');
     }
   };
@@ -422,7 +398,7 @@ const clearAllCookies = () => {
     try {
       const response = await adminService.processBulkPayouts({ riderIds, startDate, endDate });
       if (response.success) {
-        toast.success(`Processed ${response.data.processed} payouts`);
+        toast.success(`Processed ${response.data?.processed} payouts`);
         return response.data;
       }
     } catch (error) {
@@ -456,7 +432,6 @@ const clearAllCookies = () => {
         return response.data;
       }
     } catch (error) {
-      console.error('Failed to load analytics:', error);
       toast.error('Failed to load analytics');
     }
     return null;
@@ -490,7 +465,6 @@ const clearAllCookies = () => {
     bulkProcessPayouts,
     updateUserStatus,
     getAnalytics,
-    clearAllCookies,
   };
 
   return (

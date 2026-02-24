@@ -10,14 +10,18 @@ const StatsCard = ({ title, value, change, changeText, icon: Icon, color = 'blue
     red: 'bg-red-500 text-red-600',
   };
 
+  // Ensure values are primitive (number or string)
+  const safeValue = typeof value === 'object' ? JSON.stringify(value) : value;
+  const safeChange = typeof change === 'object' ? 0 : Number(change) || 0;
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between">
         <div className="min-w-0">
           <p className="text-sm font-medium text-gray-600 truncate">{title}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1 truncate">{value}</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1 truncate">{safeValue}</p>
           <p className="text-sm text-gray-500 mt-2 truncate">
-            <span className="text-green-600 font-medium">+{change}</span> {changeText}
+            <span className="text-green-600 font-medium">+{safeChange}</span> {changeText}
           </p>
         </div>
         <div className={`p-3 rounded-full ${colorClasses[color].split(' ')[0]} bg-opacity-10 flex-shrink-0 ml-4`}>

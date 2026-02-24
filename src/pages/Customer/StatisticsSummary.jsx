@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, TrendingUp, DollarSign, Car, ArrowRight, CheckCircle, XCircle, Star, Users, Leaf } from 'lucide-react';
+import { BarChart3, TrendingUp, DollarSign, Car, ArrowRight, CheckCircle, XCircle, Star, Users, Leaf, Wallet, Gift } from 'lucide-react';
 
-const StatisticsSummary = ({ statistics, bookingHistory, onViewAllStats }) => {
+const StatisticsSummary = ({ statistics, bookingHistory, userData, onViewAllStats }) => {
   const [statsData, setStatsData] = useState({
     totalRides: 0,
     completedRides: 0,
@@ -16,98 +16,160 @@ const StatisticsSummary = ({ statistics, bookingHistory, onViewAllStats }) => {
   });
 
   useEffect(() => {
+    console.log('StatisticsSummary - stats:', statistics);
+    console.log('StatisticsSummary - bookingHistory:', bookingHistory?.length);
+    console.log('StatisticsSummary - userData:', userData);
+    
     if (bookingHistory?.length > 0) {
       const calculatedStats = calculateStatsFromBookings(bookingHistory);
+      // Merge with userData for wallet and points
+      calculatedStats.walletBalance = userData?.walletBalance || statistics?.walletBalance || 0;
+      calculatedStats.loyaltyPoints = userData?.loyaltyPoints || statistics?.loyaltyPoints || 0;
+      calculatedStats.membershipTier = userData?.membershipTier || statistics?.membershipTier || 'Silver';
       setStatsData(calculatedStats);
     } else if (statistics) {
+      // Include today's stats from statistics prop - handle all possible keys
+      const todayRides = statistics.todayRides || 0;
+      const todaySpending = statistics.todaySpending || 0;
+      
       setStatsData({
-        totalRides: statistics.monthlyRides || 0,
-        completedRides: statistics.monthlyRides || 0,
-        cancelledRides: 0,
-        totalSpent: `₹${statistics.monthlySpending || 0}`,
-        averageRating: statistics.averageRating || 0,
-        cancellationRate: 0,
+        todayRides: todayRides,
+        todaySpending: todaySpending,
+        todaySpent: `₹${todaySpending}`,
+        totalRides: statistics.totalSpent ? Math.round(statistics.totalSpent / (statistics.averageFare?.replace('₹','') || 1)) : (statistics.totalRides || 0),
+        completedRides: statistics.completedRides || 0,
+        cancelledRides: statistics.cancelledRides || 0,
+        totalSpent: `₹${statistics.totalSpent || 0}`,
+        averageRating: statistics.averageRating || userData?.averageRating || 0,
+        cancellationRate: statistics.cancellationRate || 0,
         rideFrequency: statistics.rideFrequency || '0/week',
         carbonSaved: statistics.carbonSaved || '0 kg',
         thisMonthRides: statistics.monthlyRides || 0,
-        totalDistance: statistics.totalDistance || '0 km'
+        totalDistance: statistics.totalDistance || '0 km',
+        walletBalance: statistics.walletBalance || userData?.walletBalance || 0,
+        loyaltyPoints: statistics.loyaltyPoints || userData?.loyaltyPoints || 0,
+        membershipTier: statistics.membershipTier || userData?.membershipTier || 'Silver'
       });
     }
-  }, [bookingHistory, statistics]);
+  }, [bookingHistory, statistics, userData]);
 
-  const calculateStatsFromBookings = (bookings) => {
-    const totalRides = bookings.length;
-    const completedRides = bookings.filter(b => b.status === 'completed').length;
-    const cancelledRides = bookings.filter(b => b.status === 'cancelled').length;
-    
-    const totalSpent = bookings.reduce((sum, booking) => {
-      const fare = parseFloat(booking.fare?.replace(/[^0-9.]/g, '') || booking.amount || 0);
-      return sum + fare;
-    }, 0);
+ const calculateStatsFromBookings = (bookings) => {
+  const totalRides = bookings.length;
 
-    const averageRating = bookings.length > 0 
-      ? (bookings.reduce((sum, booking) => sum + (booking.rating || 0), 0) / bookings.length).toFixed(1)
+  const completedBookings = bookings.filter(b =>
+    ['COMPLETED', 'TRIP_COMPLETED', 'PAYMENT_DONE']
+      .includes(b.bookingStatus)
+  );
+
+  const cancelledRides = bookings.filter(b =>
+    ['CANCELLED', 'REJECTED']
+      .includes(b.bookingStatus)
+  ).length;
+
+  const completedRides = completedBookings.length;
+
+  // 💰 Total Spent
+  const totalSpent = bookings.reduce((sum, booking) => {
+    const fare = parseFloat(
+      booking.finalFare || booking.estimatedFare || 0
+    );
+    return sum + fare;
+  }, 0);
+
+  // ⭐ Average Rating (from userRating)
+  const totalRating = completedBookings.reduce((sum, booking) => {
+    return sum + (booking.userRating || 0);
+  }, 0);
+
+  const averageRating =
+    completedRides > 0
+      ? (totalRating / completedRides).toFixed(1)
       : 0;
 
-    const totalDistance = bookings.reduce((sum, booking) => 
-      sum + (booking.distance || 10), 0
-    );
-    const carbonKg = (totalDistance * 0.12).toFixed(1);
+  // 🚗 Total Distance
+  const totalDistance = bookings.reduce((sum, booking) =>
+    sum + (booking.distanceKm || booking.actualDistanceKm || 0),
+    0
+  );
 
-    // Calculate ride frequency (rides per week)
-    const now = new Date();
-    const firstBookingDate = new Date(Math.min(...bookings.map(b => 
-      new Date(b.date || b.createdAt || now).getTime()
-    )));
-    const weeks = Math.max(1, Math.floor((now - firstBookingDate) / (7 * 24 * 60 * 60 * 1000)));
-    const rideFrequency = (totalRides / weeks).toFixed(1);
+  const carbonKg = (totalDistance * 0.12).toFixed(1);
 
-    return {
-      totalRides,
-      completedRides,
-      cancelledRides,
-      totalSpent: `₹${Math.round(totalSpent).toLocaleString()}`,
-      averageRating,
-      cancellationRate: totalRides > 0 ? ((cancelledRides / totalRides) * 100).toFixed(1) : '0',
-      rideFrequency: `${rideFrequency}/week`,
-      carbonSaved: `${carbonKg} kg`,
-      thisMonthRides: totalRides,
-      totalDistance: `${Math.round(totalDistance)} km`
-    };
+  // 📅 Ride Frequency
+  const now = new Date();
+  const firstBookingDate = new Date(
+    Math.min(
+      ...bookings.map(b =>
+        new Date(b.date || b.createdAt || now).getTime()
+      )
+    )
+  );
+
+  const weeks = Math.max(
+    1,
+    Math.floor((now - firstBookingDate) / (7 * 24 * 60 * 60 * 1000))
+  );
+
+  const rideFrequency = (totalRides / weeks).toFixed(1);
+
+  return {
+    totalRides,
+    completedRides,
+    cancelledRides,
+    totalSpent: `₹${Math.round(totalSpent).toLocaleString()}`,
+    averageRating,
+    cancellationRate:
+      totalRides > 0
+        ? ((cancelledRides / totalRides) * 100).toFixed(1)
+        : '0',
+    rideFrequency: `${rideFrequency}/week`,
+    carbonSaved: `${carbonKg} kg`,
+    thisMonthRides: totalRides,
+    totalDistance: `${Math.round(totalDistance)} km`,
+    walletBalance: 0,
+    loyaltyPoints: 0,
+    membershipTier: 'Silver'
   };
+};
 
   const mainStats = [
     {
+      title: "Today's Rides",
+      value: statsData.todayRides || 0,
+      icon: Car,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50'
+    },
+    {
       title: 'Total Rides',
-      value: statsData.totalRides,
+      value: statsData.totalRides || 0,
       icon: Car,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50'
     },
     {
-      title: 'Total Spent',
-      value: statsData.totalSpent,
-      icon: DollarSign,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50'
-    },
-    {
       title: 'Avg Rating',
-      value: `${statsData.averageRating}/5`,
+      value: `${statsData.averageRating || 0}/5`,
       icon: Star,
       color: 'text-yellow-600',
       bgColor: 'bg-yellow-50'
     },
     {
-      title: 'Carbon Saved',
-      value: statsData.carbonSaved,
-      icon: Leaf,
-      color: 'text-emerald-600',
-      bgColor: 'bg-emerald-50'
+      title: 'Wallet',
+      value: `₹${statsData.walletBalance || 0}`,
+      icon: Wallet,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50'
     }
   ];
 
   const quickStats = [
+    { 
+      label: 'Points', 
+      value: statsData.loyaltyPoints || 0, 
+      icon: Gift,
+      color: 'text-amber-600',
+      bgColor: 'bg-amber-50'
+    },
     { 
       label: 'Completed', 
       value: statsData.completedRides, 
@@ -122,7 +184,7 @@ const StatisticsSummary = ({ statistics, bookingHistory, onViewAllStats }) => {
       color: 'text-red-600',
       bgColor: 'bg-red-50'
     },
-    { 
+    {
       label: 'Frequency', 
       value: statsData.rideFrequency, 
       icon: TrendingUp, 

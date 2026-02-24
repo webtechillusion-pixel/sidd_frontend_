@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   FaHome,
   FaCar,
@@ -13,7 +13,9 @@ import {
   FaSignOutAlt,
   FaBell,
   FaWifi,
-  FaTachometerAlt
+  FaTachometerAlt,
+  FaCheck,
+  FaTrash
 } from "react-icons/fa";
 
 export function Header({ 
@@ -21,8 +23,15 @@ export function Header({
   setActivePage, 
   online, 
   stats, 
+  liveEarnings,
   handleLogout,
-  toggleOnlineStatus 
+  toggleOnlineStatus,
+  notifications = 0,
+  notificationList = [],
+  showNotificationPanel,
+  setShowNotificationPanel,
+  markNotificationRead,
+  markAllNotificationsRead
 }) {
 const menuItems = [
     ["dashboard", "Dashboard", FaHome],
@@ -80,16 +89,25 @@ const menuItems = [
           
           {/* Stats & Actions */}
           <div className="flex items-center gap-3 lg:gap-6">
-            {/* Notifications */}
-            <button className="relative p-2 text-gray-600 hover:text-teal-600 transition-colors">
-              <FaBell className="text-lg" />
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
-            </button>
+          {/* Notifications */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotificationPanel && setShowNotificationPanel(!showNotificationPanel)}
+                className="relative p-2 text-gray-600 hover:text-teal-600 transition-colors"
+              >
+                <FaBell className="text-lg" />
+                {notifications > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs text-white flex items-center justify-center font-bold">
+                    {notifications > 9 ? '9+' : notifications}
+                  </span>
+                )}
+              </button>
+            </div>
             
             {/* Today's Earnings */}
             <div className="text-right hidden sm:block">
               <p className="text-xs lg:text-sm text-gray-500">Today's Earnings</p>
-              <p className="text-lg lg:text-2xl font-bold text-green-600">₹{Number(stats.todayEarnings || 0).toFixed(1)}</p>
+              <p className="text-lg lg:text-2xl font-bold text-green-600">₹{Number(stats.todayEarnings || liveEarnings || 0).toFixed(1)}</p>
             </div>
             
             {/* Quick Stats */}
@@ -162,7 +180,7 @@ const menuItems = [
         <div className="flex justify-around text-center">
           <div>
             <p className="text-xs text-gray-500">Today</p>
-            <p className="font-bold text-green-600">₹{Number(stats.todayEarnings || 0).toFixed(1)}</p>
+            <p className="font-bold text-green-600">₹{Number(stats.todayEarnings || liveEarnings || 0).toFixed(1)}</p>
           </div>
           <div>
             <p className="text-xs text-gray-500">Rating</p>

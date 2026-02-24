@@ -35,11 +35,17 @@ const Statistics = ({ statistics, onBack, bookingHistory = [] }) => {
     const filteredBookings = filterBookingsByTimeRange(bookings, range);
     
     const totalRides = filteredBookings.length;
-    const completedRides = filteredBookings.filter(b => b.status === 'completed').length;
-    const cancelledRides = filteredBookings.filter(b => b.status === 'cancelled').length;
+    // Use bookingStatus from API (COMPLETED, TRIP_COMPLETED, etc.)
+    const completedRides = filteredBookings.filter(b => 
+      ['COMPLETED', 'TRIP_COMPLETED', 'PAYMENT_DONE'].includes(b.bookingStatus)
+    ).length;
+    const cancelledRides = filteredBookings.filter(b => 
+      ['CANCELLED', 'REJECTED'].includes(b.bookingStatus)
+    ).length;
     
+    // Use finalFare from API (actual fare after ride completion)
     const totalSpent = filteredBookings.reduce((sum, booking) => {
-      const fare = parseFloat(booking.fare?.replace(/[^0-9.]/g, '') || booking.amount || 0);
+      const fare = parseFloat(booking.finalFare || booking.estimatedFare || 0);
       return sum + fare;
     }, 0);
 
@@ -120,9 +126,11 @@ const Statistics = ({ statistics, onBack, bookingHistory = [] }) => {
   };
 
   const calculateCarbonSaved = (bookings) => {
-    // Approximate: 120g of CO2 per km, assuming 10km average ride
-    const totalRides = bookings.length;
-    const carbonKg = (totalRides * 10 * 0.12).toFixed(1);
+    // Use actual distance from API if available
+    const totalDistance = bookings.reduce((sum, booking) => {
+      return sum + (booking.distanceKm || booking.actualDistanceKm || 10);
+    }, 0);
+    const carbonKg = (totalDistance * 0.12).toFixed(1);
     return `${carbonKg} kg`;
   };
 
@@ -131,9 +139,10 @@ const Statistics = ({ statistics, onBack, bookingHistory = [] }) => {
     const monthlyData = {};
     
     bookings.forEach(booking => {
-      const date = new Date(booking.date || booking.createdAt);
+      const date = new Date(booking.createdAt || booking.date);
       const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
-      const fare = parseFloat(booking.fare?.replace(/[^0-9.]/g, '') || booking.amount || 0);
+      // Use finalFare or estimatedFare from API
+      const fare = parseFloat(booking.finalFare || booking.estimatedFare || 0);
       
       if (!monthlyData[monthKey]) {
         monthlyData[monthKey] = { amount: 0, rides: 0 };

@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Truck, User, Car, FileText, Shield, Check, Mail, Phone, Lock, Eye, EyeOff, Upload, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-toastify';
+import api from '../../services/api';
 
 const RiderRegister = () => {
   const [step, setStep] = useState(1);
@@ -14,12 +15,21 @@ const RiderRegister = () => {
   const navigate = useNavigate();
   const { error, clearError } = useAuth();
 
-  // Load initial form data from localStorage
+  // Load initial form data from localStorage (only text fields, not files)
   const [formData, setFormData] = useState(() => {
     try {
       const saved = localStorage.getItem('riderFormData');
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        return {
+          ...parsed,
+          photo: null,
+          aadhaarFront: null,
+          aadhaarBack: null,
+          licenseFront: null,
+          licenseBack: null,
+          cabImages: []
+        };
       }
     } catch (e) {
       console.warn('Failed to load form data from localStorage:', e);
@@ -227,15 +237,16 @@ const RiderRegister = () => {
     });
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register-rider', {
-        method: 'POST',
-        body: formDataToSend,
-        credentials: 'include'
+      // Use api service instead of direct fetch
+      const response = await api.post('/api/auth/register-rider', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      const data = await response.json();
+      const data = response.data || response;
 
-      if (!response.ok) {
+      if (!data.success) {
         throw new Error(data.message || 'Registration failed');
       }
 

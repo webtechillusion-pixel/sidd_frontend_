@@ -14,15 +14,25 @@ const Overview = ({
   onViewDetailedStats,
   bookingHistory 
 }) => {
+  // Debug log
+  console.log('Overview - statistics:', statistics);
+  console.log('Overview - bookingHistory length:', bookingHistory?.length);
+  console.log('Overview - userData:', userData);
+  
   // Compact LoyaltyProgram component
   const LoyaltyProgram = () => {
-    const currentTier = userData?.membershipTier || 'Silver';
-    const currentPoints = userData?.loyaltyPoints || 0;
+    // Debug
+    console.log('LoyaltyProgram - userData:', userData);
+    console.log('LoyaltyProgram - membershipTier:', userData?.membershipTier);
+    console.log('LoyaltyProgram - loyaltyPoints:', userData?.loyaltyPoints);
+    
+    const currentTier = userData?.membershipTier || statistics?.membershipTier || 'Silver';
+    const currentPoints = userData?.loyaltyPoints || statistics?.loyaltyPoints || 0;
     const currentTierIndex = loyaltyTiers.findIndex(tier => tier.name === currentTier);
     const currentTierData = loyaltyTiers[currentTierIndex];
     const nextTier = loyaltyTiers[currentTierIndex + 1];
     const pointsToNext = nextTier ? nextTier.points - currentPoints : 0;
-    const progressPercentage = Math.min(100, (currentPoints / 2000) * 100);
+    const progressPercentage = Math.min(100, (currentPoints / (nextTier?.points || 2000)) * 100);
 
     return (
       <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl shadow-md">
@@ -110,7 +120,7 @@ const Overview = ({
               </div>
               <div className="space-y-1">
                 {currentTierData?.benefits?.slice(0, 2).map((benefit, index) => (
-                  <div key={index} className="flex items-center text-xs text-gray-700">
+                  <div key={`${benefit}-${index}`} className="flex items-center text-xs text-gray-700">
                     <div className="w-1 h-1 bg-green-500 rounded-full mr-2"></div>
                     {benefit}
                   </div>
@@ -248,7 +258,7 @@ const Overview = ({
                 <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                 <p className="text-gray-500">No upcoming rides</p>
                 <p className="text-sm text-gray-400 mt-1">Book a new ride to see it here</p>
-                <Link to = "/book" className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
+                <Link to="/book" className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
                   Book a Ride
                 </Link>
               </div>
@@ -321,6 +331,7 @@ const Overview = ({
             <StatisticsSummary 
               statistics={statistics}
               bookingHistory={bookingHistory}
+              userData={userData}
               onViewAllStats={onViewDetailedStats}
             />
           </div>

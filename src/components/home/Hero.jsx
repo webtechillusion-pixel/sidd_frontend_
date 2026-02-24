@@ -1,4 +1,3 @@
-// components/home/Hero.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   ChevronRight, 
@@ -34,20 +33,17 @@ import {
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-// Map container styles
 const mapContainerStyle = {
   width: '100%',
   height: '400px',
   borderRadius: '0.75rem'
 };
 
-// Default center (India)
 const defaultCenter = {
   lat: 28.6139,
   lng: 77.2090
 };
 
-// Map options
 const mapOptions = {
   disableDefaultUI: false,
   zoomControl: true,
@@ -58,10 +54,8 @@ const mapOptions = {
   mapTypeId: 'roadmap'
 };
 
-// Libraries to load
 const libraries = ['places'];
 
-// Vehicle types with icons and details
 const VEHICLE_TYPES = [
   { 
     id: 'HATCHBACK', 
@@ -101,17 +95,23 @@ const VEHICLE_TYPES = [
   }
 ];
 
-// Map Selection Modal Component
 const MapSelectionModal = ({ isOpen, onClose, onSelect, initialLocation, type }) => {
   const [map, setMap] = useState(null);
-  const [markerPosition, setMarkerPosition] = useState(initialLocation || defaultCenter);
+  const [markerPosition, setMarkerPosition] = useState(null);
   const [searchInput, setSearchInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [address, setAddress] = useState('');
   const [autocomplete, setAutocomplete] = useState(null);
   
   const mapRef = useRef(null);
-  const searchBoxRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setMarkerPosition(initialLocation || defaultCenter);
+      setAddress('');
+      setSearchInput('');
+    }
+  }, [isOpen, initialLocation]);
 
   const { isLoaded } = useJsApiLoader({
     id: 'map-modal-script',
@@ -142,10 +142,14 @@ const MapSelectionModal = ({ isOpen, onClose, onSelect, initialLocation, type })
     try {
       const response = await bookingService.reverseGeocode(lat, lng);
       if (response.success) {
-        setAddress(response.data.addressText);
+        const addressText = response.data.addressText || response.data.address || 'Current Location';
+        setAddress(addressText);
+        setSearchInput(addressText);
       }
     } catch (error) {
       console.error('Reverse geocode error:', error);
+      setAddress('Current Location');
+      setSearchInput('Current Location');
     }
   };
 
@@ -220,7 +224,6 @@ const MapSelectionModal = ({ isOpen, onClose, onSelect, initialLocation, type })
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
       <div className="bg-slate-900 rounded-2xl w-full max-w-4xl max-h-[100vh] overflow-hidden border border-slate-700">
-        {/* Header */}
         <div className="p-4 border-b border-slate-700 flex items-center justify-between">
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
             <Map className="text-blue-400" />
@@ -234,7 +237,6 @@ const MapSelectionModal = ({ isOpen, onClose, onSelect, initialLocation, type })
           </button>
         </div>
 
-        {/* Search Bar */}
         <div className="p-4 border-b border-slate-700">
           {isLoaded && (
             <Autocomplete
@@ -255,7 +257,6 @@ const MapSelectionModal = ({ isOpen, onClose, onSelect, initialLocation, type })
           )}
         </div>
 
-        {/* Map */}
         <div className="p-4">
           {isLoaded ? (
             <GoogleMap
@@ -285,7 +286,6 @@ const MapSelectionModal = ({ isOpen, onClose, onSelect, initialLocation, type })
           )}
         </div>
 
-        {/* Selected Address */}
         {address && (
           <div className="px-4 pb-2">
             <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
@@ -295,7 +295,6 @@ const MapSelectionModal = ({ isOpen, onClose, onSelect, initialLocation, type })
           </div>
         )}
 
-        {/* Footer */}
         <div className="p-4 border-t border-slate-700 flex items-center justify-between">
           <button
             onClick={getCurrentLocation}
@@ -314,7 +313,7 @@ const MapSelectionModal = ({ isOpen, onClose, onSelect, initialLocation, type })
             </button>
             <button
               onClick={handleConfirm}
-              className="px-6 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-all flex items-center gap-2"
+              className="px-6 py-2 bg-white text-black hover:bg-gray-100 rounded-lg transition-all flex items-center gap-2"
             >
               <Check className="h-4 w-4" />
               Confirm Location
@@ -330,7 +329,6 @@ const Hero = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   
-  // Booking form state
   const [bookingStep, setBookingStep] = useState(1);
   const [pickup, setPickup] = useState('');
   const [drop, setDrop] = useState('');
@@ -338,64 +336,63 @@ const Hero = () => {
   const [dropSuggestions, setDropSuggestions] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [tripType, setTripType] = useState('one-way');
-  const [bookingType, setBookingType] = useState('IMMEDIATE'); // 'IMMEDIATE' or 'SCHEDULED'
+  const [tripDays, setTripDays] = useState(1);
+  const [bookingType, setBookingType] = useState('IMMEDIATE');
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('CASH');
   const [fareDetails, setFareDetails] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [pickupLocation, setPickupLocation] = useState(null);
   const [dropLocation, setDropLocation] = useState(null);
   
-  // Map modal state
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [mapSelectionType, setMapSelectionType] = useState(null);
   
-  // Refs for search
   const pickupTimeoutRef = useRef(null);
   const dropTimeoutRef = useRef(null);
 
-  // Features array
   const features = [
     {
-      icon: <Shield className="h-8 w-8" />,
+      icon: <Shield className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />,
       title: "Safe & Secure",
       description: "Verified drivers and insured vehicles"
     },
     {
-      icon: <Clock className="h-8 w-8" />,
+      icon: <Clock className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />,
       title: "24/7 Available",
       description: "Book anytime, anywhere"
     },
     {
-      icon: <CreditCard className="h-8 w-8" />,
+      icon: <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />,
       title: "Transparent Pricing",
       description: "No hidden charges"
     },
     {
-      icon: <MapPin className="h-8 w-8" />,
+      icon: <MapPin className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6" />,
       title: "Wide Coverage",
       description: "50+ cities across India"
     }
   ];
 
-  // Handle place search
   const searchPlaces = async (input, type) => {
     if (!input || input.length < 3) return;
     
     try {
       const response = await bookingService.searchPlaces(input);
+      const responseData = response.data || response;
+      
       if (type === 'pickup') {
-        setPickupSuggestions(response.data || []);
+        setPickupSuggestions(responseData || []);
       } else {
-        setDropSuggestions(response.data || []);
+        setDropSuggestions(responseData || []);
       }
     } catch (error) {
       console.error('Search error:', error);
     }
   };
 
-  // Handle pickup input change
   const handlePickupChange = (e) => {
     const value = e.target.value;
     setPickup(value);
@@ -409,7 +406,6 @@ const Hero = () => {
     }, 500);
   };
 
-  // Handle drop input change
   const handleDropChange = (e) => {
     const value = e.target.value;
     setDrop(value);
@@ -423,13 +419,11 @@ const Hero = () => {
     }, 500);
   };
 
-  // Open map modal
   const openMapModal = (type) => {
     setMapSelectionType(type);
     setIsMapModalOpen(true);
   };
 
-  // Handle map selection
   const handleMapSelect = (location) => {
     if (mapSelectionType === 'pickup') {
       setPickup(location.address);
@@ -440,7 +434,7 @@ const Hero = () => {
         placeId: location.placeId
       });
       setPickupSuggestions([]);
-    } else {
+    } else if (mapSelectionType === 'drop') {
       setDrop(location.address);
       setDropLocation({
         lat: location.lat,
@@ -451,39 +445,63 @@ const Hero = () => {
       setDropSuggestions([]);
     }
 
-    // If both locations are selected, calculate fare
-    if ((mapSelectionType === 'pickup' && dropLocation) || 
-        (mapSelectionType === 'drop' && pickupLocation)) {
+    setIsMapModalOpen(false);
+    setMapSelectionType(null);
+
+    const selectedType = mapSelectionType;
+    const otherLocation = selectedType === 'pickup' ? dropLocation : pickupLocation;
+    if (otherLocation) {
       calculateFare();
     }
   };
 
-  // Select place from suggestions
   const selectPlace = async (place, type) => {
     try {
-      const details = await bookingService.getPlaceDetails(place.placeId);
+      const addressText = place.addressText || place.description;
+      const placeIdValue = place.place_id || place.placeId;
       
-      if (type === 'pickup') {
-        setPickup(place.description);
-        setPickupLocation(details.data);
-        setPickupSuggestions([]);
-      } else {
-        setDrop(place.description);
-        setDropLocation(details.data);
-        setDropSuggestions([]);
+      if (!placeIdValue) {
+        toast.error('Invalid place selected');
+        return;
       }
 
-      // If both locations are selected, calculate fare
-      if ((type === 'pickup' && dropLocation) || (type === 'drop' && pickupLocation)) {
-        calculateFare();
+      const response = await bookingService.getPlaceDetails(placeIdValue);
+      const responseData = response.data || response;
+      
+      if (responseData && responseData.success && responseData.data && responseData.data.lat && responseData.data.lng) {
+        const locationData = {
+          addressText: responseData.data.addressText || addressText,
+          address: responseData.data.address || addressText,
+          placeId: responseData.data.placeId || placeIdValue,
+          lat: responseData.data.lat,
+          lng: responseData.data.lng,
+          city: responseData.data.city,
+          state: responseData.data.state,
+          country: responseData.data.country
+        };
+        
+        if (type === 'pickup') {
+          setPickup(addressText);
+          setPickupLocation(locationData);
+          setPickupSuggestions([]);
+        } else {
+          setDrop(addressText);
+          setDropLocation(locationData);
+          setDropSuggestions([]);
+        }
+
+        if ((type === 'pickup' && dropLocation) || (type === 'drop' && pickupLocation)) {
+          calculateFare();
+        }
+      } else {
+        toast.error('Could not get location details. Please try again or select from map.');
       }
     } catch (error) {
       console.error('Error selecting place:', error);
-      toast.error('Failed to get location details');
+      toast.error(error.response?.data?.message || 'Failed to get location details. Please select from map.');
     }
   };
 
-  // Calculate fare
   const calculateFare = async () => {
     if (!pickupLocation || !dropLocation || !selectedVehicle) {
       toast.warning('Please select pickup, drop, and vehicle type');
@@ -502,7 +520,11 @@ const Hero = () => {
           address: drop
         },
         vehicleType: selectedVehicle.id,
-        tripType: tripType === 'round-trip' ? 'ROUND_TRIP' : 'ONE_WAY'
+        tripType: tripType === 'round-trip' ? 'ROUND_TRIP' : tripType === 'outstation' ? 'OUTSTATION' : tripType === 'local' ? 'LOCAL_RENTAL' : 'ONE_WAY',
+        ...(tripType === 'round-trip' && { days: tripDays }),
+        ...(tripType === 'outstation' && { days: tripDays }),
+        ...(tripType === 'local' && { hours: tripDays }),
+        paymentMethod: paymentMethod
       });
 
       if (response.success) {
@@ -517,7 +539,6 @@ const Hero = () => {
     }
   };
 
-  // Handle booking submission
   const handleBooking = async () => {
     if (!isAuthenticated) {
       toast.info('Please login to book a ride');
@@ -535,7 +556,6 @@ const Hero = () => {
       return;
     }
 
-    // Validate scheduled booking
     if (bookingType === 'SCHEDULED') {
       if (!scheduledDate || !scheduledTime) {
         toast.error('Please select date and time for scheduled booking');
@@ -585,15 +605,23 @@ const Hero = () => {
         
         toast.success(successMessage);
         
-        // Store booking ID
         localStorage.setItem('currentBookingId', response.data.booking._id);
         
-        // Navigate to tracking page
-        navigate(`/booking-tracking/${response.data.booking._id}`, {
+        navigate('/ride-tracking', {
           state: { 
-            booking: response.data.booking,
-            status: bookingType === 'SCHEDULED' ? 'SCHEDULED' : 'SEARCHING_DRIVER',
-            bookingType: bookingType
+            bookingData: {
+              bookingId: response.data.booking._id,
+              otp: response.data.booking.otp,
+              estimatedFare: response.data.booking.estimatedFare,
+              pickup: response.data.booking.pickup?.addressText,
+              drop: response.data.booking.drop?.addressText,
+              vehicleType: response.data.booking.vehicleType,
+              tripType: tripType === 'round-trip' ? 'ROUND_TRIP' : tripType === 'outstation' ? 'OUTSTATION' : tripType === 'local' ? 'LOCAL_RENTAL' : 'ONE_WAY',
+              tripDays: ['round-trip', 'outstation'].includes(tripType) ? tripDays : null,
+              bookingType: bookingType,
+              scheduledAt: bookingData.scheduledAt,
+              paymentMethod: paymentMethod
+            }
           }
         });
       }
@@ -605,10 +633,14 @@ const Hero = () => {
     }
   };
 
-  // Get current location
   const getCurrentLocation = (type) => {
     if (!navigator.geolocation) {
       toast.error('Geolocation not supported');
+      return;
+    }
+
+    if (type !== 'pickup' && type !== 'drop') {
+      console.error('Invalid type for getCurrentLocation:', type);
       return;
     }
 
@@ -618,17 +650,41 @@ const Hero = () => {
         
         try {
           const response = await bookingService.reverseGeocode(latitude, longitude);
+          const addressData = response.data;
+          const addressText = addressData.address || addressData.addressText || 'Current Location';
+          
+          const locationData = {
+            lat: latitude,
+            lng: longitude,
+            addressText: addressText,
+            city: addressData.city || 'Unknown',
+            state: addressData.state || 'Unknown',
+            country: addressData.country || 'Unknown'
+          };
           
           if (type === 'pickup') {
-            setPickup(response.data.addressText);
-            setPickupLocation(response.data);
-          } else {
-            setDrop(response.data.addressText);
-            setDropLocation(response.data);
+            setPickup(addressText);
+            setPickupLocation(locationData);
+          } else if (type === 'drop') {
+            setDrop(addressText);
+            setDropLocation(locationData);
           }
         } catch (error) {
           console.error('Reverse geocode error:', error);
-          toast.error('Failed to get address');
+          const fallbackAddress = 'Current Location';
+          const locationData = {
+            lat: latitude,
+            lng: longitude,
+            addressText: fallbackAddress
+          };
+          
+          if (type === 'pickup') {
+            setPickup(fallbackAddress);
+            setPickupLocation(locationData);
+          } else if (type === 'drop') {
+            setDrop(fallbackAddress);
+            setDropLocation(locationData);
+          }
         }
       },
       (error) => {
@@ -639,18 +695,21 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden">
-      {/* Background Image */}
+    <section className="relative min-h-[85vh] md:min-h-[100vh] flex items-center overflow-hidden">
       <div className="absolute inset-0">
         <img
           src="/images/hero_img.png"
           alt="Travel Background"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-blue-800/80 to-purple-900/70"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/70 via-slate-900/50 to-slate-900/70"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/50"></div>
       </div>
 
-      {/* Map Selection Modal */}
+      <div className="absolute top-24 left-0 w-64 md:w-96 h-64 md:h-96 bg-gradient-to-r from-blue-500/10 to-transparent rounded-full blur-3xl"></div>
+      <div className="absolute bottom-20 right-0 w-64 md:w-96 h-64 md:h-96 bg-gradient-to-l from-amber-500/10 to-transparent rounded-full blur-3xl"></div>
+
       <MapSelectionModal
         isOpen={isMapModalOpen}
         onClose={() => setIsMapModalOpen(false)}
@@ -659,60 +718,61 @@ const Hero = () => {
         type={mapSelectionType}
       />
 
-      {/* Content */}
-      <div className="container mx-auto px-4 relative z-10 py-20">
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 relative z-10 py-6 md:py-12 lg:py-16">
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-10 items-start">
           
-          {/* Left Column - Main Content */}
-          <div className="text-white">
-            <div className="mb-6">
-              <div className="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full mb-4">
-                <span className="text-sm font-semibold">SINCE 2015</span>
+          <div className="text-white order-2 lg:order-1">
+            <div className="mb-4 sm:mb-6">
+              <div className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 bg-white/10 backdrop-blur-md rounded-full mb-3 sm:mb-4 border border-white/20">
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                <span className="text-xs font-medium tracking-wide text-gray-100">INDIA'S TRUSTED CAB SERVICE</span>
               </div>
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-3 sm:mb-4 leading-tight drop-shadow-lg">
                 Your Journey, 
-                <span className="block text-blue-300 mt-2">Our Responsibility</span>
+                <span className="block mt-1 sm:mt-2 text-white drop-shadow-lg">Our Responsibility</span>
               </h1>
-              <p className="text-xl text-gray-200 mb-8 max-w-xl">
+              <p className="text-sm sm:text-base md:text-lg text-gray-100 mb-4 sm:mb-6 max-w-xl leading-relaxed drop-shadow-md">
                 Experience hassle-free travel with our premium cab services. 
                 From city rides to outstation tours, we ensure comfort, safety, 
                 and punctuality in every journey.
               </p>
             </div>
 
-            {/* Trust Stats */}
-            <div className="flex flex-wrap gap-8 mb-10">
+            <div className="flex flex-wrap gap-4 sm:gap-6 md:gap-8 mb-6 sm:mb-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-300">10K+</div>
-                <div className="text-sm text-gray-300">Happy Customers</div>
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">10K+</div>
+                <div className="text-xs sm:text-sm text-gray-200 mt-1">Happy Customers</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-300">4.8</div>
-                <div className="text-sm text-gray-300 flex items-center gap-1">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">4.8</div>
+                <div className="text-xs sm:text-sm text-gray-200 flex items-center justify-center gap-1 mt-1">
+                  <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
                   Rating
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-300">99%</div>
-                <div className="text-sm text-gray-300">On-time Service</div>
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">99%</div>
+                <div className="text-xs sm:text-sm text-gray-200 mt-1">On-time Service</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">50+</div>
+                <div className="text-xs sm:text-sm text-gray-300 mt-1">Cities Covered</div>
               </div>
             </div>
 
-            {/* Features Grid */}
-            <div className="grid grid-cols-2 gap-4">
-              {features.map((feature, index) => (
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
+              {features.map((feature, idx) => (
                 <div 
-                  key={index}
-                  className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105"
+                  key={idx}
+                  className="bg-white/10 backdrop-blur-md rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-all duration-300"
                 >
-                  <div className="text-blue-300 mb-4">
-                    {feature.icon}
+                  <div className="text-blue-300 mb-2">
+                    {React.cloneElement(feature.icon, { className: feature.icon.props.className })}
                   </div>
-                  <h3 className="text-lg font-semibold text-white mb-2">
+                  <h3 className="text-xs sm:text-sm font-semibold text-white mb-0.5">
                     {feature.title}
                   </h3>
-                  <p className="text-sm text-gray-300">
+                  <p className="text-[10px] sm:text-xs text-gray-200">
                     {feature.description}
                   </p>
                 </div>
@@ -720,80 +780,172 @@ const Hero = () => {
             </div>
           </div>
 
-          {/* Right Column - Booking Form */}
-          <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-6 border border-white/20">
-            <h2 className="text-2xl font-bold text-white mb-6">Book Your Ride</h2>
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-white/20 shadow-2xl order-1 lg:order-2">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">Book Your Ride</h2>
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-500/20 rounded-full border border-green-500/30">
+                <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                <span className="text-xs font-medium text-green-300">Available</span>
+              </div>
+            </div>
             
-            {/* Booking Type Selector - IMMEDIATE vs SCHEDULED */}
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => {
-                  setBookingType('IMMEDIATE');
-                  setScheduledDate('');
-                  setScheduledTime('');
-                }}
-                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                  bookingType === 'IMMEDIATE'
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
-                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                }`}
-              >
-                <Clock className="inline-block mr-2 h-4 w-4" />
-                Now
-              </button>
-              <button
-                onClick={() => setBookingType('SCHEDULED')}
-                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                  bookingType === 'SCHEDULED'
-                    ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white'
-                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                }`}
-              >
-                <CalendarClock className="inline-block mr-2 h-4 w-4" />
-                Schedule
-              </button>
+            <div className="mb-4 sm:mb-6 md:mb-8">
+              <div className="flex gap-1.5 sm:gap-3 p-1.5 bg-white/10 rounded-xl sm:rounded-2xl overflow-x-auto">
+                <button
+                  onClick={() => { setTripType('one-way'); setTripDays(1); }}
+                  className={`flex-1 py-2.5 sm:py-3 md:py-4 px-2 sm:px-3 rounded-lg sm:rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
+                    tripType === 'one-way'
+                      ? 'bg-white text-black shadow-lg'
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  One Way
+                </button>
+                <button
+                  onClick={() => { setTripType('round-trip'); if (tripDays < 1) setTripDays(1); }}
+                  className={`flex-1 py-2.5 sm:py-3 md:py-4 px-2 sm:px-3 rounded-lg sm:rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
+                    tripType === 'round-trip'
+                      ? 'bg-white text-black shadow-lg'
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Round Trip
+                </button>
+                <button
+                  onClick={() => { setTripType('outstation'); if (tripDays < 1) setTripDays(1); }}
+                  className={`flex-1 py-2.5 sm:py-3 md:py-4 px-2 sm:px-3 rounded-lg sm:rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
+                    tripType === 'outstation'
+                      ? 'bg-white text-black shadow-lg'
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Outstation
+                </button>
+                <button
+                  onClick={() => { setTripType('local'); if (tripDays < 1) setTripDays(2); }}
+                  className={`flex-1 py-2.5 sm:py-3 md:py-4 px-2 sm:px-3 rounded-lg sm:rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
+                    tripType === 'local'
+                      ? 'bg-white text-black shadow-lg'
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  Local
+                </button>
+              </div>
             </div>
 
-            {/* Trip Type Selector */}
-            <div className="flex gap-2 mb-6">
-              <button
-                onClick={() => setTripType('one-way')}
-                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                  tripType === 'one-way'
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
-                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                }`}
-              >
-                One Way
-              </button>
-              <button
-                onClick={() => setTripType('round-trip')}
-                className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all ${
-                  tripType === 'round-trip'
-                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
-                    : 'bg-white/10 text-gray-300 hover:bg-white/20'
-                }`}
-              >
-                Round Trip
-              </button>
+            {(tripType === 'round-trip' || tripType === 'outstation') && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-300 mb-3">
+                  Number of Days
+                </label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setTripDays(Math.max(1, tripDays - 1))}
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-xl font-bold text-white transition-all"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min="1"
+                    value={tripDays}
+                    onChange={(e) => setTripDays(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="flex-1 py-3 sm:py-4 px-4 rounded-xl bg-white/10 border border-white/20 text-white text-center text-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setTripDays(tripDays + 1)}
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-xl font-bold text-white transition-all"
+                  >
+                    +
+                  </button>
+                  <span className="text-gray-300 text-sm">day(s)</span>
+                </div>
+              </div>
+            )}
+
+            {tripType === 'local' && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-300 mb-3">
+                  Number of Hours
+                </label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setTripDays(Math.max(2, tripDays - 1))}
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-xl font-bold text-white transition-all"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    min="2"
+                    value={tripDays}
+                    onChange={(e) => setTripDays(Math.max(2, parseInt(e.target.value) || 2))}
+                    className="flex-1 py-3 sm:py-4 px-4 rounded-xl bg-white/10 border border-white/20 text-white text-center text-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setTripDays(tripDays + 1)}
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-xl font-bold text-white transition-all"
+                  >
+                    +
+                  </button>
+                  <span className="text-gray-300 text-sm">hour(s)</span>
+                </div>
+              </div>
+            )}
+
+            <div className="mb-6 sm:mb-8">
+              <label className="block text-sm font-medium text-gray-300 mb-3">
+                Payment Method
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setPaymentMethod('CASH')}
+                  className={`py-3 sm:py-4 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm ${
+                    paymentMethod === 'CASH'
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                      : 'bg-slate-700/50 text-gray-300 hover:bg-slate-600/50'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  Cash
+                </button>
+                <button
+                  onClick={() => setPaymentMethod('ONLINE')}
+                  className={`py-3 sm:py-4 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm ${
+                    paymentMethod === 'ONLINE'
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                      : 'bg-slate-700/50 text-gray-300 hover:bg-slate-600/50'
+                  }`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  Online
+                </button>
+              </div>
             </div>
 
-            {/* Step 1: Location Selection */}
             {bookingStep === 1 && (
-              <div className="space-y-4">
-                {/* Pickup Location */}
+              <div className="space-y-5">
                 <div className="relative">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Pickup Location
                   </label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-400 h-5 w-5" />
+                    <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-400 h-5 w-5" />
                     <input
                       type="text"
                       value={pickup}
                       onChange={handlePickupChange}
                       placeholder="Enter pickup location"
-                      className="w-full pl-10 pr-20 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-11 pr-24 py-3.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     />
                     <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
                       <button
@@ -813,14 +965,13 @@ const Hero = () => {
                     </div>
                   </div>
                   
-                  {/* Suggestions */}
                   {pickupSuggestions.length > 0 && (
-                    <div className="absolute z-20 mt-1 w-full bg-slate-800 rounded-xl border border-slate-700 shadow-xl max-h-60 overflow-y-auto">
+                    <div className="absolute z-20 mt-2 w-full bg-slate-800/95 backdrop-blur-xl rounded-xl border border-slate-700 shadow-xl max-h-60 overflow-y-auto">
                       {pickupSuggestions.map((place, idx) => (
                         <button
                           key={idx}
                           onClick={() => selectPlace(place, 'pickup')}
-                          className="w-full text-left px-4 py-3 hover:bg-slate-700 text-white text-sm border-b border-slate-700 last:border-0"
+                          className="w-full text-left px-4 py-3 hover:bg-slate-700 text-white text-sm border-b border-slate-700 last:border-0 transition-colors"
                         >
                           {place.description}
                         </button>
@@ -829,19 +980,18 @@ const Hero = () => {
                   )}
                 </div>
 
-                {/* Drop Location */}
                 <div className="relative">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Drop Location
                   </label>
                   <div className="relative">
-                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-red-400 h-5 w-5" />
+                    <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-red-400 h-5 w-5" />
                     <input
                       type="text"
                       value={drop}
                       onChange={handleDropChange}
                       placeholder="Enter drop location"
-                      className="w-full pl-10 pr-20 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-11 pr-24 py-3.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     />
                     <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
                       <button
@@ -861,14 +1011,13 @@ const Hero = () => {
                     </div>
                   </div>
                   
-                  {/* Suggestions */}
                   {dropSuggestions.length > 0 && (
-                    <div className="absolute z-20 mt-1 w-full bg-slate-800 rounded-xl border border-slate-700 shadow-xl max-h-60 overflow-y-auto">
+                    <div className="absolute z-20 mt-2 w-full bg-slate-800/95 backdrop-blur-xl rounded-xl border border-slate-700 shadow-xl max-h-60 overflow-y-auto">
                       {dropSuggestions.map((place, idx) => (
                         <button
                           key={idx}
                           onClick={() => selectPlace(place, 'drop')}
-                          className="w-full text-left px-4 py-3 hover:bg-slate-700 text-white text-sm border-b border-slate-700 last:border-0"
+                          className="w-full text-left px-4 py-3 hover:bg-slate-700 text-white text-sm border-b border-slate-700 last:border-0 transition-colors"
                         >
                           {place.description}
                         </button>
@@ -877,80 +1026,44 @@ const Hero = () => {
                   )}
                 </div>
 
-                {/* Schedule (Only for SCHEDULED bookings) */}
-                {bookingType === 'SCHEDULED' && (
-                  <div className="grid grid-cols-2 gap-3 mt-4 p-4 bg-purple-900/20 rounded-xl border border-purple-500/30">
-                    <div>
-                      <label className="block text-sm font-medium text-purple-300 mb-2">
-                        Pick Date
-                      </label>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-5 w-5" />
-                        <input
-                          type="date"
-                          min={new Date().toISOString().split('T')[0]}
-                          value={scheduledDate}
-                          onChange={(e) => setScheduledDate(e.target.value)}
-                          className="w-full pl-10 pr-3 py-3 bg-purple-900/30 border border-purple-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-purple-300 mb-2">
-                        Pick Time
-                      </label>
-                      <div className="relative">
-                        <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-400 h-5 w-5" />
-                        <input
-                          type="time"
-                          value={scheduledTime}
-                          onChange={(e) => setScheduledTime(e.target.value)}
-                          className="w-full pl-10 pr-3 py-3 bg-purple-900/30 border border-purple-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
                 <button
                   onClick={() => setBookingStep(2)}
                   disabled={!pickup || !drop}
-                  className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full py-4 bg-white hover:bg-gray-100 text-black font-semibold rounded-xl transition-all text-base disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                 >
                   Select Vehicle
                 </button>
               </div>
             )}
 
-            {/* Step 2: Vehicle Selection */}
             {bookingStep === 2 && (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <h3 className="text-lg font-semibold text-white mb-4">
                   Select Vehicle Type
                 </h3>
                 
-                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                <div className="space-y-3 max-h-80 md:max-h-96 overflow-y-auto pr-1">
                   {VEHICLE_TYPES.map((vehicle) => (
                     <button
                       key={vehicle.id}
                       onClick={() => setSelectedVehicle(vehicle)}
-                      className={`w-full p-4 rounded-xl border-2 transition-all ${
+                      className={`w-full p-4 rounded-2xl border-2 transition-all ${
                         selectedVehicle?.id === vehicle.id
-                          ? 'border-blue-500 bg-blue-500/20'
-                          : 'border-white/10 bg-white/5 hover:bg-white/10'
+                          ? 'border-blue-500 bg-blue-500/20 shadow-lg shadow-blue-500/20'
+                          : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
                       }`}
                     >
                       <div className="flex items-center gap-4">
                         <div className="text-4xl">{vehicle.icon}</div>
                         <div className="flex-1 text-left">
-                          <h4 className="text-white font-semibold">{vehicle.name}</h4>
+                          <h4 className="text-white font-semibold text-base">{vehicle.name}</h4>
                           <p className="text-sm text-gray-400">{vehicle.description}</p>
-                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
+                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
                             <span className="flex items-center gap-1">
-                              <Users className="h-3 w-3" /> {vehicle.capacity} seats
+                              <Users className="h-4 w-4" /> {vehicle.capacity} Seats
                             </span>
                             <span className="flex items-center gap-1">
-                              <Car className="h-3 w-3" /> {vehicle.luggage} luggage
+                              <Car className="h-4 w-4" /> {vehicle.luggage} Bags
                             </span>
                           </div>
                         </div>
@@ -959,17 +1072,17 @@ const Hero = () => {
                   ))}
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-3 pt-3">
                   <button
                     onClick={() => setBookingStep(1)}
-                    className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all"
+                    className="flex-1 py-3.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all text-sm"
                   >
                     Back
                   </button>
                   <button
                     onClick={calculateFare}
                     disabled={!selectedVehicle || isCalculating}
-                    className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50"
+                    className="flex-1 py-3.5 bg-white hover:bg-gray-100 text-black font-semibold rounded-xl transition-all text-sm disabled:opacity-50 shadow-lg"
                   >
                     {isCalculating ? (
                       <Loader className="h-5 w-5 animate-spin mx-auto" />
@@ -981,152 +1094,175 @@ const Hero = () => {
               </div>
             )}
 
-            {/* Step 3: Fare Details & Confirm */}
             {bookingStep === 3 && fareDetails && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-white mb-4">
-                  Fare Details
-                </h3>
-
-                {/* Booking Type Badge */}
-                <div className={`inline-flex px-3 py-1 rounded-full text-sm font-semibold ${
-                  bookingType === 'SCHEDULED' 
-                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' 
-                    : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                }`}>
-                  {bookingType === 'SCHEDULED' ? (
-                    <>📅 Scheduled for {new Date(`${scheduledDate}T${scheduledTime}`).toLocaleString()}</>
-                  ) : (
-                    <>⚡ Immediate Ride</>
-                  )}
+              <div className="bg-white/10 rounded-2xl p-5 space-y-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Trip Type</span>
+                  <span className={`font-medium ${
+                    tripType === 'round-trip' ? 'text-purple-400' : 
+                    tripType === 'outstation' ? 'text-orange-400' : 
+                    tripType === 'local' ? 'text-blue-400' : 'text-green-400'
+                  }`}>
+                    {tripType === 'round-trip' ? 'Round Trip' : 
+                     tripType === 'outstation' ? 'Outstation' : 
+                     tripType === 'local' ? 'Local Rental' : 'One Way'}
+                  </span>
                 </div>
 
-                {/* Route Summary */}
-                <div className="bg-white/5 rounded-xl p-4 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-blue-400 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-400">Pickup</p>
-                      <p className="text-sm text-white">{pickup}</p>
+                {(tripType === 'round-trip' || tripType === 'outstation') && fareDetails?.days && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Days</span>
+                      <span className="text-white">{fareDetails.days} day{fareDetails.days > 1 ? 's' : ''}</span>
                     </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-red-400 mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-400">Drop</p>
-                      <p className="text-sm text-white">{drop}</p>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-400">Nights</span>
+                      <span className="text-white">{fareDetails.totalNights} night{fareDetails.totalNights > 1 ? 's' : ''}</span>
                     </div>
+                  </>
+                )}
+
+                {tripType === 'local' && fareDetails?.hours && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Hours</span>
+                    <span className="text-white">{fareDetails.hours} hour{fareDetails.hours > 1 ? 's' : ''}</span>
                   </div>
+                )}
+
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Payment Method</span>
+                  <span className={`font-medium ${paymentMethod === 'CASH' ? 'text-green-400' : 'text-blue-400'}`}>
+                    {paymentMethod === 'CASH' ? 'Cash' : 'Online'}
+                  </span>
                 </div>
 
-                {/* Fare Breakdown */}
-                <div className="bg-white/5 rounded-xl p-4 space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Distance</span>
-                    <span className="text-white">{fareDetails.distanceKm} km</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Base Fare</span>
-                    <span className="text-white">₹{fareDetails.baseFare}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Distance Fare</span>
-                    <span className="text-white">
-                      ₹{fareDetails.pricePerKm} × {fareDetails.distanceKm} km
-                    </span>
-                  </div>
-                  <div className="border-t border-white/10 pt-3 flex justify-between font-semibold">
-                    <span className="text-gray-300">Total Fare</span>
-                    <span className="text-blue-400 text-xl">₹{fareDetails.estimatedFare}</span>
-                  </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Distance</span>
+                  <span className="text-white">{fareDetails?.distanceKm || 0} km</span>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-3">
+                {(tripType === 'round-trip' || tripType === 'outstation') && fareDetails?.billableKm && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Billable KM</span>
+                    <span className="text-white">{fareDetails.billableKm} km</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Base Fare</span>
+                  <span className="text-white">₹{fareDetails?.baseFare || 0}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Distance Fare</span>
+                  <span className="text-white">
+                    ₹{fareDetails?.pricePerKm || 0} × {(tripType === 'round-trip' || tripType === 'outstation') ? (fareDetails?.billableKm || 0) : (fareDetails?.distanceKm || 0)} km
+                  </span>
+                </div>
+
+                {(tripType === 'round-trip' || tripType === 'outstation') && fareDetails?.totalNights && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Driver Allowance</span>
+                    <span className="text-white">₹{fareDetails.driverAllowanceTotal || 0}</span>
+                  </div>
+                )}
+
+                <div className="border-t border-white/20 pt-4 flex justify-between font-semibold">
+                  <span className="text-gray-300 text-base">Total Fare</span>
+                  <span className="text-blue-400 text-2xl font-bold">₹{fareDetails?.estimatedFare || 0}</span>
+                </div>
+
+                <div className="flex gap-3 pt-2">
                   <button
                     onClick={() => setBookingStep(2)}
-                    className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all"
+                    className="flex-1 py-3.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all text-sm"
                   >
                     Back
                   </button>
                   <button
                     onClick={handleBooking}
                     disabled={isSearching}
-                    className="flex-1 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 py-3.5 bg-white hover:bg-gray-100 text-black font-semibold rounded-xl transition-all text-sm disabled:opacity-50 shadow-lg"
                   >
                     {isSearching ? (
-                      <>
-                        <Loader className="h-5 w-5 animate-spin" />
-                        {bookingType === 'SCHEDULED' ? 'Scheduling...' : 'Booking...'}
-                      </>
+                      <Loader className="h-5 w-5 animate-spin mx-auto" />
                     ) : (
-                      <>
-                        {bookingType === 'SCHEDULED' ? 'Schedule Ride' : 'Confirm Booking'}
-                        <ChevronRight className="h-5 w-5" />
-                      </>
+                      'Confirm Booking'
                     )}
                   </button>
                 </div>
-
-                {!isAuthenticated && (
-                  <p className="text-sm text-yellow-400 text-center mt-2">
-                    You'll need to login to confirm your booking
-                  </p>
-                )}
               </div>
             )}
           </div>
         </div>
 
-        {/* Bottom Services Preview */}
-        <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-gradient-to-r from-blue-600/30 to-blue-700/30 rounded-2xl p-6 backdrop-blur-sm border border-white/10">
-            <h3 className="text-xl font-bold text-white mb-3">One-Way Trips</h3>
-            <p className="text-gray-300 mb-4">Travel between any two cities with fixed pricing</p>
+        <div className="mt-8 sm:mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
+          <div className="group bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border border-white/10 hover:border-white/30 hover:bg-white/20 transition-all duration-300 cursor-pointer">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-1 sm:mb-2">One-Way Trips</h3>
+            <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4">Travel between any two cities with fixed pricing</p>
             <button 
               onClick={() => {
                 setTripType('one-way');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="text-blue-300 text-sm font-medium hover:text-blue-200"
+              className="text-white text-xs sm:text-sm font-medium hover:text-gray-200 flex items-center gap-1 group-hover:gap-2 transition-all"
             >
-              Book now →
+              Book now
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
           </div>
           
-          <div className="bg-gradient-to-r from-purple-600/30 to-purple-700/30 rounded-2xl p-6 backdrop-blur-sm border border-white/10">
-            <h3 className="text-xl font-bold text-white mb-3">Round Trips</h3>
-            <p className="text-gray-300 mb-4">Complete packages with return journey included</p>
+          <div className="group bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border border-white/10 hover:border-white/30 hover:bg-white/20 transition-all duration-300 cursor-pointer">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-600/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </div>
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-1 sm:mb-2">Round Trips</h3>
+            <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4">Complete packages with return journey included</p>
             <button 
               onClick={() => {
                 setTripType('round-trip');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="text-purple-300 text-sm font-medium hover:text-purple-200"
+              className="text-white text-xs sm:text-sm font-medium hover:text-gray-200 flex items-center gap-1 group-hover:gap-2 transition-all"
             >
-              Book now →
+              Book now
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
           </div>
           
-          <div className="bg-gradient-to-r from-indigo-600/30 to-indigo-700/30 rounded-2xl p-6 backdrop-blur-sm border border-white/10">
-            <h3 className="text-xl font-bold text-white mb-3">Corporate Travel</h3>
-            <p className="text-gray-300 mb-4">Business travel solutions with billing support</p>
+          <div className="group bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border border-white/10 hover:border-white/30 hover:bg-white/20 transition-all duration-300 cursor-pointer hidden md:block">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-600/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-1 sm:mb-2">Corporate Travel</h3>
+            <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4">Business travel solutions with billing support</p>
             <button 
               onClick={() => {
                 setTripType('one-way');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="text-indigo-300 text-sm font-medium hover:text-indigo-200"
+              className="text-white text-xs sm:text-sm font-medium hover:text-gray-200 flex items-center gap-1 group-hover:gap-2 transition-all"
             >
-              Book now →
+              Book now
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-        <ChevronRight className="h-8 w-8 text-white rotate-90" />
+      <div className="absolute bottom-6 sm:bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce hidden sm:block group">
+        <span className="text-white/60 text-xs font-medium">Scroll to explore</span>
+        <div className="w-8 h-12 border-2 border-white/40 rounded-full flex justify-center pt-2">
+          <div className="w-1.5 h-3 bg-white/60 rounded-full animate-pulse"></div>
+        </div>
       </div>
     </section>
   );

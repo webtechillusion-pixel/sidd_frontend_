@@ -3,8 +3,6 @@ import { toast } from 'react-toastify';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-console.log('API Base URL:', API_BASE_URL); 
-
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -32,21 +30,23 @@ const processQueue = (error, token = null) => {
 // Request interceptor to add token
 api.interceptors.request.use(
   (config) => {
-    console.log('API Request:', config.method?.toUpperCase(), config.url);
-    
     // Add admin token from localStorage for admin routes
     if (config.url?.includes('/admin/')) {
       const adminToken = localStorage.getItem('adminToken');
       if (adminToken) {
         config.headers.Authorization = `Bearer ${adminToken}`;
-        console.log('Admin token added to request');
+      }
+    } else {
+      // Add regular token for other routes
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
       }
     }
     
     return config;
   },
   (error) => {
-    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -55,20 +55,18 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => {
-    console.log(`API Response: ${response.status} ${response.config.url}`);
-    
     // Format response for admin routes
     if (response.config.url?.includes('/admin/')) {
       const data = response.data;
       
       // Check if it's a successful response
       if (response.status >= 200 && response.status < 300) {
-        // Return formatted response for admin
+        // Return formatted response for admin - ensure data is properly handled
         return {
           ...response,
-          success: data.success !== false,
-          message: data.message,
-          data: data.data || data
+          success: data?.success !== false,
+          message: data?.message || '',
+          data: data?.data !== undefined ? data.data : data
         };
       }
     }
@@ -78,16 +76,8 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    console.error('API Error:', {
-      status: error.response?.status,
-      url: error.config?.url,
-      data: error.response?.data
-    });
-    
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
-      console.log('401 Unauthorized - redirecting to login');
-      
       // Clear appropriate data based on route
       if (originalRequest.url?.includes('/admin/')) {
         // Clear admin data
@@ -97,7 +87,6 @@ api.interceptors.response.use(
         // Redirect to admin login if not already there
         const currentPath = window.location.pathname;
         if (!currentPath.includes('/admin/login')) {
-          console.log('Redirecting to admin login');
           setTimeout(() => {
             window.location.href = '/admin/login';
           }, 1000);
@@ -116,7 +105,6 @@ api.interceptors.response.use(
             redirectPath = '/login/rider';
           }
           
-          console.log('Redirecting to:', redirectPath);
           setTimeout(() => {
             window.location.href = redirectPath;
           }, 1000);
@@ -126,7 +114,6 @@ api.interceptors.response.use(
     
     // Handle 403 Forbidden
     if (error.response?.status === 403) {
-      console.log('403 Forbidden - Access denied');
       toast.error('Access denied. You do not have permission.');
     }
     

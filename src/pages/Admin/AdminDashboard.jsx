@@ -8,12 +8,19 @@ import {
   TrendingUp,
   UserCheck,
   UserX,
-  Clock
+  Clock,
+  RefreshCw
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
 import StatsCard from '../../components/admin/StatsCard';
 import RecentBookings from '../../components/admin/RecentBookings';
 // import RevenueChart from '../../components/admin/RevenueChart';
+
+// Helper to safely get nested values
+const getNestedValue = (obj, path, defaultValue = 0) => {
+  if (!obj || typeof obj !== 'object') return defaultValue;
+  return obj[path] ?? defaultValue;
+};
 
 const AdminDashboard = () => {
   const {
@@ -24,17 +31,33 @@ const AdminDashboard = () => {
   } = useAdmin();
   const [recentBookings, setRecentBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchData = async () => {
+  const fetchData = async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
       setLoading(true);
+    }
+    setError(null);
+    
+    try {
       await loadDashboardStats();
       const result = await loadBookings({ page: 1, limit: 5 });
       if (result?.bookings) {
         setRecentBookings(result.bookings);
       }
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+      setError('Failed to load dashboard data');
+    } finally {
       setLoading(false);
-    };
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -49,17 +72,33 @@ const AdminDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Welcome to your admin dashboard</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600">Welcome to your admin dashboard</p>
+        </div>
+        <button
+          onClick={() => fetchData(true)}
+          disabled={refreshing}
+          className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </button>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          {error}
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Total Users"
-          value={stats?.users?.total || 0}
-          change={stats?.users?.newToday || 0}
+          value={getNestedValue(stats, 'users.total', 0)}
+          change={getNestedValue(stats, 'users.newToday', 0)}
           changeText="today"
           icon={Users}
           color="blue"
@@ -67,8 +106,8 @@ const AdminDashboard = () => {
         
         <StatsCard
           title="Total Riders"
-          value={stats?.riders?.total || 0}
-          change={stats?.riders?.online || 0}
+          value={getNestedValue(stats, 'riders.total', 0)}
+          change={getNestedValue(stats, 'riders.online', 0)}
           changeText="online"
           icon={Car}
           color="green"
@@ -76,8 +115,8 @@ const AdminDashboard = () => {
         
         <StatsCard
           title="Today's Bookings"
-          value={stats?.bookings?.today || 0}
-          change={stats?.bookings?.week || 0}
+          value={getNestedValue(stats, 'bookings.today', 0)}
+          change={getNestedValue(stats, 'bookings.week', 0)}
           changeText="this week"
           icon={Calendar}
           color="purple"
@@ -85,8 +124,8 @@ const AdminDashboard = () => {
         
         <StatsCard
           title="Monthly Revenue"
-          value={`₹${(stats?.revenue?.total || 0).toLocaleString()}`}
-          change={`₹${(stats?.revenue?.commission || 0).toLocaleString()}`}
+          value={`₹${(getNestedValue(stats, 'revenue.total', 0)).toLocaleString()}`}
+          change={getNestedValue(stats, 'revenue.commission', 0)}
           changeText="commission"
           icon={CreditCard}
           color="orange"
@@ -102,7 +141,7 @@ const AdminDashboard = () => {
             </div>
             <div className="ml-4 min-w-0">
               <p className="text-sm text-gray-500 truncate">Approved Riders</p>
-              <p className="text-2xl font-bold truncate">{stats?.riders?.approved || 0}</p>
+              <p className="text-2xl font-bold truncate">{getNestedValue(stats, 'riders.approved', 0)}</p>
             </div>
           </div>
         </div>
@@ -114,7 +153,7 @@ const AdminDashboard = () => {
             </div>
             <div className="ml-4 min-w-0">
               <p className="text-sm text-gray-500 truncate">Pending Riders</p>
-              <p className="text-2xl font-bold truncate">{stats?.riders?.pending || 0}</p>
+              <p className="text-2xl font-bold truncate">{getNestedValue(stats, 'riders.pending', 0)}</p>
             </div>
           </div>
         </div>
@@ -138,7 +177,7 @@ const AdminDashboard = () => {
             </div>
             <div className="ml-4 min-w-0">
               <p className="text-sm text-gray-500 truncate">Active Users</p>
-              <p className="text-2xl font-bold truncate">{stats?.users?.active || 0}</p>
+              <p className="text-2xl font-bold truncate">{getNestedValue(stats, 'users.active', 0)}</p>
             </div>
           </div>
         </div>

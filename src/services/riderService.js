@@ -32,6 +32,40 @@ const riderService = {
   },
 
   /**
+   * Update rider documents
+   * @param {Object} documentNumbers - { aadhaarNumber, drivingLicenseNumber }
+   * @param {Object} files - { aadhaarFront, aadhaarBack, drivingLicenseFront, drivingLicenseBack, policeVerification }
+   */
+  updateDocuments: async (documentNumbers, files) => {
+    try {
+      const formData = new FormData();
+      
+      if (documentNumbers.aadhaarNumber) {
+        formData.append('aadhaarNumber', documentNumbers.aadhaarNumber);
+      }
+      if (documentNumbers.drivingLicenseNumber) {
+        formData.append('drivingLicenseNumber', documentNumbers.drivingLicenseNumber);
+      }
+      
+      Object.keys(files).forEach(key => {
+        if (files[key]) {
+          formData.append(key, files[key]);
+        }
+      });
+      
+      const response = await api.put('/api/riders/documents', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Update documents error:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Update rider location
    * @param {Object} location - { lat, lng }
    */
@@ -87,17 +121,18 @@ getAvailableBookings: async (params = {}) => {
   }
 },
 
-  /**
+   /**
    * Accept a booking request
    * @param {string} bookingId 
    */
   acceptBooking: async (bookingId) => {
     try {
       console.log('Accepting booking:', bookingId);
+      console.log('Token available:', !!localStorage.getItem('token'));
       const response = await api.post('/api/riders/bookings/accept', { bookingId });
       return response.data;
     } catch (error) {
-      console.error('Accept booking error:', error);
+      console.error('Accept booking error:', error.response?.data || error.message);
       throw error;
     }
   },
@@ -169,6 +204,21 @@ getAvailableBookings: async (params = {}) => {
       return response.data;
     } catch (error) {
       console.error('Complete ride error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Cancel booking by rider
+   * @param {string} bookingId 
+   * @param {string} reason 
+   */
+  cancelBooking: async (bookingId, reason) => {
+    try {
+      const response = await api.post(`/api/bookings/${bookingId}/cancel`, { reason });
+      return response.data;
+    } catch (error) {
+      console.error('Cancel booking error:', error);
       throw error;
     }
   },

@@ -59,7 +59,12 @@ const customerService = {
   },
 
   rateRider: async (bookingId, rating, comment) => {
-    return await api.post(`/api/users/bookings/${bookingId}/rate`, { rating, comment });
+    try {
+      return await api.post(`/api/bookings/${bookingId}/rate`, { rating, comment });
+    } catch (error) {
+      console.error('Rate rider error:', error);
+      throw error;
+    }
   },
 
   // ========== NOTIFICATIONS ==========

@@ -69,13 +69,13 @@ const MyBookings = () => {
       if (response.data.success) {
         const allBookings = response.data.data || [];
         
-        // Categorize bookings by status
+        // Categorize bookings by status using bookingStatus from API
         const categorized = {
           upcoming: allBookings.filter(b => 
-            ['PENDING', 'CONFIRMED', 'ASSIGNED', 'ARRIVED', 'ONGOING'].includes(b.bookingStatus)
+            ['PENDING', 'CONFIRMED', 'ASSIGNED', 'ARRIVED', 'ONGOING', 'DRIVER_ASSIGNED', 'DRIVER_ARRIVED', 'TRIP_STARTED', 'ACCEPTED', 'PICKED_UP', 'IN_PROGRESS'].includes(b.bookingStatus)
           ),
           completed: allBookings.filter(b => 
-            ['COMPLETED'].includes(b.bookingStatus)
+            ['COMPLETED', 'TRIP_COMPLETED', 'PAYMENT_DONE'].includes(b.bookingStatus)
           ),
           cancelled: allBookings.filter(b => 
             ['CANCELLED', 'REJECTED'].includes(b.bookingStatus)
@@ -84,10 +84,10 @@ const MyBookings = () => {
         
         setBookings(categorized);
         
-        // Calculate stats
+        // Calculate stats using finalFare from API
         const totalSpent = allBookings
-          .filter(b => b.bookingStatus === 'COMPLETED')
-          .reduce((sum, b) => sum + (b.actualFare || b.estimatedFare || 0), 0);
+          .filter(b => ['COMPLETED', 'TRIP_COMPLETED', 'PAYMENT_DONE'].includes(b.bookingStatus))
+          .reduce((sum, b) => sum + (b.finalFare || b.estimatedFare || 0), 0);
         
         setStats({
           totalBookings: allBookings.length,

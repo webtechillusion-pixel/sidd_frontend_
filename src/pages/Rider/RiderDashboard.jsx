@@ -29,11 +29,14 @@ export default function RiderDashboard() {
   const bookingRefreshIntervalRef = useRef(null);
   const isMountedRef = useRef(true);
   const onlineStatusRef = useRef(false);
+  const lastLocationUpdateRef = useRef(0);
 
   const [stats, setStats] = useState({
     todayEarnings: 0,
+    totalEarnings: 0,
     totalRides: 0,
     rating: 0,
+    totalRatings: 0,
     acceptance: 0,
     weeklyEarnings: [],
     hourlyData: [],
@@ -41,11 +44,7 @@ export default function RiderDashboard() {
     paymentHistory: [],
     monthlyEarnings: [],
     peakHours: [],
-    performance: {
-      completionRate: 0,
-      responseTime: 0,
-      customerSatisfaction: 0
-    }
+    performance: null
   });
 
   const [liveEarnings, setLiveEarnings] = useState(0);
@@ -63,6 +62,9 @@ export default function RiderDashboard() {
     overallRating: 0,
     totalRatings: 0,
     completedRides: 0,
+    rejectedRides: 0,
+    acceptanceRate: 0,
+    avgResponseTime: 0,
     cab: null
   });
   const [toasts, setToasts] = useState([]);
@@ -70,6 +72,46 @@ export default function RiderDashboard() {
   const [chatOpen, setChatOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
+  const [notificationList, setNotificationList] = useState([]);
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false);
+
+  // Fetch notifications
+  const fetchNotifications = async () => {
+    try {
+      const response = await riderService.getNotifications({ page: 1, limit: 10 });
+      if (response.success && response.data) {
+        setNotificationList(response.data.notifications || []);
+        const unread = response.data.notifications?.filter(n => !n.isRead).length || 0;
+        setNotifications(unread);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  // Mark notification as read
+  const markNotificationRead = async (notificationId) => {
+    try {
+      await riderService.markNotificationRead(notificationId);
+      setNotificationList(prev => prev.map(n => 
+        n._id === notificationId ? { ...n, isRead: true } : n
+      ));
+      setNotifications(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  // Mark all notifications as read
+  const markAllNotificationsRead = async () => {
+    try {
+      await riderService.markAllNotificationsRead();
+      setNotificationList(prev => prev.map(n => ({ ...n, isRead: true })));
+      setNotifications(0);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
 
   useEffect(() => {
     onlineStatusRef.current = online;
@@ -79,6 +121,7 @@ export default function RiderDashboard() {
     isMountedRef.current = true;
     fetchRiderProfile();
     fetchEarnings();
+    fetchNotifications();
     
     // Setup socket listeners for real-time booking requests
     if (socket && isConnected && user?._id) {
@@ -150,25 +193,6 @@ export default function RiderDashboard() {
         }
       };
       
-      // Manual test listener
-      const handleTestBooking = () => {
-        console.log('🧪 Manual test booking triggered');
-        const testBooking = {
-          id: 'test-' + Date.now(),
-          passenger: 'Test Customer',
-          pickup: 'Test Pickup Location',
-          dropoff: 'Test Drop Location',
-          distance: '2.5 km',
-          fare: 150,
-          eta: '5 min',
-          rating: 4.5,
-          details: { bookingId: 'test-' + Date.now() }
-        };
-        
-        setRideRequests(prev => [...prev, testBooking]);
-        showToast('🧪 Test booking added!', 'success');
-      };
-      
       // Listen for booking taken by other rider
       const handleBookingTaken = (data) => {
         if (isMountedRef.current) {
@@ -186,20 +210,61 @@ export default function RiderDashboard() {
           showToast('❌ Customer cancelled the booking', 'info');
         }
       };
+
+      // Handle ride completion - auto refresh earnings
+      const handleRideCompleted = (data) => {
+        console.log('🎉 Ride completed:', data);
+        if (isMountedRef.current) {
+          showToast(`Ride completed! Earned ₹${data.riderEarning}`, 'success');
+          // Refresh earnings and stats
+          fetchEarnings();
+          fetchRiderProfile();
+          // Refresh available bookings
+          if (onlineStatusRef.current && profileData.approvalStatus === 'APPROVED') {
+            fetchAvailableBookings();
+          }
+          // Refresh active ride
+          setActiveRide(null);
+        }
+      };
+
+      // Handle booking status changes
+      const handleBookingStatusChanged = (data) => {
+        console.log('📊 Booking status changed:', data);
+        if (isMountedRef.current) {
+          // Refresh active ride data
+          setTimeout(() => {
+            if (activeRide) {
+              setActiveRide(prev => ({ ...prev, bookingStatus: data.status }));
+            }
+          }, 500);
+        }
+      };
       
       socket.on('new-booking-request', handleNewBookingRequest);
       socket.on('global-booking-request', handleGlobalBookingRequest);
-      socket.on('test-booking', handleTestBooking);
       socket.on('booking-taken', handleBookingTaken);
       socket.on('booking-cancelled', handleBookingCancelled);
+      socket.on('ride-completed', handleRideCompleted);
+      socket.on('trip-status-changed', handleBookingStatusChanged);
+      
+      // Auto-refresh earnings and profile every 30 seconds
+      const earningsInterval = setInterval(() => {
+        if (isMountedRef.current) {
+          fetchEarnings();
+          fetchRiderProfile();
+        }
+      }, 30000);
       
       return () => {
         console.log('🧹 Cleaning up rider socket listeners');
         socket.off('new-booking-request', handleNewBookingRequest);
         socket.off('global-booking-request', handleGlobalBookingRequest);
-        socket.off('test-booking', handleTestBooking);
         socket.off('booking-taken', handleBookingTaken);
         socket.off('booking-cancelled', handleBookingCancelled);
+        socket.off('ride-completed', handleRideCompleted);
+        socket.off('trip-status-changed', handleBookingStatusChanged);
+        clearInterval(earningsInterval);
       };
     } else {
       console.log('⚠️ Socket not connected - using polling fallback');
@@ -209,9 +274,17 @@ export default function RiderDashboard() {
           fetchAvailableBookings().catch(console.error);
         }
       }, 30000);
+
+      // Also poll for earnings in fallback mode
+      const earningsPollInterval = setInterval(() => {
+        if (isMountedRef.current) {
+          fetchEarnings();
+        }
+      }, 30000);
       
       return () => {
         clearInterval(pollInterval);
+        clearInterval(earningsPollInterval);
       };
     }
     
@@ -258,6 +331,9 @@ export default function RiderDashboard() {
           overallRating: rider.overallRating,
           totalRatings: rider.totalRatings,
           completedRides: rider.completedRides,
+          rejectedRides: rider.rejectedRides,
+          acceptanceRate: rider.acceptanceRate,
+          avgResponseTime: rider.avgResponseTime,
           cab: cab
         });
 
@@ -266,13 +342,14 @@ export default function RiderDashboard() {
         
         setStats(prev => ({
           ...prev,
-          todayEarnings: wallet?.balance || 0,
+          todayEarnings: prev.todayEarnings,
           totalRides: rider.completedRides || 0,
           rating: rider.overallRating || 0,
-          acceptance: rider.completedRides > 0 ? Math.min(100, (rider.completedRides / (rider.completedRides + (rider.rejectedRides || 0))) * 100) : 0,
-          performance: {
+          totalRatings: rider.totalRatings || 0,
+          acceptance: rider.acceptanceRate || (rider.completedRides > 0 ? Math.min(100, (rider.completedRides / (rider.completedRides + (rider.rejectedRides || 0))) * 100) : 0),
+          performance: rider.performance || {
             completionRate: rider.completedRides > 0 ? 95 : 0,
-            responseTime: 2.3,
+            responseTime: rider.avgResponseTime || 0,
             customerSatisfaction: rider.overallRating || 0
           },
           rideHistory: recentEarnings?.map(earning => ({
@@ -417,30 +494,65 @@ export default function RiderDashboard() {
 
   const fetchEarnings = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const response = await riderService.getEarnings({
-        startDate: today,
-        endDate: today,
+      const today = new Date();
+      const todayStr = today.toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const thirtyDaysAgoStr = thirtyDaysAgo.toLocaleDateString('en-CA');
+      
+      console.log('Fetching earnings for today:', todayStr, 'to:', thirtyDaysAgoStr);
+      
+      // Fetch today's earnings
+      const todayResponse = await riderService.getEarnings({
+        startDate: todayStr,
+        endDate: todayStr,
         page: 1,
         limit: 20
       });
 
-      if (response.success && isMountedRef.current) {
-        const { earnings, summary } = response.data;
+      console.log('Today earnings response:', todayResponse);
+
+      // Fetch total earnings (last 30 days or all time)
+      const totalResponse = await riderService.getEarnings({
+        startDate: thirtyDaysAgoStr,
+        endDate: todayStr,
+        page: 1,
+        limit: 1
+      });
+
+      console.log('Total earnings response:', totalResponse);
+
+      // Also fetch ratings
+      const ratingsResponse = await riderService.getRatings({ page: 1, limit: 10 }).catch(() => ({ success: false }));
+
+      if (isMountedRef.current) {
+        const todayData = todayResponse.success ? todayResponse.data : {};
+        const totalData = totalResponse.success ? totalResponse.data : {};
+        
+        const todaySummary = todayData?.summary || {};
+        const totalSummary = totalData?.summary || {};
+        
+        console.log('Today summary:', todaySummary);
+        console.log('Total summary:', totalSummary);
+        
         setStats(prev => ({
           ...prev,
-          paymentHistory: earnings?.map(earning => ({
+          todayEarnings: todaySummary.totalEarnings || 0,
+          totalEarnings: totalSummary.totalEarnings || todaySummary.totalEarnings || 0,
+          totalRides: todaySummary.totalRides || totalSummary.totalRides || prev.totalRides,
+          rating: ratingsResponse.success ? (ratingsResponse.data?.summary?.averageRating || prev.rating) : prev.rating,
+          totalRatings: ratingsResponse.success ? (ratingsResponse.data?.summary?.totalRatings || 0) : 0,
+          paymentHistory: todayData?.earnings?.map(earning => ({
             id: earning._id,
             amount: earning.riderEarning,
             date: earning.createdAt,
             type: 'Ride Earnings',
             status: earning.payoutStatus
           })) || [],
-          weeklyEarnings: response.data?.charts?.weeklyEarnings || [],
-          monthlyEarnings: response.data?.charts?.monthlyEarnings || []
+          weeklyEarnings: todayData?.charts?.weeklyEarnings || [],
+          monthlyEarnings: todayData?.charts?.monthlyEarnings || []
         }));
         
-        setLiveEarnings(summary?.walletBalance || 0);
+        setLiveEarnings(todaySummary.walletBalance || totalSummary.walletBalance || 0);
       }
     } catch (error) {
       console.error('Earnings fetch error:', error);
@@ -457,12 +569,21 @@ export default function RiderDashboard() {
       
       if (response.success && isMountedRef.current) {
         const ride = rideRequests.find(r => r.id === rideId);
+        const bookingData = response.data?.booking;
         
         setActiveRide({
           ...ride,
-          phone: ride.details?.customerInfo?.phone || ride.details?.user?.phone || '+91 98765 43210',
+          ...bookingData,
+          phone: bookingData?.userId?.phone || ride.details?.customerInfo?.phone || ride.details?.user?.phone || '+91 98765 43210',
           currentLocation: 'Pickup Location',
-          otp: response.data?.otp
+          otp: response.data?.otp,
+          pickup: bookingData?.pickup || ride?.pickup,
+          drop: bookingData?.drop || ride?.dropoff,
+          distanceKm: bookingData?.distanceKm || ride?.distance,
+          estimatedFare: bookingData?.estimatedFare || ride?.fare,
+          finalFare: bookingData?.finalFare,
+          vehicleType: bookingData?.vehicleType,
+          paymentMethod: bookingData?.paymentMethod
         });
         
         setRideRequests(prev => prev.filter(r => r.id !== rideId));
@@ -615,21 +736,49 @@ export default function RiderDashboard() {
 
 const handleLogout = async () => {
     if (window.confirm('Are you sure you want to logout?')) {
+      // Force logout regardless of any errors
       try {
-        stopAllTracking();
-        clearAllIntervals();
+        // Stop tracking
+        if (stopAllTracking) stopAllTracking();
+        if (clearAllIntervals) clearAllIntervals();
         
-        // Clear context state first
-        authLogout();
-        // Then clear local data and navigate
-        await authService.logout(navigate);
-        navigate('/login/rider');
-      } catch (error) {
-        console.error('Logout error:', error);
-        localStorage.clear();
-        sessionStorage.clear();
-        navigate('/login/rider');
+        // Disconnect socket safely
+        try {
+          if (socket && socket.disconnect) socket.disconnect();
+        } catch (e) { console.log('Socket disconnect error:', e); }
+        
+      } catch (e) { console.log('Tracking stop error:', e); }
+      
+      // Always execute these - clear everything
+      const token = localStorage.getItem('token');
+      
+      // Try to call logout API (non-blocking)
+      if (token) {
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/auth/logout`, {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }).catch(() => {});
       }
+      
+      // Clear ALL storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Clear cookies
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      });
+      
+      // Call auth logout
+      try {
+        authLogout();
+      } catch (e) { console.log('Auth logout error:', e); }
+      
+      // Force redirect
+      window.location.href = '/login';
     }
   };
 
@@ -745,16 +894,30 @@ const manualFetchBookings = useCallback(() => {
 
   const handleProfileUpdate = async () => {
     try {
-      showToast('Profile updated successfully!', 'success');
+      const response = await riderService.updateProfile({
+        name: profileData.name,
+        phone: profileData.phone
+      });
+      
+      if (response.success) {
+        showToast('Profile updated successfully!', 'success');
+        // Update localStorage
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        user.name = profileData.name;
+        user.phone = profileData.phone;
+        localStorage.setItem('user', JSON.stringify(user));
+      } else {
+        showToast(response.message || 'Failed to update profile', 'error');
+      }
     } catch (error) {
-      showToast('Failed to update profile', 'error');
+      showToast(error.response?.data?.message || 'Failed to update profile', 'error');
     }
   };
 
   const renderActivePage = () => {
     switch (activePage) {
       case "dashboard":
-        return <Dashboard stats={stats} profile={profileData} cab={profileData.cab} />;
+        return <Dashboard stats={stats} profile={profileData} cab={profileData.cab} liveEarnings={liveEarnings} />;
       case "earnings":
         return <Earnings 
           stats={stats} 
@@ -782,6 +945,7 @@ const manualFetchBookings = useCallback(() => {
       if (response.success) {
         setRideStatus('ongoing');
         showToast('Ride started successfully!', 'success');
+        fetchRiderProfile();
       } else {
         showToast(response.message || 'Failed to start ride', 'error');
       }
@@ -805,6 +969,15 @@ const manualFetchBookings = useCallback(() => {
               }
             }}
             onManualRefresh={manualFetchBookings}
+            onRideComplete={() => {
+              // Refresh data after ride completion
+              fetchEarnings();
+              fetchRiderProfile();
+            }}
+            onOtpVerified={() => {
+              // Refresh data after OTP verification
+              fetchRiderProfile();
+            }}
           />
         );
 case "navigation":
@@ -850,8 +1023,15 @@ case "navigation":
           setActivePage={setActivePage}
           online={online}
           stats={stats}
+          liveEarnings={liveEarnings}
           handleLogout={handleLogout}
           toggleOnlineStatus={toggleOnlineStatus}
+          notifications={notifications}
+          notificationList={notificationList}
+          showNotificationPanel={showNotificationPanel}
+          setShowNotificationPanel={setShowNotificationPanel}
+          markNotificationRead={markNotificationRead}
+          markAllNotificationsRead={markAllNotificationsRead}
         />
 
         <div className="p-2 sm:p-4 lg:p-6">
@@ -908,6 +1088,62 @@ case "navigation":
       {/* Rider Support Modal */}
       {supportOpen && (
         <RiderSupport onClose={() => setSupportOpen(false)} />
+      )}
+
+      {/* Notification Panel */}
+      {showNotificationPanel && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowNotificationPanel(false)}></div>
+          <div className="relative w-full max-w-md bg-white shadow-xl h-full overflow-hidden">
+            <div className="p-4 border-b bg-gradient-to-r from-teal-600 to-blue-600 text-white">
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg font-bold">Notifications</h2>
+                <button 
+                  onClick={() => setShowNotificationPanel(false)}
+                  className="p-1 hover:bg-white/20 rounded"
+                >
+                  ✕
+                </button>
+              </div>
+              {notifications > 0 && (
+                <button 
+                  onClick={markAllNotificationsRead}
+                  className="text-sm text-white/80 hover:text-white mt-2 flex items-center gap-1"
+                >
+                  <FaCheck /> Mark all as read
+                </button>
+              )}
+            </div>
+            <div className="overflow-y-auto h-[calc(100vh-120px)]">
+              {notificationList.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  No notifications yet
+                </div>
+              ) : (
+                notificationList.map((notification, index) => (
+                  <div 
+                    key={notification._id || index}
+                    onClick={() => markNotificationRead(notification._id)}
+                    className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${!notification.isRead ? 'bg-blue-50' : ''}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <h4 className={`font-medium ${!notification.isRead ? 'text-blue-800' : 'text-gray-800'}`}>
+                        {notification.title || 'Notification'}
+                      </h4>
+                      {!notification.isRead && (
+                        <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                    <p className="text-xs text-gray-400 mt-2">
+                      {new Date(notification.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

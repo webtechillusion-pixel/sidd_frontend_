@@ -98,13 +98,18 @@ const authService = {
     
     console.log('Login successful. Response:', data);
     
-    // ✅ Store ONLY user data (NO token)
+    // Store user and token
     if (data.data?.user) {
       localStorage.setItem('user', JSON.stringify(data.data.user));
-      console.log('User stored in localStorage');
     } else if (data?.user) {
       localStorage.setItem('user', JSON.stringify(data.user));
-      console.log('User stored in localStorage');
+    }
+    
+    // Store token for API requests
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+    } else if (data.data?.token) {
+      localStorage.setItem('token', data.data.token);
     }
     
     return data;
@@ -138,18 +143,18 @@ const authService = {
         console.log('Logout API call completed');
       });
       
-      // Use navigate instead of window.location
+      // Use navigate instead of window.location - default to /login
       if (navigate) {
-        navigate('/');
+        navigate('/login');
       } else {
-        window.location.href = '/';
+        window.location.href = '/login';
       }
     } catch (error) {
       console.error('Logout error:', error);
       if (navigate) {
-        navigate('/');
+        navigate('/login');
       } else {
-        window.location.href = '/';
+        window.location.href = '/login';
       }
     }
   },

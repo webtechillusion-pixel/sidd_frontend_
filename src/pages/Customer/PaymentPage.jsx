@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   CreditCard, 
@@ -31,24 +31,7 @@ const PaymentPage = () => {
   const [paymentStatus, setPaymentStatus] = useState('PENDING');
   const [bookingDetails, setBookingDetails] = useState(null);
 
-  useEffect(() => {
-    // If no booking data in state, try to get from URL params or redirect
-    if (!bookingData.bookingId) {
-      const urlParams = new URLSearchParams(location.search);
-      const bookingId = urlParams.get('bookingId');
-      
-      if (bookingId) {
-        fetchBookingDetails(bookingId);
-      } else {
-        toast.error('No booking information found');
-        navigate('/customer/dashboard');
-      }
-    } else {
-      setBookingDetails(bookingData);
-    }
-  }, [bookingData, location.search, navigate]);
-
-  const fetchBookingDetails = async (bookingId) => {
+  const fetchBookingDetails = useCallback(async (bookingId) => {
     try {
       const response = await api.get(`/api/bookings/${bookingId}`);
       if (response.data.success) {
@@ -62,18 +45,37 @@ const PaymentPage = () => {
       toast.error('Failed to fetch booking details');
       navigate('/customer/dashboard');
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    // If no booking data in state, try to get from URL params or redirect
+    if (!bookingData.bookingId) {
+      const urlParams = new URLSearchParams(location.search);
+      const bookingId = urlParams.get('bookingId');
+      
+      if (bookingId) {
+        fetchBookingDetails(bookingId);
+      } else {
+        toast.error('No booking information found');
+        navigate('/customer/dashboard');
+      }
+    } else {
+      // Always fetch full booking details from API
+      fetchBookingDetails(bookingData.bookingId);
+    }
+  }, [bookingData, location.search, navigate, fetchBookingDetails]);
 
   const handleCashPayment = async () => {
-    if (!bookingDetails?.bookingId) {
+    const bookingId = bookingDetails?.bookingId || bookingDetails?._id;
+    if (!bookingId) {
       toast.error('Booking information not found');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await api.post('/api/payments/complete-cash', {
-        bookingId: bookingDetails.bookingId
+      const response = await api.post('/api/payments/cash', {
+        bookingId: bookingId
       });
 
       if (response.data.success) {
@@ -81,11 +83,12 @@ const PaymentPage = () => {
         toast.success('Cash payment confirmed successfully!');
         
         // Redirect to success page after 2 seconds
+        const bookingId = bookingDetails?.bookingId || bookingDetails?._id;
         setTimeout(() => {
           navigate('/customer/bookings', {
             state: { 
               paymentSuccess: true,
-              bookingId: bookingDetails.bookingId 
+              bookingId: bookingId
             }
           });
         }, 2000);
@@ -101,7 +104,8 @@ const PaymentPage = () => {
   };
 
   const handleOnlinePayment = async () => {
-    if (!bookingDetails?.bookingId) {
+    const bookingId = bookingDetails?.bookingId || bookingDetails?._id;
+    if (!bookingId) {
       toast.error('Booking information not found');
       return;
     }
@@ -110,7 +114,7 @@ const PaymentPage = () => {
     try {
       // Create Razorpay order
       const orderResponse = await api.post('/api/payments/create-order', {
-        bookingId: bookingDetails.bookingId,
+        bookingId: bookingId,
         amount: bookingDetails.finalFare || bookingDetails.estimatedFare,
         paymentType: 'FULL'
       });
@@ -143,11 +147,12 @@ const PaymentPage = () => {
               setPaymentStatus('SUCCESS');
               toast.success('Payment successful!');
               
+              const bookingId = bookingDetails?.bookingId || bookingDetails?._id;
               setTimeout(() => {
                 navigate('/customer/bookings', {
                   state: { 
                     paymentSuccess: true,
-                    bookingId: bookingDetails.bookingId 
+                    bookingId: bookingId
                   }
                 });
               }, 2000);
@@ -175,6 +180,13 @@ const PaymentPage = () => {
         }
       };
 
+      // Check if Razorpay is loaded
+      if (!window.Razorpay) {
+        toast.error('Payment gateway not loaded. Please refresh the page.');
+        setLoading(false);
+        return;
+      }
+
       const razorpay = new window.Razorpay(options);
       razorpay.open();
       
@@ -198,6 +210,7 @@ const PaymentPage = () => {
   }
 
   if (paymentStatus === 'SUCCESS') {
+    const bookingId = bookingDetails?.bookingId || bookingDetails?._id;
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
@@ -276,8 +289,28 @@ const PaymentPage = () => {
               {/* Trip Details */}
               <div className="space-y-3 mb-6 pb-6 border-b">
                 <div className="flex justify-between">
+                  <span className="text-gray-600">Trip Type</span>
+                  <span className="font-medium">
+                    {bookingDetails.tripType === 'ROUND_TRIP' ? (
+                      <span className="text-green-600 font-semibold">Round Trip</span>
+                    ) : (
+                      <span>One Way</span>
+                    )}
+                  </span>
+                </div>
+                {bookingDetails.tripType === 'ROUND_TRIP' && bookingDetails.days && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Days</span>
+                    <span className="font-medium">{bookingDetails.days} day{bookingDetails.days > 1 ? 's' : ''}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
                   <span className="text-gray-600">Distance</span>
-                  <span className="font-medium">{bookingDetails.distanceKm?.toFixed(1) || '0.0'} km</span>
+                  <span className="font-medium">
+                    {bookingDetails.actualDistanceKm ? 
+                      `${bookingDetails.actualDistanceKm.toFixed(1)} km` : 
+                      `${bookingDetails.distanceKm?.toFixed(1) || '0.0'} km`}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Vehicle Type</span>
@@ -285,24 +318,60 @@ const PaymentPage = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Booking ID</span>
-                  <span className="font-medium text-sm">#{bookingDetails.bookingId}</span>
+                  <span className="font-medium text-sm">#{bookingDetails._id?.slice(-8)}</span>
                 </div>
               </div>
 
               {/* Fare Breakdown */}
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Base Fare</span>
-                  <span className="font-medium">₹{bookingDetails.baseFare || 50}</span>
+                  <span className="text-gray-600">Estimated Fare</span>
+                  <span className="font-medium">₹{bookingDetails.estimatedFare || 0}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Distance Fare</span>
-                  <span className="font-medium">₹{bookingDetails.distanceFare || 100}</span>
-                </div>
+                
+                {bookingDetails.additionalCharges > 0 && (
+                  <div className="flex justify-between text-orange-600">
+                    <span>Additional Charges</span>
+                    <span className="font-medium">₹{bookingDetails.additionalCharges}</span>
+                  </div>
+                )}
+                
+                {bookingDetails.additionalChargesBreakdown && (
+                  <div className="text-sm space-y-1 pl-2 border-l-2 border-orange-200">
+                    {bookingDetails.additionalChargesBreakdown.tollCharges > 0 && (
+                      <div className="flex justify-between text-gray-500">
+                        <span>Toll Charges</span>
+                        <span>₹{bookingDetails.additionalChargesBreakdown.tollCharges}</span>
+                      </div>
+                    )}
+                    {bookingDetails.additionalChargesBreakdown.parkingCharges > 0 && (
+                      <div className="flex justify-between text-gray-500">
+                        <span>Parking Charges</span>
+                        <span>₹{bookingDetails.additionalChargesBreakdown.parkingCharges}</span>
+                      </div>
+                    )}
+                    {bookingDetails.additionalChargesBreakdown.nightCharges > 0 && (
+                      <div className="flex justify-between text-gray-500">
+                        <span>Night Charges</span>
+                        <span>₹{bookingDetails.additionalChargesBreakdown.nightCharges}</span>
+                      </div>
+                    )}
+                    {bookingDetails.additionalChargesBreakdown.otherCharges > 0 && (
+                      <div className="flex justify-between text-gray-500">
+                        <span>Other Charges</span>
+                        <span>₹{bookingDetails.additionalChargesBreakdown.otherCharges}</span>
+                      </div>
+                    )}
+                    {bookingDetails.additionalChargesBreakdown.description && (
+                      <p className="text-gray-500 text-xs mt-1">{bookingDetails.additionalChargesBreakdown.description}</p>
+                    )}
+                  </div>
+                )}
+                
                 <div className="flex justify-between pt-3 border-t">
                   <span className="text-lg font-bold text-gray-900">Total Amount</span>
                   <span className="text-2xl font-bold text-blue-600">
-                    ₹{bookingDetails.finalFare || bookingDetails.estimatedFare || 150}
+                    ₹{bookingDetails.finalFare || bookingDetails.estimatedFare || 0}
                   </span>
                 </div>
               </div>
@@ -432,7 +501,7 @@ const PaymentPage = () => {
                 </button>
                 <button
                   onClick={paymentMethod === 'CASH' ? handleCashPayment : handleOnlinePayment}
-                  disabled={loading}
+                  disabled={loading || !bookingDetails}
                   className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
@@ -440,6 +509,8 @@ const PaymentPage = () => {
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       Processing...
                     </span>
+                  ) : !bookingDetails ? (
+                    'Loading...'
                   ) : (
                     `${paymentMethod === 'CASH' ? 'Confirm Cash Payment' : 'Pay Online'} - ₹${bookingDetails.finalFare || bookingDetails.estimatedFare || 150}`
                   )}

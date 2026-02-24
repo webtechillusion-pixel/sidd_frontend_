@@ -28,7 +28,7 @@ const CustomerDashboard = React.lazy(
   () => import("./pages/Customer/CustomerDashboard"),
 );
 const RiderDashboard = React.lazy(() => import("./pages/Rider/RiderDashboard"));
-const BookingPage = React.lazy(() => import("./pages/Customer/BookingPage"));
+// const BookingPage = React.lazy(() => import("./pages/Customer/BookingPage"));
 const MyBookings = React.lazy(() => import("./pages/Customer/MyBookings"));
 const ServicesPage = React.lazy(() => import("./pages/ServicesPage"));
 const GalleryPage = React.lazy(() => import("./pages/GalleryPage"));
@@ -40,6 +40,8 @@ const VerifyEmail = React.lazy(() => import('./pages/auth/VerifyEmail'));
 const ForgotPassword = React.lazy(() => import('./pages/auth/ForgotPassword'));
 const ResetPassword = React.lazy(() => import('./pages/auth/ResetPassword'));
 const BookingFlowTest = React.lazy(() => import('./components/BookingFlowTest'));
+const RideTrackingPage = React.lazy(() => import('./pages/Customer/RideTrackingPage'));
+const PaymentPage = React.lazy(() => import('./pages/Customer/PaymentPage'));
 
 // Admin Routes (whole admin section - lazy loaded)
 const AdminRoutes = React.lazy(() => import("./routes/AdminRoutes"));
@@ -86,7 +88,15 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/checkout" element={<CheckoutPage />} />
-              <Route path="/booking-status/:id" element={<BookingPage />} />
+             
+              <Route path="/ride-tracking" element={<RideTrackingPage />} />
+              <Route path="/customer/payment" element={
+                <ProtectedRoute roles={["USER", "customer"]}>
+                  <Layout>
+                    <PaymentPage />
+                  </Layout>
+                </ProtectedRoute>
+              } />
               <Route path="/test-booking" element={<Layout><BookingFlowTest /></Layout>} />
               
               {/* Protected Customer Routes */}
@@ -110,16 +120,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/book"
-                element={
-                  <ProtectedRoute roles={["USER", "customer"]}>
-                    <Layout>
-                      <BookingPage />
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
+             
               <Route
                 path="/my-bookings"
                 element={

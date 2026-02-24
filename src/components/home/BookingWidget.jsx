@@ -21,6 +21,8 @@ const SERVICE_TYPES = [
 const TRIP_TYPES = [
   { id: 'ONE_WAY', label: 'One Way', icon: ArrowRightLeft },
   { id: 'ROUND_TRIP', label: 'Round Trip', icon: ArrowRightLeft },
+  { id: 'OUTSTATION', label: 'Outstation', icon: MapPinned },
+  { id: 'LOCAL_RENTAL', label: 'Local', icon: Clock },
 ];
 
 const VEHICLES = [
@@ -78,12 +80,14 @@ const BookingWidget = () => {
   const { user } = useAuth();
   const { socket, isConnected, joinBookingRoom, joinUserRoom } = useSocket();
 
-const [step, setStep] = useState(1); // 1: Location, 2: Vehicle, 3: Status
+  const [step, setStep] = useState(1); // 1: Location, 2: Vehicle, 3: Status
   const [serviceType, setServiceType] = useState('OUTSTATION');
   const [pickupLocation, setPickupLocation] = useState({ text: '', lat: null, lng: null });
   const [dropLocation, setDropLocation] = useState({ text: '', lat: null, lng: null });
   const [passengers, setPassengers] = useState(1);
   const [vehicleType, setVehicleType] = useState('SEDAN');
+  const [vehicleOptions, setVehicleOptions] = useState([]);
+  const [loadingVehicleTypes, setLoadingVehicleTypes] = useState(true);
   const [showVehicleModal, setShowVehicleModal] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
   const [mapSelectingFor, setMapSelectingFor] = useState('pickup');
@@ -96,10 +100,56 @@ const [step, setStep] = useState(1); // 1: Location, 2: Vehicle, 3: Status
   const [mapLoading, setMapLoading] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [manualInput, setManualInput] = useState({ pickup: '', drop: '' });
+
+  // Fetch vehicle types from backend
+  useEffect(() => {
+    fetchVehicleTypes();
+  }, []);
+
+  const fetchVehicleTypes = async () => {
+    try {
+      const response = await bookingService.getVehicleTypes();
+      if (response.success && response.data) {
+        const vehicles = response.data.map(v => ({
+          id: v.cabType?.toUpperCase() || v.vehicleType?.toUpperCase() || 'SEDAN',
+          name: v.cabType || v.vehicleType || 'Sedan',
+          capacity: `${v.seatingCapacity || 4} passengers`,
+          icon: getVehicleIcon(v.cabType || v.vehicleType),
+          description: v.description || `${v.cabType || 'Sedan'} for comfortable travel`,
+          features: v.features || ['AC', 'Music System'],
+          baseFare: v.baseFare || v.minimumFare || 50,
+          pricePerKm: v.pricePerKm || v.ratePerKm || 12,
+          extra: v
+        }));
+        setVehicleOptions(vehicles);
+        if (vehicles.length > 0) {
+          setVehicleType(vehicles[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching vehicle types:', error);
+    } finally {
+      setLoadingVehicleTypes(false);
+    }
+  };
+
+  const getVehicleIcon = (type) => {
+    const icons = {
+      'HATCHBACK': '🚘',
+      'SEDAN': '🚗',
+      'SUV': '🚙',
+      'PREMIUM': '🏎️',
+      'LUXURY': '🚔',
+      'MPV': '🚐',
+      'MINI_BUS': '🚌'
+    };
+    return icons[type?.toUpperCase()] || '🚗';
+  };
   const [showSuggestions, setShowSuggestions] = useState({ pickup: false, drop: false });
 
   // Booking states
   const [tripType, setTripType] = useState('ONE_WAY');
+  const [tripDays, setTripDays] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('CASH');
   const [bookingType, setBookingType] = useState('IMMEDIATE');
   const [scheduledDate, setScheduledDate] = useState('');
@@ -317,13 +367,19 @@ const mapRef = useRef(null);
       if (!pickupLocation.lat || !dropLocation.lat) return;
       try {
         const fareData = {
-          pickupLat: pickupLocation.lat,
-          pickupLng: pickupLocation.lng,
-          dropLat: dropLocation.lat,
-          dropLng: dropLocation.lng,
-          cabType: vehicleType,
+          pickup: {
+            lat: pickupLocation.lat,
+            lng: pickupLocation.lng,
+            coordinates: [pickupLocation.lng, pickupLocation.lat]
+          },
+          drop: {
+            lat: dropLocation.lat,
+            lng: dropLocation.lng,
+            coordinates: [dropLocation.lng, dropLocation.lat]
+          },
           vehicleType: vehicleType,
-          passengers: passengers
+          tripType: tripType,
+          ...(tripType === 'ROUND_TRIP' && { days: tripDays })
         };
         const response = await bookingService.calculateFare(fareData);
         if (response.success) {
@@ -339,7 +395,7 @@ const mapRef = useRef(null);
       }
     };
     calculateFare();
-  }, [pickupLocation, dropLocation, vehicleType, passengers]);
+  }, [pickupLocation, dropLocation, vehicleType, passengers, tripType, tripDays]);
 
   // --- Nearby cabs (if needed) ---
   const fetchNearbyCabs = async () => {
@@ -360,8 +416,23 @@ const mapRef = useRef(null);
 
   const calculateFareForCab = (cab, distance) => {
     if (!distance) return 0;
-    const baseFares = { HATCHBACK: 50, SEDAN: 60, SUV: 80, PREMIUM: 100 };
-    const perKmRates = { HATCHBACK: 12, SEDAN: 14, SUV: 18, PREMIUM: 25 };
+    
+    // Use backend vehicle pricing
+    const selectedVehicle = vehicleOptions.find(v => v.id === (cab?.cab?.type || vehicleType));
+    const baseFares = {
+      'HATCHBACK': selectedVehicle?.baseFare || 40,
+      'SEDAN': selectedVehicle?.baseFare || 50,
+      'SUV': selectedVehicle?.baseFare || 70,
+      'PREMIUM': selectedVehicle?.baseFare || 100,
+      'LUXURY': selectedVehicle?.baseFare || 150
+    };
+    const perKmRates = {
+      'HATCHBACK': selectedVehicle?.pricePerKm || 10,
+      'SEDAN': selectedVehicle?.pricePerKm || 12,
+      'SUV': selectedVehicle?.pricePerKm || 18,
+      'PREMIUM': selectedVehicle?.pricePerKm || 25,
+      'LUXURY': selectedVehicle?.pricePerKm || 30
+    };
     const cabType = cab?.cab?.type || vehicleType;
     const baseFare = baseFares[cabType] || 60;
     const perKmRate = perKmRates[cabType] || 14;
@@ -514,6 +585,9 @@ const mapRef = useRef(null);
         passengers: passengers,
         tripType: tripType,
         bookingType: bookingType,
+        ...(tripType === 'ROUND_TRIP' && { days: tripDays }),
+        ...(tripType === 'OUTSTATION' && { days: tripDays }),
+        ...(tripType === 'LOCAL_RENTAL' && { hours: tripDays }),
         ...(bookingType === 'SCHEDULED' && { scheduledAt: `${scheduledDate}T${scheduledTime}:00.000Z` })
       };
 
@@ -524,22 +598,27 @@ const mapRef = useRef(null);
         setBookingOTP(otp);
         setSearchingRiders(searchingRiders || 0);
         setCurrentStatus('SEARCHING_DRIVER');
-        setStep(3);
 
         if (paymentMethod === 'CASH') {
-          toast.success(bookingType === 'IMMEDIATE' ? 'Booking created! Searching for riders...' : `Scheduled booking confirmed for ${new Date(scheduledAt).toLocaleString()}`);
-
-          // Set a timeout to cancel if no rider accepts within 60 seconds
-          if (bookingType === 'IMMEDIATE') {
-            const timeout = setTimeout(() => {
-              if (currentStatus === 'SEARCHING_DRIVER') {
-                setCurrentStatus('CANCELLED');
-                toast.error('No riders available');
-                setTimeout(() => resetBookingState(), 3000);
+          // Navigate to ride tracking page
+          navigate('/ride-tracking', {
+            state: {
+              bookingData: {
+                bookingId: newBookingId,
+                otp,
+                estimatedFare,
+                pickup: pickupLocation.text,
+                drop: dropLocation.text,
+                vehicleType,
+                tripType,
+                tripDays: tripType === 'ROUND_TRIP' ? tripDays : null,
+                bookingType,
+                scheduledAt
               }
-            }, 60000);
-            setSearchTimeout(timeout);
-          }
+            }
+          });
+          
+          toast.success(bookingType === 'IMMEDIATE' ? 'Booking created! Searching for riders...' : `Scheduled booking confirmed for ${new Date(scheduledAt).toLocaleString()}`);
 
           // Emit booking created event to notify nearby riders
           if (socket && isConnected) {
@@ -622,7 +701,7 @@ const mapRef = useRef(null);
         {TRIP_TYPES.map((type) => (
           <button
             key={type.id}
-            onClick={() => setTripType(type.id)}
+            onClick={() => { setTripType(type.id); if (type.id === 'ONE_WAY') setTripDays(1); }}
             className={`py-2 px-2 rounded-lg font-medium text-xs flex items-center justify-center gap-1 ${
               tripType === type.id ? 'bg-[#fb8500] text-white' : 'bg-gray-100 text-[#023047] hover:bg-gray-200'
             }`}
@@ -631,6 +710,65 @@ const mapRef = useRef(null);
             {type.label}
           </button>
         ))}
+      </div>
+
+      {(tripType === 'ROUND_TRIP' || tripType === 'OUTSTATION' || tripType === 'LOCAL_RENTAL') && (
+        <div className="mt-3">
+          <label className="block text-xs font-medium text-[#023047] mb-1">
+            Number of {tripType === 'LOCAL_RENTAL' ? 'Hours' : 'Days'}
+          </label>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setTripDays(Math.max(1, tripDays - 1))}
+              className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-lg font-bold text-[#023047]"
+            >
+              -
+            </button>
+            <input
+              type="number"
+              min="1"
+              value={tripDays}
+              onChange={(e) => setTripDays(Math.max(1, parseInt(e.target.value) || 1))}
+              className="flex-1 py-1 px-2 rounded-lg border border-gray-300 text-center text-sm font-medium focus:ring-2 focus:ring-[#fb8500]"
+            />
+            <button
+              type="button"
+              onClick={() => setTripDays(tripDays + 1)}
+              className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-lg font-bold text-[#023047]"
+            >
+              +
+            </button>
+            <span className="text-xs text-gray-600">{tripType === 'LOCAL_RENTAL' ? 'hour(s)' : 'day(s)'}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Method Selector */}
+      <div className="mb-3">
+        <label className="block text-xs font-medium text-[#023047] mb-1">Payment Method</label>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            onClick={() => setPaymentMethod('CASH')}
+            className={`py-2 px-3 rounded-lg font-medium text-xs flex items-center justify-center gap-1 ${
+              paymentMethod === 'CASH' 
+                ? 'bg-green-600 text-white' 
+                : 'bg-gray-100 text-[#023047] hover:bg-gray-200'
+            }`}
+          >
+            💵 Cash
+          </button>
+          <button
+            onClick={() => setPaymentMethod('ONLINE')}
+            className={`py-2 px-3 rounded-lg font-medium text-xs flex items-center justify-center gap-1 ${
+              paymentMethod === 'ONLINE' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-100 text-[#023047] hover:bg-gray-200'
+            }`}
+          >
+            💳 Online
+          </button>
+        </div>
       </div>
 
       <div>
@@ -800,23 +938,71 @@ const mapRef = useRef(null);
 
         {fareDetails && (
           <div className="bg-[#8ecae6]/10 rounded-lg p-3">
+            {/* Trip Type */}
             <div className="flex justify-between text-xs">
-              <span className="text-[#475569]">Distance</span>
-              <span className="font-medium text-[#023047]">{fareDetails.distance?.toFixed(1)} km</span>
+              <span className="text-[#475569]">Trip Type</span>
+              <span className={`font-medium ${
+                tripType === 'ROUND_TRIP' ? 'text-purple-600' : 
+                tripType === 'OUTSTATION' ? 'text-orange-600' : 
+                tripType === 'LOCAL_RENTAL' ? 'text-blue-600' : 'text-green-600'
+              }`}>
+                {tripType === 'ROUND_TRIP' ? 'Round Trip' : 
+                 tripType === 'OUTSTATION' ? 'Outstation' : 
+                 tripType === 'LOCAL_RENTAL' ? 'Local' : 'One Way'}
+              </span>
             </div>
+
+            {/* Payment Method */}
+            <div className="flex justify-between text-xs mt-1">
+              <span className="text-[#475569]">Payment</span>
+              <span className={`font-medium ${paymentMethod === 'CASH' ? 'text-green-600' : 'text-blue-600'}`}>
+                {paymentMethod === 'CASH' ? 'Cash' : 'Online'}
+              </span>
+            </div>
+
+            {/* Days for Round Trip/Outstation */}
+            {(tripType === 'ROUND_TRIP' || tripType === 'OUTSTATION') && fareDetails.days && (
+              <div className="flex justify-between text-xs mt-1">
+                <span className="text-[#475569]">Days</span>
+                <span className="font-medium text-[#023047]">{fareDetails.days} day{fareDetails.days > 1 ? 's' : ''}</span>
+              </div>
+            )}
+
+            <div className="flex justify-between text-xs mt-1">
+              <span className="text-[#475569]">Distance</span>
+              <span className="font-medium text-[#023047]">{fareDetails.distanceKm?.toFixed(1) || fareDetails.distance?.toFixed(1)} km</span>
+            </div>
+
+            {(tripType === 'ROUND_TRIP' || tripType === 'OUTSTATION') && fareDetails.billableKm && (
+              <div className="flex justify-between text-xs mt-1">
+                <span className="text-[#475569]">Billable KM</span>
+                <span className="font-medium text-[#023047]">{fareDetails.billableKm.toFixed(1)} km</span>
+              </div>
+            )}
+
             <div className="flex justify-between text-xs mt-1">
               <span className="text-[#475569]">Duration</span>
               <span className="font-medium text-[#023047]">{fareDetails.estimatedDuration} min</span>
             </div>
+
             <div className="border-t border-gray-200 my-2 pt-2">
               <div className="flex justify-between text-xs">
                 <span className="text-[#475569]">Base Fare</span>
-                <span className="font-medium text-[#023047]">₹{fareDetails.breakdown?.baseFare || 50}</span>
+                <span className="font-medium text-[#023047]">₹{fareDetails.baseFare || fareDetails.breakdown?.baseFare || 50}</span>
               </div>
               <div className="flex justify-between text-xs mt-1">
                 <span className="text-[#475569]">Distance Fare</span>
-                <span className="font-medium text-[#023047]">₹{fareDetails.breakdown?.distanceFare || 100}</span>
+                <span className="font-medium text-[#023047]">
+                  ₹{fareDetails.pricePerKm} × {tripType === 'ROUND_TRIP' ? (fareDetails.billableKm?.toFixed(0) || fareDetails.distanceKm) : fareDetails.distanceKm} km
+                </span>
               </div>
+
+              {tripType === 'ROUND_TRIP' && fareDetails.totalNights && (
+                <div className="flex justify-between text-xs mt-1">
+                  <span className="text-[#475569]">Driver Allowance</span>
+                  <span className="font-medium text-[#023047]">{fareDetails.totalNights} night{fareDetails.totalNights > 1 ? 's' : ''}</span>
+                </div>
+              )}
             </div>
           </div>
         )}

@@ -402,7 +402,25 @@ if (response?.success) {
     // ✅ All backend updates are done – just show success and redirect
     setConfirmedBooking(bookingData);
     setShowSuccessPopup(true);
-    navigate(`/booking-status/${bookingData._id}`, { replace: true });
+    
+    // Navigate to ride tracking page with booking data
+    navigate('/ride-tracking', {
+      replace: true,
+      state: {
+        bookingData: {
+          bookingId: bookingData._id,
+          otp: bookingData.otp,
+          estimatedFare: bookingData.estimatedFare,
+          pickup: bookingData.pickup?.addressText || location.state?.pickup,
+          drop: bookingData.drop?.addressText || location.state?.drop,
+          vehicleType: bookingData.vehicleType || location.state?.vehicleType,
+          tripType: bookingData.tripType || location.state?.tripType,
+          tripDays: bookingData.days || location.state?.tripDays,
+          bookingType: bookingData.bookingType || location.state?.bookingType,
+          scheduledAt: bookingData.scheduledAt || location.state?.scheduledAt
+        }
+      }
+    });
     
     // Clean up
     localStorage.removeItem('pendingBooking');

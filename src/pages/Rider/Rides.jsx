@@ -47,14 +47,29 @@ const RIDE_STATUS_STEPS = [
 
 
 
-const Rides = () => {
+const Rides = ({ 
+  activeRide: propActiveRide,
+  rideRequests: propRideRequests,
+  rideStatus: propRideStatus,
+  acceptRide: propAcceptRide,
+  declineRide: propDeclineRide,
+  updateRideStatus: propUpdateRideStatus,
+  handleEmergency: propHandleEmergency,
+  profile: propProfile,
+  showToast: propShowToast,
+  onPageLoad: propOnPageLoad,
+  onManualRefresh: propOnManualRefresh,
+  onRideComplete: propOnRideComplete,
+  onOtpVerified: propOnOtpVerified
+}) => {
   const { user } = useAuth();
   const { socket, isConnected } = useSocket();
   const navigate = useNavigate();
   
-  // State management
-  const [availableBookings, setAvailableBookings] = useState([]);
-  const [activeBooking, setActiveBooking] = useState(null);
+  // Use props if provided, otherwise use internal state
+  const [availableBookings, setAvailableBookings] = useState(propRideRequests || []);
+  const [activeBooking, setActiveBooking] = useState(propActiveRide || null);
+  const [currentRideStatus, setCurrentRideStatus] = useState(propRideStatus || 'waiting');
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
@@ -63,7 +78,14 @@ const Rides = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [rideCompletionData, setRideCompletionData] = useState({
     actualDistance: 0,
-    additionalCharges: 0
+    additionalCharges: 0,
+    additionalChargesBreakdown: {
+      tollCharges: 0,
+      parkingCharges: 0,
+      nightCharges: 0,
+      otherCharges: 0,
+      description: ''
+    }
   });
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [activeTab, setActiveTab] = useState('available');
@@ -74,9 +96,60 @@ const Rides = () => {
   const [vehiclePricing, setVehiclePricing] = useState({});
   const [isLoadingPricing, setIsLoadingPricing] = useState(false);
   
+  // Sync props to state when they change
+  useEffect(() => {
+    if (propActiveRide) {
+      setActiveBooking(propActiveRide);
+    }
+  }, [propActiveRide]);
+
+  useEffect(() => {
+    if (propRideRequests) {
+      setAvailableBookings(propRideRequests);
+    }
+  }, [propRideRequests]);
+
+  useEffect(() => {
+    if (propRideStatus) {
+      setCurrentRideStatus(propRideStatus);
+    }
+  }, [propRideStatus]);
+  
   const mapRef = useRef(null);
   const audioRef = useRef(null);
   const locationTimeoutRef = useRef(null);
+  const otpRefreshIntervalRef = useRef(null);
+
+  // Auto-refresh after OTP verification
+  useEffect(() => {
+    if (activeBooking && activeBooking.bookingStatus === 'TRIP_STARTED') {
+      // Poll every 5 seconds when trip has started
+      otpRefreshIntervalRef.current = setInterval(() => {
+        if (propOnOtpVerified) {
+          propOnOtpVerified();
+        }
+      }, 5000);
+    }
+
+    return () => {
+      if (otpRefreshIntervalRef.current) {
+        clearInterval(otpRefreshIntervalRef.current);
+      }
+    };
+  }, [activeBooking?.bookingStatus]);
+
+  // Fetch latest ride status function
+  const fetchLatestRideStatus = async () => {
+    if (!activeBooking?._id) return;
+    try {
+      const response = await api.get(`/api/bookings/${activeBooking._id}`);
+      if (response.data?.success && response.data?.data) {
+        setActiveBooking(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching ride status:', error);
+    }
+  };
 
   // Countdown Timer Component - Add this inside your Rides component before the return statement
 const CountdownTimer = ({ targetDate }) => {
@@ -451,14 +524,17 @@ const CountdownTimer = ({ targetDate }) => {
   const handleAcceptBooking = async (booking) => {
     setIsLoading(true);
     try {
-      console.log('✅ Accepting booking:', booking._id);
-      const response = await riderService.acceptBooking(booking._id);
+      // Use _id if available, otherwise use id (for backward compatibility)
+      const bookingId = booking._id || booking.id;
+      console.log('✅ Accepting booking:', bookingId);
+      const response = await riderService.acceptBooking(bookingId);
       
       if (response.success) {
         toast.success('Booking accepted successfully!');
         
-        // Remove from available bookings
-        setAvailableBookings(prev => prev.filter(b => b._id !== booking._id));
+        // Remove from available bookings - use _id || id for compatibility
+        const bookingId = booking._id || booking.id;
+        setAvailableBookings(prev => prev.filter(b => (b._id || b.id) !== bookingId));
         
         // Set as active booking
         setActiveBooking(response.data.booking || response.data);
@@ -511,6 +587,30 @@ const CountdownTimer = ({ targetDate }) => {
     }
   };
 
+  // Handle cancel booking by rider
+  const handleCancelBooking = async () => {
+    if (!activeBooking) return;
+    
+    const confirmCancel = window.confirm('Are you sure you want to cancel this ride?');
+    if (!confirmCancel) return;
+
+    setIsLoading(true);
+    try {
+      const response = await riderService.cancelBooking(activeBooking._id, 'Cancelled by rider');
+      
+      if (response.success) {
+        toast.info('Ride cancelled successfully');
+        setActiveBooking(null);
+        fetchActiveBooking();
+      }
+    } catch (error) {
+      console.error('❌ Cancel error:', error);
+      toast.error(error.response?.data?.message || 'Failed to cancel ride');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Handle start ride with OTP
   const handleStartRide = async () => {
     if (!selectedBooking || !otpInput) {
@@ -533,6 +633,16 @@ const CountdownTimer = ({ targetDate }) => {
         setOtpInput('');
         setActiveBooking(response.data);
         setSelectedBooking(null);
+        
+        // Trigger refresh callback and fetch latest status
+        if (propOnOtpVerified) {
+          propOnOtpVerified();
+        }
+        
+        // Immediately fetch latest ride status
+        setTimeout(() => {
+          fetchLatestRideStatus();
+        }, 1000);
       }
     } catch (error) {
       console.error('❌ Start ride error:', error);
@@ -589,6 +699,11 @@ const CountdownTimer = ({ targetDate }) => {
         setActiveTab('available');
         setRideCompletionData({ actualDistance: 0, additionalCharges: 0 });
         stopLocationTracking();
+        
+        // Refresh earnings and profile after ride completion
+        if (propOnRideComplete) {
+          propOnRideComplete();
+        }
       }
     } catch (error) {
       console.error('❌ Complete ride error:', error);
@@ -749,10 +864,10 @@ const CountdownTimer = ({ targetDate }) => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-4 overflow-y-auto">
+      <div className="flex-1 p-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
         {/* Available Rides Tab */}
         {activeTab === 'available' && (
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto pb-20">
             {/* Available Rides Header */}
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-white">
@@ -783,10 +898,11 @@ const CountdownTimer = ({ targetDate }) => {
             ) : (
               availableBookings.map((booking) => {
                 const timeRemaining = getTimeRemaining(booking.expiresAt);
+                const bookingKey = booking._id || booking.id;
                 
                 return (
                   <div
-                    key={booking._id}
+                    key={bookingKey}
                     className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 hover:border-teal-500/50 transition-all"
                   >
                     {/* Ride Header */}
@@ -904,7 +1020,7 @@ const CountdownTimer = ({ targetDate }) => {
                         Accept
                       </button>
                       <button
-                        onClick={() => handleRejectBooking(booking._id)}
+                        onClick={() => handleRejectBooking(booking._id || booking.id)}
                         disabled={isLoading}
                         className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                       >
@@ -1047,54 +1163,106 @@ const CountdownTimer = ({ targetDate }) => {
         </div>
       )}
 
-      {/* Fare Info */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-slate-700/30 rounded-lg p-3">
-          <p className="text-xs text-slate-400">Distance</p>
-          <p className="text-lg font-semibold text-white">{activeBooking.distanceKm || 0} km</p>
+      {/* Fare Info with Rate from Database */}
+      <div className="bg-slate-700/30 rounded-lg p-4 mb-4">
+        <div className="flex justify-between items-center mb-3">
+          <h4 className="text-white font-medium">Trip Details</h4>
+          <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">
+            {activeBooking.vehicleType}
+          </span>
         </div>
-        <div className="bg-slate-700/30 rounded-lg p-3">
-          <p className="text-xs text-slate-400">Estimated Fare</p>
-          <p className="text-lg font-semibold text-teal-400">{formatCurrency(activeBooking.estimatedFare || 0)}</p>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <p className="text-xs text-slate-400">Distance</p>
+            <p className="text-lg font-semibold text-white">{activeBooking.distanceKm || 0} km</p>
+          </div>
+          <div>
+            <p className="text-xs text-slate-400">Rate per km</p>
+            <p className="text-lg font-semibold text-teal-400">
+              ₹{vehiclePricing[activeBooking.vehicleType]?.pricePerKm || 0}
+            </p>
+          </div>
+        </div>
+        
+        <div className="mt-3 pt-3 border-t border-slate-600">
+          <div className="flex justify-between items-center">
+            <span className="text-slate-400">Estimated Fare</span>
+            <span className="text-xl font-bold text-teal-400">
+              {formatCurrency(activeBooking.estimatedFare || 0)}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* OTP Display - Only show for immediate rides or when it's time */}
-      {activeBooking.otp && activeBooking.bookingType === 'IMMEDIATE' && 
-       activeBooking.bookingStatus !== 'TRIP_STARTED' && 
-       activeBooking.bookingStatus !== 'TRIP_COMPLETED' && (
-        <div className="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border border-yellow-500/30 rounded-lg p-4 mb-4">
-          <p className="text-xs text-yellow-400 mb-1">Customer OTP</p>
-          <p className="text-3xl font-bold text-yellow-400 tracking-wider">{activeBooking.otp}</p>
-          <p className="text-xs text-slate-400 mt-1">Share this with customer to start ride</p>
+      {/* Trip Type & Payment Method */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-slate-700/30 rounded-lg p-3">
+          <p className="text-xs text-slate-400">Trip Type</p>
+          <p className="text-lg font-semibold text-white">
+            {activeBooking.tripType === 'ROUND_TRIP' ? (
+              <span className="text-yellow-400">Round Trip</span>
+            ) : (
+              <span>One Way</span>
+            )}
+          </p>
+          {activeBooking.tripType === 'ROUND_TRIP' && activeBooking.days && (
+            <p className="text-xs text-slate-400">{activeBooking.days} day(s)</p>
+          )}
         </div>
-      )}
+        <div className="bg-slate-700/30 rounded-lg p-3">
+          <p className="text-xs text-slate-400">Payment</p>
+          <p className={`text-lg font-semibold ${activeBooking.paymentMethod === 'CASH' ? 'text-yellow-400' : 'text-green-400'}`}>
+            {activeBooking.paymentMethod === 'CASH' ? 'Cash' : 'Online'}
+          </p>
+        </div>
+      </div>
 
       {/* Action Buttons based on status */}
       <div className="space-y-3">
         {activeBooking.bookingStatus === 'DRIVER_ASSIGNED' && (
-          <button
-            onClick={handleDriverArrived}
-            disabled={isLoading}
-            className="w-full py-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
-          >
-            {isLoading ? <FaSpinner className="animate-spin" /> : <FaMapMarkerAlt />}
-            I've Arrived at Pickup
-          </button>
+          <>
+            <button
+              onClick={handleDriverArrived}
+              disabled={isLoading}
+              className="w-full py-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+            >
+              {isLoading ? <FaSpinner className="animate-spin" /> : <FaMapMarkerAlt />}
+              I've Arrived at Pickup
+            </button>
+            
+            <button
+              onClick={handleCancelBooking}
+              disabled={isLoading}
+              className="w-full py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 font-semibold rounded-xl transition-all"
+            >
+              Cancel Ride
+            </button>
+          </>
         )}
 
         {activeBooking.bookingStatus === 'DRIVER_ARRIVED' && (
-          <button
-            onClick={() => {
-              setSelectedBooking(activeBooking);
-              setShowOtpModal(true);
-            }}
-            disabled={isLoading}
-            className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
-          >
-            <FaKey />
-            Verify OTP & Start Ride
-          </button>
+          <>
+            <button
+              onClick={() => {
+                setSelectedBooking(activeBooking);
+                setShowOtpModal(true);
+              }}
+              disabled={isLoading}
+              className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+            >
+              <FaKey />
+              Verify OTP & Start Ride
+            </button>
+            
+            <button
+              onClick={handleCancelBooking}
+              disabled={isLoading}
+              className="w-full py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 font-semibold rounded-xl transition-all"
+            >
+              Cancel Ride
+            </button>
+          </>
         )}
 
         {activeBooking.bookingStatus === 'TRIP_STARTED' && (
@@ -1180,9 +1348,13 @@ const CountdownTimer = ({ targetDate }) => {
       {/* Ride Completion Modal - FIXED WITH DATABASE PRICING */}
       {showCompletionModal && activeBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-slate-800 rounded-2xl w-full max-w-md p-6 border border-slate-700">
-            <h3 className="text-xl font-bold text-white mb-4">Complete Ride</h3>
+          <div className="bg-slate-800 rounded-2xl w-full max-w-md max-h-[90vh] border border-slate-700 overflow-hidden flex flex-col">
+            <div className="p-6 border-b border-slate-700">
+              <h3 className="text-xl font-bold text-white">Complete Ride</h3>
+              <p className="text-sm text-slate-400 mt-1">Enter ride details and calculate fare</p>
+            </div>
             
+            <div className="flex-1 overflow-y-auto p-6">
             {isLoadingPricing ? (
               <div className="flex justify-center py-8">
                 <FaSpinner className="animate-spin text-4xl text-teal-400" />
@@ -1215,6 +1387,51 @@ const CountdownTimer = ({ targetDate }) => {
                 
                 return (
                   <div className="space-y-4 mb-6">
+                    {/* Customer Info */}
+                    <div className="bg-slate-700/30 rounded-lg p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
+                          <FaUser className="text-white" />
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">{activeBooking.userId?.name || 'Customer'}</p>
+                          <p className="text-xs text-slate-400">{activeBooking.userId?.phone || 'N/A'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Trip Route */}
+                    <div className="bg-slate-700/30 rounded-lg p-4 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                        <div>
+                          <p className="text-xs text-slate-400">Pickup</p>
+                          <p className="text-sm text-white">{activeBooking.pickup?.addressText || 'Pickup location'}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full mt-2"></div>
+                        <div>
+                          <p className="text-xs text-slate-400">Drop</p>
+                          <p className="text-sm text-white">{activeBooking.drop?.addressText || 'Drop location'}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Trip Type & Payment */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-slate-700/30 rounded-lg p-3">
+                        <p className="text-xs text-slate-400">Trip Type</p>
+                        <p className="text-white font-medium">{activeBooking.tripType === 'ROUND_TRIP' ? 'Round Trip' : 'One Way'}</p>
+                      </div>
+                      <div className="bg-slate-700/30 rounded-lg p-3">
+                        <p className="text-xs text-slate-400">Payment</p>
+                        <p className={`font-medium ${activeBooking.paymentMethod === 'CASH' ? 'text-yellow-400' : 'text-green-400'}`}>
+                          {activeBooking.paymentMethod === 'CASH' ? 'Cash' : 'Online'}
+                        </p>
+                      </div>
+                    </div>
+
                     {/* Distance Input */}
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">
@@ -1238,22 +1455,121 @@ const CountdownTimer = ({ targetDate }) => {
                       </p>
                     </div>
 
-                    {/* Additional Charges */}
+                    {/* Additional Charges breakdown */}
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">
-                        Additional Charges (₹)
+                        Additional Charges Breakdown (₹)
                       </label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <input
+                            type="number"
+                            value={rideCompletionData.additionalChargesBreakdown.tollCharges}
+                            onChange={(e) => setRideCompletionData({
+                              ...rideCompletionData,
+                              additionalChargesBreakdown: {
+                                ...rideCompletionData.additionalChargesBreakdown,
+                                tollCharges: parseFloat(e.target.value) || 0
+                              },
+                              additionalCharges: (
+                                (parseFloat(e.target.value) || 0) +
+                                rideCompletionData.additionalChargesBreakdown.parkingCharges +
+                                rideCompletionData.additionalChargesBreakdown.nightCharges +
+                                rideCompletionData.additionalChargesBreakdown.otherCharges
+                              )
+                            })}
+                            min="0"
+                            step="10"
+                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white text-sm"
+                            placeholder="Toll"
+                          />
+                          <p className="text-xs text-slate-500 mt-1">Toll</p>
+                        </div>
+                        <div>
+                          <input
+                            type="number"
+                            value={rideCompletionData.additionalChargesBreakdown.parkingCharges}
+                            onChange={(e) => setRideCompletionData({
+                              ...rideCompletionData,
+                              additionalChargesBreakdown: {
+                                ...rideCompletionData.additionalChargesBreakdown,
+                                parkingCharges: parseFloat(e.target.value) || 0
+                              },
+                              additionalCharges: (
+                                rideCompletionData.additionalChargesBreakdown.tollCharges +
+                                (parseFloat(e.target.value) || 0) +
+                                rideCompletionData.additionalChargesBreakdown.nightCharges +
+                                rideCompletionData.additionalChargesBreakdown.otherCharges
+                              )
+                            })}
+                            min="0"
+                            step="10"
+                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white text-sm"
+                            placeholder="Parking"
+                          />
+                          <p className="text-xs text-slate-500 mt-1">Parking</p>
+                        </div>
+                        <div>
+                          <input
+                            type="number"
+                            value={rideCompletionData.additionalChargesBreakdown.nightCharges}
+                            onChange={(e) => setRideCompletionData({
+                              ...rideCompletionData,
+                              additionalChargesBreakdown: {
+                                ...rideCompletionData.additionalChargesBreakdown,
+                                nightCharges: parseFloat(e.target.value) || 0
+                              },
+                              additionalCharges: (
+                                rideCompletionData.additionalChargesBreakdown.tollCharges +
+                                rideCompletionData.additionalChargesBreakdown.parkingCharges +
+                                (parseFloat(e.target.value) || 0) +
+                                rideCompletionData.additionalChargesBreakdown.otherCharges
+                              )
+                            })}
+                            min="0"
+                            step="10"
+                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white text-sm"
+                            placeholder="Night"
+                          />
+                          <p className="text-xs text-slate-500 mt-1">Night</p>
+                        </div>
+                        <div>
+                          <input
+                            type="number"
+                            value={rideCompletionData.additionalChargesBreakdown.otherCharges}
+                            onChange={(e) => setRideCompletionData({
+                              ...rideCompletionData,
+                              additionalChargesBreakdown: {
+                                ...rideCompletionData.additionalChargesBreakdown,
+                                otherCharges: parseFloat(e.target.value) || 0
+                              },
+                              additionalCharges: (
+                                rideCompletionData.additionalChargesBreakdown.tollCharges +
+                                rideCompletionData.additionalChargesBreakdown.parkingCharges +
+                                rideCompletionData.additionalChargesBreakdown.nightCharges +
+                                (parseFloat(e.target.value) || 0)
+                              )
+                            })}
+                            min="0"
+                            step="10"
+                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white text-sm"
+                            placeholder="Other"
+                          />
+                          <p className="text-xs text-slate-500 mt-1">Other</p>
+                        </div>
+                      </div>
                       <input
-                        type="number"
-                        value={rideCompletionData.additionalCharges}
+                        type="text"
+                        value={rideCompletionData.additionalChargesBreakdown.description}
                         onChange={(e) => setRideCompletionData({
                           ...rideCompletionData,
-                          additionalCharges: parseFloat(e.target.value) || 0
+                          additionalChargesBreakdown: {
+                            ...rideCompletionData.additionalChargesBreakdown,
+                            description: e.target.value
+                          }
                         })}
-                        min="0"
-                        step="10"
-                        className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Toll, parking, etc."
+                        className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white text-sm mt-3"
+                        placeholder="Description (optional)"
                       />
                     </div>
 
@@ -1285,7 +1601,7 @@ const CountdownTimer = ({ targetDate }) => {
                             {actualDistance.toFixed(1)} km × ₹{perKmRate} = ₹{Math.round(distanceFare)}
                           </span>
                         </div>
-                        
+
                         {/* Additional Charges */}
                         {additionalCharges > 0 && (
                           <div className="flex justify-between text-sm">
@@ -1305,67 +1621,19 @@ const CountdownTimer = ({ targetDate }) => {
                         
                         {/* Total Fare (what customer pays) */}
                         <div className="flex justify-between font-semibold">
-                          <span className="text-slate-300">💰 TOTAL FARE (Customer pays):</span>
+                          <span className="text-slate-300">TOTAL FARE:</span>
                           <span className="text-teal-400 text-xl">₹{Math.round(totalFare)}</span>
                         </div>
                       </div>
                     </div>
-
-                    {/* Payment Method Specific Info */}
-                    {activeBooking.paymentMethod === 'CASH' ? (
-                      <div className="bg-yellow-600/20 border border-yellow-500/30 rounded-lg p-4">
-                        <h4 className="text-yellow-400 font-medium mb-2 flex items-center gap-2">
-                          <FaMoneyBillWave /> Cash Payment
-                        </h4>
-                        <div className="space-y-2 text-sm">
-                          <p className="text-slate-300">
-                            <span className="text-slate-400">Collect from customer:</span>{' '}
-                            <span className="text-white font-bold">₹{Math.round(totalFare)}</span>
-                          </p>
-                          <p className="text-slate-300">
-                            <span className="text-slate-400">Company commission ({commissionPercent}%):</span>{' '}
-                            <span className="text-yellow-400">₹{commission}</span>
-                          </p>
-                          <p className="text-slate-300">
-                            <span className="text-slate-400">Your earnings:</span>{' '}
-                            <span className="text-green-400 font-bold">₹{Math.round(riderEarning)}</span>
-                          </p>
-                          <p className="text-xs text-yellow-400 mt-2">
-                            ⏰ Please remit ₹{commission} to company within 3 days
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-blue-600/20 border border-blue-500/30 rounded-lg p-4">
-                        <h4 className="text-blue-400 font-medium mb-2 flex items-center gap-2">
-                          <FaCreditCard /> Online Payment
-                        </h4>
-                        <div className="space-y-2 text-sm">
-                          <p className="text-slate-300">
-                            <span className="text-slate-400">Total fare:</span>{' '}
-                            <span className="text-white">₹{Math.round(totalFare)}</span>
-                          </p>
-                          <p className="text-slate-300">
-                            <span className="text-slate-400">Company commission ({commissionPercent}%):</span>{' '}
-                            <span className="text-blue-400">₹{commission}</span>
-                          </p>
-                          <p className="text-slate-300">
-                            <span className="text-slate-400">Your earnings:</span>{' '}
-                            <span className="text-green-400 font-bold">₹{Math.round(riderEarning)}</span>
-                          </p>
-                          <p className="text-xs text-blue-400 mt-2">
-                            ⏰ Amount will be credited to your account within 7 days
-                          </p>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 );
               })()
             )}
-
+            </div>
+            
             {/* Action Buttons */}
-            <div className="flex gap-3">
+            <div className="p-6 border-t border-slate-700 flex gap-3">
               <button
                 onClick={() => setShowCompletionModal(false)}
                 className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all"
@@ -1375,7 +1643,7 @@ const CountdownTimer = ({ targetDate }) => {
               <button
                 onClick={handleCompleteRide}
                 disabled={!rideCompletionData.actualDistance || rideCompletionData.actualDistance < (activeBooking?.distanceKm || 0) || isLoading || isLoadingPricing}
-                className="flex-1 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 py-3 bg-gradient-to-r from-teal-600 to-green-600 hover:from-teal-700 hover:to-green-700 text-white rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isLoading ? <FaSpinner className="animate-spin" /> : <FaCheck />}
                 Complete Ride
@@ -1389,3 +1657,4 @@ const CountdownTimer = ({ targetDate }) => {
 };
 
 export default Rides;
+
