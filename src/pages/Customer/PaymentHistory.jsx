@@ -1,6 +1,6 @@
 // frontend/src/components/PaymentHistory.jsx
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, CreditCard, Wallet, Calendar, Check, X } from 'lucide-react';
+import { ChevronRight, CreditCard, Wallet, Calendar, Check, X, RefreshCw } from 'lucide-react';
 import customerService from "../../services/customerService";
 
 
@@ -12,11 +12,19 @@ const PaymentHistory = ({ onBack }) => {
     fetchPayments();
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchPayments();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const fetchPayments = async () => {
     try {
       setLoading(true);
       const response = await customerService.getPaymentHistory();
-      setPayments(response.data?.data || response.data || []);
+      const paymentsData = response?.data?.payments || response?.data || response?.payments || [];
+      setPayments(paymentsData);
     } catch (error) {
       console.error('Failed to fetch payments:', error);
     } finally {
@@ -35,7 +43,16 @@ const PaymentHistory = ({ onBack }) => {
             <ChevronRight className="h-5 w-5 rotate-180 mr-2" />
             Back to Dashboard
           </button>
-          <h2 className="text-xl font-bold text-gray-900">Payment History</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-gray-900">Payment History</h2>
+            <button 
+              onClick={fetchPayments}
+              disabled={loading}
+              className="p-1 hover:bg-gray-100 rounded-full"
+            >
+              <RefreshCw className={`h-4 w-4 text-gray-500 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
           <p className="text-gray-600 text-sm">View all your payment transactions</p>
         </div>
         <CreditCard className="h-8 w-8 text-blue-600" />
@@ -48,33 +65,42 @@ const PaymentHistory = ({ onBack }) => {
         </div>
       ) : payments.length > 0 ? (
         <div className="space-y-4">
-          {payments.map((payment) => (
+          {payments.map((payment) => {
+            const status = payment.paymentStatus?.toLowerCase() || 'pending';
+            const method = payment.paymentMethod?.toLowerCase() || 'card';
+            const bookingId = typeof payment.bookingId === 'string' ? payment.bookingId : payment.bookingId?._id || '';
+            return (
             <div key={payment._id} className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center">
-                  {payment.paymentMethod === 'wallet' ? (
+                  {method === 'wallet' ? (
                     <Wallet className="h-5 w-5 mr-3 text-green-600" />
+                  ) : method === 'cash' ? (
+                    <Wallet className="h-5 w-5 mr-3 text-yellow-600" />
                   ) : (
                     <CreditCard className="h-5 w-5 mr-3 text-blue-600" />
                   )}
                   <div>
                     <p className="font-medium text-gray-900">
-                      {payment.paymentMethod === 'wallet' ? 'Wallet Payment' : 'Card Payment'}
+                      {method === 'wallet' ? 'Wallet Payment' : method === 'cash' ? 'Cash Payment' : 'Card Payment'}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Booking: {payment.bookingId?.slice(-8) || 'N/A'}
+                      Booking: {bookingId.slice(-8) || 'N/A'}
                     </p>
                   </div>
                 </div>
                 <div className={`flex items-center ${
-                  payment.status === 'success' ? 'text-green-600' : 'text-red-600'
+                  status === 'success' ? 'text-green-600' : 
+                  status === 'pending_settlement' || status === 'pending' ? 'text-yellow-600' : 'text-red-600'
                 }`}>
-                  {payment.status === 'success' ? (
+                  {status === 'success' || status === 'pending_settlement' ? (
                     <Check className="h-5 w-5 mr-1" />
                   ) : (
                     <X className="h-5 w-5 mr-1" />
                   )}
-                  <span className="font-medium capitalize">{payment.status}</span>
+                  <span className="font-medium capitalize">
+                    {status === 'pending_settlement' ? 'Cash Collected' : status === 'pending' ? 'Pending' : status}
+                  </span>
                 </div>
               </div>
               
@@ -92,7 +118,8 @@ const PaymentHistory = ({ onBack }) => {
                 <p className="text-sm text-gray-600 mt-2">{payment.description}</p>
               )}
             </div>
-          ))}
+          );
+          })}
         </div>
       ) : (
         <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">

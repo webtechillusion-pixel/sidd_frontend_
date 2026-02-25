@@ -29,63 +29,86 @@ const RideTrackingPage = () => {
   const [assignedRider, setAssignedRider] = useState(null);
   const [loading, setLoading] = useState(true);
   const pollingIntervalRef = useRef(null);
+  const statusRef = useRef('SEARCHING_DRIVER');
 
-  // Poll for booking status every 30 seconds for automatic updates
-  const startPolling = () => {
-    if (pollingIntervalRef.current) return;
+  // Update ref when status changes
+  useEffect(() => {
+    statusRef.current = currentStatus;
+  }, [currentStatus]);
+
+  // Poll for booking status every 5 seconds for automatic updates
+  const fetchBookingStatus = async () => {
+    if (!bookingData?.bookingId) return;
     
-    pollingIntervalRef.current = setInterval(async () => {
-      if (!bookingData?.bookingId) return;
-      
-      try {
-        const response = await api.get(`/api/bookings/${bookingData.bookingId}`);
-        if (response.data.success) {
-          const booking = response.data.data;
-          console.log('📊 Polling - Booking status:', booking.bookingStatus);
-          
-          if (booking.riderId && currentStatus === 'SEARCHING_DRIVER') {
+    try {
+      const response = await api.get(`/api/bookings/${bookingData.bookingId}`);
+      if (response.data.success) {
+        const booking = response.data.data;
+        console.log('📊 Polling - Booking status:', booking.bookingStatus, 'riderId:', booking.riderId);
+        
+        // Check if driver is assigned
+        if (booking.riderId && statusRef.current === 'SEARCHING_DRIVER') {
+          setAssignedRider({
+            name: booking.riderId.name,
+            phone: booking.riderId.phone,
+            cabDetails: booking.cabId
+          });
+          setCurrentStatus('DRIVER_ASSIGNED');
+          toast.success('Driver assigned! Driver is on the way.');
+        }
+        
+        // Check booking status directly from API
+        if (booking.bookingStatus === 'DRIVER_ASSIGNED' && statusRef.current !== 'DRIVER_ASSIGNED') {
+          if (booking.riderId) {
             setAssignedRider({
               name: booking.riderId.name,
               phone: booking.riderId.phone,
               cabDetails: booking.cabId
             });
-            setCurrentStatus('DRIVER_ASSIGNED');
-            toast.success('Driver assigned! Driver is on the way.');
           }
-          
-          if (booking.bookingStatus === 'DRIVER_ARRIVED' && currentStatus !== 'DRIVER_ARRIVED') {
-            setCurrentStatus('DRIVER_ARRIVED');
-            toast.info('Driver has arrived at pickup location');
-          }
-          
-          if (booking.bookingStatus === 'TRIP_STARTED' && currentStatus !== 'TRIP_STARTED') {
-            setCurrentStatus('TRIP_STARTED');
-            toast.info('Trip started! Enjoy your ride.');
-          }
-          
-          if (booking.bookingStatus === 'TRIP_COMPLETED') {
-            setCurrentStatus('TRIP_COMPLETED');
-            if (pollingIntervalRef.current) {
-              clearInterval(pollingIntervalRef.current);
-            }
-            toast.success('Trip completed! Redirecting to payment...');
-            setTimeout(() => {
-              navigate('/customer/payment', { state: { bookingData: { bookingId: bookingData.bookingId } } });
-            }, 2000);
-          }
-          
-          if (booking.bookingStatus === 'CANCELLED') {
-            setCurrentStatus('CANCELLED');
-            if (pollingIntervalRef.current) {
-              clearInterval(pollingIntervalRef.current);
-            }
-            toast.error('Booking was cancelled');
-          }
+          setCurrentStatus('DRIVER_ASSIGNED');
+          toast.success('Driver assigned! Driver is on the way.');
         }
-      } catch (error) {
-        console.error('Polling error:', error);
+        
+        if (booking.bookingStatus === 'DRIVER_ARRIVED' && statusRef.current !== 'DRIVER_ARRIVED') {
+          setCurrentStatus('DRIVER_ARRIVED');
+          toast.info('Driver has arrived at pickup location');
+        }
+        
+        if (booking.bookingStatus === 'TRIP_STARTED' && statusRef.current !== 'TRIP_STARTED') {
+          setCurrentStatus('TRIP_STARTED');
+          toast.info('Trip started! Enjoy your ride.');
+        }
+        
+        if (booking.bookingStatus === 'TRIP_COMPLETED') {
+          setCurrentStatus('TRIP_COMPLETED');
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+          }
+          toast.success('Trip completed! Redirecting to payment...');
+          setTimeout(() => {
+            navigate('/customer/payment', { state: { bookingData: { bookingId: bookingData.bookingId } } });
+          }, 2000);
+        }
+        
+        if (booking.bookingStatus === 'CANCELLED') {
+          setCurrentStatus('CANCELLED');
+          if (pollingIntervalRef.current) {
+            clearInterval(pollingIntervalRef.current);
+          }
+          toast.error('Booking was cancelled');
+        }
       }
-    }, 30000);
+    } catch (error) {
+      console.error('Polling error:', error);
+    }
+  };
+
+  const startPolling = () => {
+    if (pollingIntervalRef.current) return;
+    
+    fetchBookingStatus(); // Immediate first call
+    pollingIntervalRef.current = setInterval(fetchBookingStatus, 5000);
   };
 
   useEffect(() => {
@@ -96,27 +119,53 @@ const RideTrackingPage = () => {
       return;
     }
     setBookingData(data);
-    setLoading(false);
-
-    // Join user room and booking room for real-time updates
-    if (socket && isConnected) {
-      if (user?._id) {
-        socket.emit('join-user', user._id);
-        console.log('📡 Joined user room:', user._id);
-      }
-      socket.emit('join-booking', data.bookingId);
-      console.log('📡 Joined booking room:', data.bookingId);
-    }
     
-    // Start polling as fallback
+    // Fetch initial booking status immediately
+    const fetchInitialStatus = async () => {
+      try {
+        const response = await api.get(`/api/bookings/${data.bookingId}`);
+        if (response.data.success) {
+          const booking = response.data.data;
+          console.log('📊 Initial fetch - Booking status:', booking.bookingStatus, 'riderId:', booking.riderId);
+          
+          if (booking.riderId) {
+            setAssignedRider({
+              name: booking.riderId.name,
+              phone: booking.riderId.phone,
+              cabDetails: booking.cabId
+            });
+            setCurrentStatus(booking.bookingStatus || 'DRIVER_ASSIGNED');
+          } else if (booking.bookingStatus && booking.bookingStatus !== 'SEARCHING_DRIVER') {
+            setCurrentStatus(booking.bookingStatus);
+          }
+        }
+      } catch (error) {
+        console.error('Initial fetch error:', error);
+      }
+    };
+    
+    fetchInitialStatus();
     startPolling();
+    setLoading(false);
     
     return () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [location.state, navigate, socket, isConnected, user]);
+  }, [location.state, navigate]);
+
+  // Join socket rooms when socket connects
+  useEffect(() => {
+    if (!socket || !isConnected || !bookingData?.bookingId) return;
+
+    if (user?._id) {
+      socket.emit('join-user', user._id);
+      console.log('📡 Joined user room:', user._id);
+    }
+    socket.emit('join-booking', bookingData.bookingId);
+    console.log('📡 Joined booking room:', bookingData.bookingId);
+  }, [socket, isConnected, bookingData?.bookingId, user?._id]);
 
   useEffect(() => {
     if (!socket || !isConnected || !bookingData?.bookingId) return;
@@ -142,6 +191,15 @@ const RideTrackingPage = () => {
       console.log('🎯 Socket: Trip started:', data);
       setCurrentStatus('TRIP_STARTED');
       toast.info('Trip started! Enjoy your ride.');
+    };
+
+    const handleRideCompleted = (data) => {
+      console.log('🎯 Socket: Ride completed:', data);
+      setCurrentStatus('TRIP_COMPLETED');
+      toast.success('Trip completed! Redirecting to payment...');
+      setTimeout(() => {
+        navigate('/customer/payment', { state: { bookingData: { bookingId: bookingData.bookingId } } });
+      }, 2000);
     };
 
     const handleTripCompleted = (data) => {
@@ -183,15 +241,21 @@ const RideTrackingPage = () => {
     };
 
     socket.on('rider-assigned', handleRiderAssigned);
+    socket.on('driver-assigned', handleRiderAssigned); // Backend emits this
     socket.on('driver-arrived', handleDriverArrived);
     socket.on('trip-started', handleTripStarted);
+    socket.on('ride-started', handleTripStarted); // Backend also emits this
+    socket.on('ride-completed', handleRideCompleted); // Backend emits this
     socket.on('trip-status-changed', handleStatusChanged);
     socket.on('booking-cancelled', handleBookingCancelled);
 
     return () => {
       socket.off('rider-assigned', handleRiderAssigned);
+      socket.off('driver-assigned', handleRiderAssigned);
       socket.off('driver-arrived', handleDriverArrived);
       socket.off('trip-started', handleTripStarted);
+      socket.off('ride-started', handleTripStarted);
+      socket.off('ride-completed', handleRideCompleted);
       socket.off('trip-status-changed', handleStatusChanged);
       socket.off('booking-cancelled', handleBookingCancelled);
     };
@@ -321,13 +385,9 @@ const RideTrackingPage = () => {
           <span>Back</span>
         </button>
         
-        <button
-          onClick={handleRefreshStatus}
-          className="flex items-center text-white hover:bg-white/10 rounded-lg p-2"
-        >
-          <Loader2 className="h-5 w-5 mr-1" />
-          <span className="text-sm">Refresh</span>
-        </button>
+        <div className="flex items-center text-white">
+          <span className="text-xs bg-green-600 px-2 py-1 rounded-full animate-pulse">● Live</span>
+        </div>
       </div>
 
       {/* Main Content */}

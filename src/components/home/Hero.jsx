@@ -182,7 +182,9 @@ const MapSelectionModal = ({ isOpen, onClose, onSelect, initialLocation, type })
   };
 
   const onPlaceSelect = (place) => {
-    if (place && place.geometry) {
+    if (!place) return;
+    
+    if (place.geometry && place.geometry.location) {
       const location = {
         lat: place.geometry.location.lat(),
         lng: place.geometry.location.lng()
@@ -195,6 +197,21 @@ const MapSelectionModal = ({ isOpen, onClose, onSelect, initialLocation, type })
         mapRef.current.panTo(location);
         mapRef.current.setZoom(16);
       }
+    } else if (place.place_id) {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ placeId: place.place_id }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const location = results[0].geometry.location;
+          setMarkerPosition(location);
+          setAddress(results[0].formatted_address);
+          setSearchInput(results[0].formatted_address);
+          
+          if (mapRef.current) {
+            mapRef.current.panTo(location);
+            mapRef.current.setZoom(16);
+          }
+        }
+      });
     }
   };
 
@@ -738,25 +755,24 @@ const Hero = () => {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-4 sm:gap-6 md:gap-8 mb-6 sm:mb-8">
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">10K+</div>
-                <div className="text-xs sm:text-sm text-gray-200 mt-1">Happy Customers</div>
+            <div className="flex flex-wrap gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 min-w-[80px] sm:min-w-[100px]">
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg">10K+</div>
+                <div className="text-[10px] sm:text-xs text-gray-200 mt-0.5">Happy Customers</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">4.8</div>
-                <div className="text-xs sm:text-sm text-gray-200 flex items-center justify-center gap-1 mt-1">
-                  <Star className="h-3 w-3 sm:h-4 sm:w-4 fill-yellow-400 text-yellow-400" />
-                  Rating
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 min-w-[80px] sm:min-w-[100px]">
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg flex items-center justify-center gap-1">
+                  4.8 <Star className="h-3 w-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
                 </div>
+                <div className="text-[10px] sm:text-xs text-gray-200 mt-0.5 text-center">Rating</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white drop-shadow-lg">99%</div>
-                <div className="text-xs sm:text-sm text-gray-200 mt-1">On-time Service</div>
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 min-w-[80px] sm:min-w-[100px]">
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg">99%</div>
+                <div className="text-[10px] sm:text-xs text-gray-200 mt-0.5">On-time</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">50+</div>
-                <div className="text-xs sm:text-sm text-gray-300 mt-1">Cities Covered</div>
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 min-w-[80px] sm:min-w-[100px]">
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white">50+</div>
+                <div className="text-[10px] sm:text-xs text-gray-300 mt-0.5">Cities</div>
               </div>
             </div>
 
@@ -764,10 +780,10 @@ const Hero = () => {
               {features.map((feature, idx) => (
                 <div 
                   key={idx}
-                  className="bg-white/10 backdrop-blur-md rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 transition-all duration-300"
+                  className="bg-white/10 backdrop-blur-md rounded-xl p-3 sm:p-4 border border-white/20 hover:bg-white/20 hover:scale-105 transition-all duration-300 cursor-pointer"
                 >
-                  <div className="text-blue-300 mb-2">
-                    {React.cloneElement(feature.icon, { className: feature.icon.props.className })}
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center mb-2 shadow-lg">
+                    {React.cloneElement(feature.icon, { className: "h-4 w-4 sm:h-5 sm:w-5 text-white" })}
                   </div>
                   <h3 className="text-xs sm:text-sm font-semibold text-white mb-0.5">
                     {feature.title}
@@ -780,22 +796,25 @@ const Hero = () => {
             </div>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 border border-white/20 shadow-2xl order-1 lg:order-2">
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">Book Your Ride</h2>
+          <div className="bg-white/10 backdrop-blur-2xl rounded-3xl p-5 sm:p-6 md:p-8 border border-white/30 shadow-2xl order-1 lg:order-2">
+            <div className="flex items-center justify-between mb-5 sm:mb-6">
+              <div>
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">Book Your Ride</h2>
+                <p className="text-xs sm:text-sm text-gray-300 mt-1">Quick & easy booking</p>
+              </div>
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-500/20 rounded-full border border-green-500/30">
                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
                 <span className="text-xs font-medium text-green-300">Available</span>
               </div>
             </div>
             
-            <div className="mb-4 sm:mb-6 md:mb-8">
-              <div className="flex gap-1.5 sm:gap-3 p-1.5 bg-white/10 rounded-xl sm:rounded-2xl overflow-x-auto">
+            <div className="mb-5 sm:mb-7 md:mb-9">
+              <div className="flex gap-1.5 sm:gap-3 p-1.5 bg-white/5 rounded-2xl overflow-x-auto">
                 <button
                   onClick={() => { setTripType('one-way'); setTripDays(1); }}
-                  className={`flex-1 py-2.5 sm:py-3 md:py-4 px-2 sm:px-3 rounded-lg sm:rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
+                  className={`flex-1 py-3 sm:py-4 px-3 sm:px-4 rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
                     tripType === 'one-way'
-                      ? 'bg-white text-black shadow-lg'
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30'
                       : 'text-gray-400 hover:text-white hover:bg-white/10'
                   }`}
                 >
@@ -803,9 +822,9 @@ const Hero = () => {
                 </button>
                 <button
                   onClick={() => { setTripType('round-trip'); if (tripDays < 1) setTripDays(1); }}
-                  className={`flex-1 py-2.5 sm:py-3 md:py-4 px-2 sm:px-3 rounded-lg sm:rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
+                  className={`flex-1 py-3 sm:py-4 px-3 sm:px-4 rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
                     tripType === 'round-trip'
-                      ? 'bg-white text-black shadow-lg'
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30'
                       : 'text-gray-400 hover:text-white hover:bg-white/10'
                   }`}
                 >
@@ -813,9 +832,9 @@ const Hero = () => {
                 </button>
                 <button
                   onClick={() => { setTripType('outstation'); if (tripDays < 1) setTripDays(1); }}
-                  className={`flex-1 py-2.5 sm:py-3 md:py-4 px-2 sm:px-3 rounded-lg sm:rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
+                  className={`flex-1 py-3 sm:py-4 px-3 sm:px-4 rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
                     tripType === 'outstation'
-                      ? 'bg-white text-black shadow-lg'
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30'
                       : 'text-gray-400 hover:text-white hover:bg-white/10'
                   }`}
                 >
@@ -823,9 +842,9 @@ const Hero = () => {
                 </button>
                 <button
                   onClick={() => { setTripType('local'); if (tripDays < 1) setTripDays(2); }}
-                  className={`flex-1 py-2.5 sm:py-3 md:py-4 px-2 sm:px-3 rounded-lg sm:rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
+                  className={`flex-1 py-3 sm:py-4 px-3 sm:px-4 rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
                     tripType === 'local'
-                      ? 'bg-white text-black shadow-lg'
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30'
                       : 'text-gray-400 hover:text-white hover:bg-white/10'
                   }`}
                 >

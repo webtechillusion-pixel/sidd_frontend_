@@ -143,7 +143,7 @@ const customerService = {
 
   getPaymentHistory: async (params = {}) => {
     try {
-      const response = await api.get('/api/payments/history', { params });
+      const response = await api.get('/api/payments/user/my-payments', { params });
       return response.data || response;
     } catch (error) {
       console.error('Get payment history error:', error);

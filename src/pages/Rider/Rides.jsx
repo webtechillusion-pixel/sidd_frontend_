@@ -95,6 +95,7 @@ const Rides = ({
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [vehiclePricing, setVehiclePricing] = useState({});
   const [isLoadingPricing, setIsLoadingPricing] = useState(false);
+  const [isInitialLocationFetched, setIsInitialLocationFetched] = useState(false);
   
   // Sync props to state when they change
   useEffect(() => {
@@ -119,6 +120,62 @@ const Rides = ({
   const audioRef = useRef(null);
   const locationTimeoutRef = useRef(null);
   const otpRefreshIntervalRef = useRef(null);
+  const autoRefreshIntervalRef = useRef(null);
+
+  // Auto-refresh available bookings every 10 seconds
+  useEffect(() => {
+    if (activeTab === 'available' && currentLocation) {
+      // Initial fetch
+      fetchAvailableBookings();
+      
+      // Auto-refresh every 10 seconds
+      autoRefreshIntervalRef.current = setInterval(() => {
+        fetchAvailableBookings();
+      }, 10000);
+    }
+
+    return () => {
+      if (autoRefreshIntervalRef.current) {
+        clearInterval(autoRefreshIntervalRef.current);
+      }
+    };
+  }, [activeTab, currentLocation]);
+
+  // Reset and pre-fill ride completion data when modal opens
+  useEffect(() => {
+    if (showCompletionModal && activeBooking) {
+      const isRoundTrip = activeBooking.tripType === 'ROUND_TRIP';
+      const estimatedDistance = activeBooking.distanceKm || 0;
+      const billableKm = activeBooking.billableKm || estimatedDistance;
+      
+      setRideCompletionData({
+        actualDistance: isRoundTrip ? billableKm : estimatedDistance,
+        additionalCharges: 0,
+        additionalChargesBreakdown: {
+          tollCharges: 0,
+          parkingCharges: 0,
+          nightCharges: 0,
+          otherCharges: 0,
+          description: ''
+        }
+      });
+    }
+  }, [showCompletionModal, activeBooking]);
+
+  // Auto-refresh active booking status every 5 seconds
+  useEffect(() => {
+    if (activeBooking && activeTab === 'active') {
+      // Initial fetch
+      fetchActiveBooking();
+      
+      // Auto-refresh every 5 seconds
+      const activeBookingInterval = setInterval(() => {
+        fetchActiveBooking();
+      }, 5000);
+      
+      return () => clearInterval(activeBookingInterval);
+    }
+  }, [activeBooking, activeTab]);
 
   // Auto-refresh after OTP verification
   useEffect(() => {
@@ -246,6 +303,7 @@ const CountdownTimer = ({ targetDate }) => {
         console.log('📍 Location obtained:', location);
         setCurrentLocation(location);
         setIsGettingLocation(false);
+        setIsInitialLocationFetched(true);
         
         // Update location in backend
         riderService.updateLocation(location).catch(err => {
@@ -328,7 +386,6 @@ const CountdownTimer = ({ targetDate }) => {
   // Fetch available bookings
   const fetchAvailableBookings = useCallback(async () => {
     if (!currentLocation) {
-      getCurrentLocation();
       return;
     }
 
@@ -352,7 +409,7 @@ const CountdownTimer = ({ targetDate }) => {
     } finally {
       setIsRefreshing(false);
     }
-  }, [currentLocation, getCurrentLocation]);
+  }, [currentLocation]);
 
   // Fetch active booking
   const fetchActiveBooking = useCallback(async () => {
@@ -425,10 +482,10 @@ const CountdownTimer = ({ targetDate }) => {
 
   // Fetch available bookings when location changes and tab is available
   useEffect(() => {
-    if (currentLocation && activeTab === 'available') {
+    if (currentLocation && activeTab === 'available' && isInitialLocationFetched) {
       fetchAvailableBookings();
     }
-  }, [currentLocation, activeTab, fetchAvailableBookings]);
+  }, [currentLocation, activeTab, fetchAvailableBookings, isInitialLocationFetched]);
 
   // Socket event handlers
   useEffect(() => {
@@ -656,16 +713,28 @@ const CountdownTimer = ({ targetDate }) => {
   const handleCompleteRide = async () => {
     if (!activeBooking) return;
 
-    const pricing = vehiclePricing[activeBooking.vehicleType];
+    // Normalize vehicle type to match pricing keys
+    const vehicleTypeKey = activeBooking.vehicleType?.toUpperCase();
+    const pricing = vehiclePricing[vehicleTypeKey] || vehiclePricing[activeBooking.vehicleType];
     if (!pricing) {
       toast.error('Pricing information not available');
       return;
     }
 
     const estimatedDistance = activeBooking.distanceKm || 0;
-    if (rideCompletionData.actualDistance < estimatedDistance) {
-      toast.warning('Actual distance cannot be less than estimated distance');
-      return;
+    const billableKm = activeBooking.billableKm || estimatedDistance;
+    const isRoundTrip = activeBooking.tripType === 'ROUND_TRIP';
+    
+    if (isRoundTrip) {
+      if (rideCompletionData.actualDistance < billableKm) {
+        toast.warning(`Actual distance cannot be less than billable distance (${billableKm} km) for round trip`);
+        return;
+      }
+    } else {
+      if (rideCompletionData.actualDistance < estimatedDistance) {
+        toast.warning('Actual distance cannot be less than estimated distance');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -849,16 +918,12 @@ const CountdownTimer = ({ targetDate }) => {
             </button>
           </div>
 
-          {/* Refresh Button - only show in available tab */}
+          {/* Auto-refresh indicator */}
           {activeTab === 'available' && (
-            <button
-              onClick={fetchAvailableBookings}
-              disabled={isRefreshing}
-              className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700 rounded-xl text-white transition-all flex items-center gap-2 disabled:opacity-50"
-            >
-              <FaSpinner className={`${isRefreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
+            <div className="px-4 py-2 bg-slate-700/50 rounded-xl text-white flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              Auto-refresh
+            </div>
           )}
         </div>
       </div>
@@ -1180,7 +1245,7 @@ const CountdownTimer = ({ targetDate }) => {
           <div>
             <p className="text-xs text-slate-400">Rate per km</p>
             <p className="text-lg font-semibold text-teal-400">
-              ₹{vehiclePricing[activeBooking.vehicleType]?.pricePerKm || 0}
+              ₹{vehiclePricing[activeBooking.vehicleType?.toUpperCase()]?.pricePerKm || vehiclePricing[activeBooking.vehicleType]?.pricePerKm || 0}
             </p>
           </div>
         </div>
@@ -1267,7 +1332,18 @@ const CountdownTimer = ({ targetDate }) => {
 
         {activeBooking.bookingStatus === 'TRIP_STARTED' && (
           <button
-            onClick={() => setShowCompletionModal(true)}
+            onClick={async () => {
+              // Fetch latest booking data before showing modal
+              try {
+                const response = await riderService.getActiveBooking();
+                if (response.success && response.data) {
+                  setActiveBooking(response.data);
+                }
+              } catch (error) {
+                console.error('Error fetching latest booking:', error);
+              }
+              setShowCompletionModal(true);
+            }}
             className="w-full py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
           >
             <FaFlag />
@@ -1361,7 +1437,14 @@ const CountdownTimer = ({ targetDate }) => {
               </div>
             ) : (
               (() => {
-                const pricing = vehiclePricing[activeBooking.vehicleType];
+                // Normalize vehicle type to match pricing keys (uppercase)
+                const vehicleTypeKey = activeBooking.vehicleType?.toUpperCase();
+                const pricing = vehiclePricing[vehicleTypeKey] || vehiclePricing[activeBooking.vehicleType] || { baseFare: 50, pricePerKm: 12, adminCommissionPercent: 20 };
+                
+                if (!vehiclePricing[vehicleTypeKey] && !vehiclePricing[activeBooking.vehicleType]) {
+                  console.warn('⚠️ Pricing not found for vehicle type:', activeBooking.vehicleType, 'Using default pricing');
+                }
+                
                 if (!pricing) {
                   return (
                     <div className="text-center py-8">
@@ -1371,7 +1454,9 @@ const CountdownTimer = ({ targetDate }) => {
                 }
                 
                 const estimatedDistance = activeBooking.distanceKm || 0;
-                const actualDistance = rideCompletionData.actualDistance || estimatedDistance;
+                const billableKm = activeBooking.billableKm || estimatedDistance;
+                const isRoundTrip = activeBooking.tripType === 'ROUND_TRIP';
+                const actualDistance = rideCompletionData.actualDistance || (isRoundTrip ? billableKm : estimatedDistance);
                 const additionalCharges = rideCompletionData.additionalCharges || 0;
                 
                 // Calculate fares using database pricing
@@ -1389,14 +1474,24 @@ const CountdownTimer = ({ targetDate }) => {
                   <div className="space-y-4 mb-6">
                     {/* Customer Info */}
                     <div className="bg-slate-700/30 rounded-lg p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
-                          <FaUser className="text-white" />
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
+                            <FaUser className="text-white" />
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">{activeBooking.userId?.name || 'Customer'}</p>
+                            <p className="text-xs text-slate-400">{activeBooking.userId?.phone || 'N/A'}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-white font-medium">{activeBooking.userId?.name || 'Customer'}</p>
-                          <p className="text-xs text-slate-400">{activeBooking.userId?.phone || 'N/A'}</p>
-                        </div>
+                        {activeBooking.userId?.phone && (
+                          <a
+                            href={`tel:${activeBooking.userId.phone}`}
+                            className="p-2 bg-green-600 hover:bg-green-700 rounded-full"
+                          >
+                            <FaPhone className="text-white text-sm" />
+                          </a>
+                        )}
                       </div>
                     </div>
 
@@ -1418,8 +1513,8 @@ const CountdownTimer = ({ targetDate }) => {
                       </div>
                     </div>
 
-                    {/* Trip Type & Payment */}
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* Trip Type & Payment & Estimated Fare */}
+                    <div className="grid grid-cols-3 gap-3">
                       <div className="bg-slate-700/30 rounded-lg p-3">
                         <p className="text-xs text-slate-400">Trip Type</p>
                         <p className="text-white font-medium">{activeBooking.tripType === 'ROUND_TRIP' ? 'Round Trip' : 'One Way'}</p>
@@ -1430,6 +1525,10 @@ const CountdownTimer = ({ targetDate }) => {
                           {activeBooking.paymentMethod === 'CASH' ? 'Cash' : 'Online'}
                         </p>
                       </div>
+                      <div className="bg-slate-700/30 rounded-lg p-3">
+                        <p className="text-xs text-slate-400">Est. Fare</p>
+                        <p className="text-white font-medium">₹{activeBooking.estimatedFare || 0}</p>
+                      </div>
                     </div>
 
                     {/* Distance Input */}
@@ -1439,19 +1538,19 @@ const CountdownTimer = ({ targetDate }) => {
                       </label>
                       <input
                         type="number"
-                        value={rideCompletionData.actualDistance}
+                        value={rideCompletionData.actualDistance || (isRoundTrip ? billableKm : estimatedDistance)}
                         onChange={(e) => setRideCompletionData({
                           ...rideCompletionData,
                           actualDistance: parseFloat(e.target.value) || 0
                         })}
                         step="0.1"
-                        min={estimatedDistance}
+                        min={isRoundTrip ? billableKm : estimatedDistance}
                         className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="Enter actual distance"
                         autoFocus
                       />
                       <p className="text-xs text-slate-500 mt-1">
-                        Estimated: {estimatedDistance.toFixed(2)} km
+                        {isRoundTrip ? `Round Trip - Billable: ${billableKm.toFixed(2)} km` : `Estimated: ${estimatedDistance.toFixed(2)} km`}
                       </p>
                     </div>
 
@@ -1581,7 +1680,7 @@ const CountdownTimer = ({ targetDate }) => {
                         {/* Vehicle Type & Rate */}
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-400">Vehicle Type:</span>
-                          <span className="text-white font-medium">{activeBooking.vehicleType}</span>
+                          <span className="text-white font-medium">{activeBooking.vehicleType?.replace('_', ' ') || 'Sedan'}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-400">Rate per km:</span>

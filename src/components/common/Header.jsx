@@ -152,15 +152,15 @@ const handleLogout = async () => {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm rounded-b-2xl">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
           
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-            <Car className="h-8 w-8 text-[#219ebc]" />
+          <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
+            <img src="/pariyatan logo.png" alt="Pariyatan" className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 object-contain" />
             <div>
-              <h1 className="text-3xl font-bold text-[#023047]">Pariyatan</h1>
+              <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#023047]">Pariyatan</h1>
             </div>
           </Link>
 

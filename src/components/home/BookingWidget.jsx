@@ -290,12 +290,36 @@ const mapRef = useRef(null);
   const handlePlaceSelect = () => {
     if (!autocompleteRef.current) return;
     const place = autocompleteRef.current.getPlace();
-    if (place.geometry) {
+    
+    if (!place) {
+      console.error('No place selected');
+      return;
+    }
+    
+    if (place.geometry && place.geometry.location) {
       handleMapLocationSelect({
         name: place.name || place.formatted_address,
         coords: { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() },
         type: 'selected'
       });
+    } else if (place.place_id) {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ placeId: place.place_id }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const location = results[0].geometry.location;
+          handleMapLocationSelect({
+            name: place.description || place.formatted_address,
+            coords: { lat: location.lat(), lng: location.lng() },
+            type: 'selected'
+          });
+        } else {
+          console.error('Geocoding failed:', status);
+          toast.error('Could not get location details. Please try selecting from map.');
+        }
+      });
+    } else {
+      console.error('No geometry or place_id available for this selection');
+      toast.error('Please select a valid location from the suggestions.');
     }
   };
 
@@ -429,13 +453,13 @@ const mapRef = useRef(null);
     const perKmRates = {
       'HATCHBACK': selectedVehicle?.pricePerKm || 10,
       'SEDAN': selectedVehicle?.pricePerKm || 12,
-      'SUV': selectedVehicle?.pricePerKm || 18,
-      'PREMIUM': selectedVehicle?.pricePerKm || 25,
-      'LUXURY': selectedVehicle?.pricePerKm || 30
+      'SUV': selectedVehicle?.pricePerKm || 15,
+      'PREMIUM': selectedVehicle?.pricePerKm || 20,
+      'LUXURY': selectedVehicle?.pricePerKm || 25
     };
     const cabType = cab?.cab?.type || vehicleType;
-    const baseFare = baseFares[cabType] || 60;
-    const perKmRate = perKmRates[cabType] || 14;
+    const baseFare = baseFares[cabType] || 50;
+    const perKmRate = perKmRates[cabType] || 12;
     const surge = nearbyCabs.length < 3 ? 1.2 : 1;
     return Math.round((baseFare + distance * perKmRate) * surge);
   };
