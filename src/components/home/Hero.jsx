@@ -712,20 +712,20 @@ const Hero = () => {
   };
 
   return (
-    <section className="relative min-h-[85vh] md:min-h-[100vh] flex items-center overflow-hidden">
+    <section className="relative min-h-screen md:min-h-[100vh] flex items-start md:items-center overflow-hidden">
       <div className="absolute inset-0">
         <img
           src="/images/hero_img.png"
           alt="Travel Background"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/70 via-slate-900/50 to-slate-900/70"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/50"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-slate-900/60 to-slate-900/80 md:from-slate-900/70 md:via-slate-900/50 md:to-slate-900/70"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent md:from-slate-900/80"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-slate-900/60 md:to-slate-900/50"></div>
       </div>
 
-      <div className="absolute top-24 left-0 w-64 md:w-96 h-64 md:h-96 bg-gradient-to-r from-blue-500/10 to-transparent rounded-full blur-3xl"></div>
-      <div className="absolute bottom-20 right-0 w-64 md:w-96 h-64 md:h-96 bg-gradient-to-l from-amber-500/10 to-transparent rounded-full blur-3xl"></div>
+      <div className="absolute top-20 md:top-24 left-0 w-40 md:w-96 h-40 md:h-96 bg-gradient-to-r from-blue-500/10 to-transparent rounded-full blur-3xl"></div>
+      <div className="absolute bottom-40 md:bottom-20 right-0 w-40 md:w-96 h-40 md:h-96 bg-gradient-to-l from-amber-500/10 to-transparent rounded-full blur-3xl"></div>
 
       <MapSelectionModal
         isOpen={isMapModalOpen}
@@ -735,44 +735,44 @@ const Hero = () => {
         type={mapSelectionType}
       />
 
-      <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 relative z-10 py-6 md:py-12 lg:py-16">
-        <div className="grid lg:grid-cols-2 gap-6 lg:gap-10 items-start">
+      <div className="container mx-auto px-2 sm:px-4 md:px-6 lg:px-8 relative z-10 pt-20 sm:pt-16 pb-4 md:py-12 lg:py-16 w-full overflow-hidden">
+        <div className="grid lg:grid-cols-2 gap-4 lg:gap-8 xl:gap-10 items-start">
           
           <div className="text-white order-2 lg:order-1">
-            <div className="mb-4 sm:mb-6">
-              <div className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 bg-white/10 backdrop-blur-md rounded-full mb-3 sm:mb-4 border border-white/20">
-                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-                <span className="text-xs font-medium tracking-wide text-gray-100">INDIA'S TRUSTED CAB SERVICE</span>
+            <div className="mb-3 sm:mb-6">
+              <div className="inline-flex items-center px-2.5 py-1 sm:px-4 sm:py-2 bg-white/10 backdrop-blur-md rounded-full mb-2 sm:mb-4 border border-white/20">
+                <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full mr-1.5 sm:mr-2 animate-pulse"></span>
+                <span className="text-[10px] sm:text-xs font-medium tracking-wide text-gray-100">INDIA'S TRUSTED CAB SERVICE</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-3 sm:mb-4 leading-tight drop-shadow-lg">
+              <h1 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-2 sm:mb-4 leading-tight drop-shadow-lg">
                 Your Journey, 
                 <span className="block mt-1 sm:mt-2 text-white drop-shadow-lg">Our Responsibility</span>
               </h1>
-              <p className="text-sm sm:text-base md:text-lg text-gray-100 mb-4 sm:mb-6 max-w-xl leading-relaxed drop-shadow-md">
+              <p className="text-xs sm:text-base md:text-lg text-gray-100 mb-3 sm:mb-6 max-w-xl leading-relaxed drop-shadow-md">
                 Experience hassle-free travel with our premium cab services. 
                 From city rides to outstation tours, we ensure comfort, safety, 
                 and punctuality in every journey.
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 min-w-[80px] sm:min-w-[100px]">
-                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg">10K+</div>
-                <div className="text-[10px] sm:text-xs text-gray-200 mt-0.5">Happy Customers</div>
+            <div className="flex flex-wrap gap-2 sm:gap-4 md:gap-6 mb-4 sm:mb-8">
+              <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-white/20 min-w-[70px] sm:min-w-[100px] flex-1 sm:flex-none">
+                <div className="text-lg sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg">10K+</div>
+                <div className="text-[9px] sm:text-xs text-gray-200 mt-0.5">Happy Customers</div>
               </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 min-w-[80px] sm:min-w-[100px]">
-                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg flex items-center justify-center gap-1">
-                  4.8 <Star className="h-3 w-3 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
+              <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-white/20 min-w-[70px] sm:min-w-[100px] flex-1 sm:flex-none">
+                <div className="text-lg sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg flex items-center justify-center gap-1">
+                  4.8 <Star className="h-2.5 w-2.5 sm:w-4 sm:h-4 fill-yellow-400 text-yellow-400" />
                 </div>
-                <div className="text-[10px] sm:text-xs text-gray-200 mt-0.5 text-center">Rating</div>
+                <div className="text-[9px] sm:text-xs text-gray-200 mt-0.5 text-center">Rating</div>
               </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 min-w-[80px] sm:min-w-[100px]">
-                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg">99%</div>
-                <div className="text-[10px] sm:text-xs text-gray-200 mt-0.5">On-time</div>
+              <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-white/20 min-w-[70px] sm:min-w-[100px] flex-1 sm:flex-none">
+                <div className="text-lg sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg">99%</div>
+                <div className="text-[9px] sm:text-xs text-gray-200 mt-0.5">On-time</div>
               </div>
-              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 min-w-[80px] sm:min-w-[100px]">
-                <div className="text-xl sm:text-2xl md:text-3xl font-bold text-white">50+</div>
-                <div className="text-[10px] sm:text-xs text-gray-300 mt-0.5">Cities</div>
+              <div className="bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-2.5 sm:p-4 border border-white/20 min-w-[70px] sm:min-w-[100px] flex-1 sm:flex-none">
+                <div className="text-lg sm:text-2xl md:text-3xl font-bold text-white">50+</div>
+                <div className="text-[9px] sm:text-xs text-gray-300 mt-0.5">Cities</div>
               </div>
             </div>
 
@@ -796,11 +796,11 @@ const Hero = () => {
             </div>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-2xl rounded-3xl p-5 sm:p-6 md:p-8 border border-white/30 shadow-2xl order-1 lg:order-2">
-            <div className="flex items-center justify-between mb-5 sm:mb-6">
+          <div className="bg-white/10 backdrop-blur-2xl rounded-xl sm:rounded-3xl p-2 sm:p-6 md:p-8 border border-white/30 shadow-2xl order-1 lg:order-2 w-full max-w-[420px] lg:max-w-none mx-auto overflow-hidden">
+            <div className="flex items-center justify-between mb-3 sm:mb-6">
               <div>
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">Book Your Ride</h2>
-                <p className="text-xs sm:text-sm text-gray-300 mt-1">Quick & easy booking</p>
+                <h2 className="text-base sm:text-2xl md:text-3xl font-bold text-white">Book Your Ride</h2>
+                <p className="text-[10px] sm:text-sm text-gray-300 mt-0.5">Quick & easy booking</p>
               </div>
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-500/20 rounded-full border border-green-500/30">
                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
@@ -808,11 +808,11 @@ const Hero = () => {
               </div>
             </div>
             
-            <div className="mb-5 sm:mb-7 md:mb-9">
-              <div className="flex gap-1.5 sm:gap-3 p-1.5 bg-white/5 rounded-2xl overflow-x-auto">
+            <div className="mb-3 sm:mb-7 md:mb-9">
+              <div className="flex gap-1 p-1 bg-white/5 rounded-lg sm:rounded-2xl overflow-x-auto">
                 <button
                   onClick={() => { setTripType('one-way'); setTripDays(1); }}
-                  className={`flex-1 py-3 sm:py-4 px-3 sm:px-4 rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
+                  className={`flex-1 py-2 sm:py-3 px-1.5 sm:px-4 rounded-md sm:rounded-xl font-semibold transition-all text-[9px] sm:text-sm whitespace-nowrap ${
                     tripType === 'one-way'
                       ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30'
                       : 'text-gray-400 hover:text-white hover:bg-white/10'
@@ -822,7 +822,7 @@ const Hero = () => {
                 </button>
                 <button
                   onClick={() => { setTripType('round-trip'); if (tripDays < 1) setTripDays(1); }}
-                  className={`flex-1 py-3 sm:py-4 px-3 sm:px-4 rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
+                  className={`flex-1 py-2 sm:py-3 px-1.5 sm:px-4 rounded-md sm:rounded-xl font-semibold transition-all text-[9px] sm:text-sm whitespace-nowrap ${
                     tripType === 'round-trip'
                       ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30'
                       : 'text-gray-400 hover:text-white hover:bg-white/10'
@@ -832,7 +832,7 @@ const Hero = () => {
                 </button>
                 <button
                   onClick={() => { setTripType('outstation'); if (tripDays < 1) setTripDays(1); }}
-                  className={`flex-1 py-3 sm:py-4 px-3 sm:px-4 rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
+                  className={`flex-1 py-2 sm:py-3 px-1.5 sm:px-4 rounded-md sm:rounded-xl font-semibold transition-all text-[9px] sm:text-sm whitespace-nowrap ${
                     tripType === 'outstation'
                       ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30'
                       : 'text-gray-400 hover:text-white hover:bg-white/10'
@@ -842,7 +842,7 @@ const Hero = () => {
                 </button>
                 <button
                   onClick={() => { setTripType('local'); if (tripDays < 1) setTripDays(2); }}
-                  className={`flex-1 py-3 sm:py-4 px-3 sm:px-4 rounded-xl font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
+                  className={`flex-1 py-2 sm:py-3 px-1.5 sm:px-4 rounded-md sm:rounded-xl font-semibold transition-all text-[9px] sm:text-sm whitespace-nowrap ${
                     tripType === 'local'
                       ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/30'
                       : 'text-gray-400 hover:text-white hover:bg-white/10'
@@ -854,15 +854,15 @@ const Hero = () => {
             </div>
 
             {(tripType === 'round-trip' || tripType === 'outstation') && (
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-300 mb-3">
+              <div className="mb-3 sm:mb-6">
+                <label className="block text-xs font-medium text-gray-300 mb-2">
                   Number of Days
                 </label>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => setTripDays(Math.max(1, tripDays - 1))}
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-xl font-bold text-white transition-all"
+                    className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-lg sm:rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-base sm:text-xl font-bold text-white transition-all"
                   >
                     -
                   </button>
@@ -871,30 +871,30 @@ const Hero = () => {
                     min="1"
                     value={tripDays}
                     onChange={(e) => setTripDays(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="flex-1 py-3 sm:py-4 px-4 rounded-xl bg-white/10 border border-white/20 text-white text-center text-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 py-2 sm:py-3 px-2 sm:px-4 rounded-lg sm:rounded-xl bg-white/10 border border-white/20 text-white text-center text-sm sm:text-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     type="button"
                     onClick={() => setTripDays(tripDays + 1)}
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-xl font-bold text-white transition-all"
+                    className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-lg sm:rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-base sm:text-xl font-bold text-white transition-all"
                   >
                     +
                   </button>
-                  <span className="text-gray-300 text-sm">day(s)</span>
+                  <span className="text-gray-300 text-xs sm:text-sm whitespace-nowrap">day(s)</span>
                 </div>
               </div>
             )}
 
             {tripType === 'local' && (
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-300 mb-3">
+              <div className="mb-3 sm:mb-6">
+                <label className="block text-xs font-medium text-gray-300 mb-2">
                   Number of Hours
                 </label>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => setTripDays(Math.max(2, tripDays - 1))}
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-xl font-bold text-white transition-all"
+                    className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-lg sm:rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-base sm:text-xl font-bold text-white transition-all"
                   >
                     -
                   </button>
@@ -903,47 +903,47 @@ const Hero = () => {
                     min="2"
                     value={tripDays}
                     onChange={(e) => setTripDays(Math.max(2, parseInt(e.target.value) || 2))}
-                    className="flex-1 py-3 sm:py-4 px-4 rounded-xl bg-white/10 border border-white/20 text-white text-center text-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 py-2 sm:py-3 px-2 sm:px-4 rounded-lg sm:rounded-xl bg-white/10 border border-white/20 text-white text-center text-sm sm:text-lg font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     type="button"
                     onClick={() => setTripDays(tripDays + 1)}
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-xl font-bold text-white transition-all"
+                    className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-lg sm:rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-base sm:text-xl font-bold text-white transition-all"
                   >
                     +
                   </button>
-                  <span className="text-gray-300 text-sm">hour(s)</span>
+                  <span className="text-gray-300 text-xs sm:text-sm whitespace-nowrap">hour(s)</span>
                 </div>
               </div>
             )}
 
-            <div className="mb-6 sm:mb-8">
-              <label className="block text-sm font-medium text-gray-300 mb-3">
+            <div className="mb-3 sm:mb-8">
+              <label className="block text-[10px] sm:text-sm font-medium text-gray-300 mb-1.5 sm:mb-3">
                 Payment Method
               </label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-3">
                 <button
                   onClick={() => setPaymentMethod('CASH')}
-                  className={`py-3 sm:py-4 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm ${
+                  className={`py-2 sm:py-3 px-2 sm:px-4 rounded-lg sm:rounded-xl font-semibold transition-all flex items-center justify-center gap-1 text-[10px] sm:text-sm ${
                     paymentMethod === 'CASH'
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                       : 'bg-slate-700/50 text-gray-300 hover:bg-slate-600/50'
                   }`}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3.5 h-3.5 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                   Cash
                 </button>
                 <button
                   onClick={() => setPaymentMethod('ONLINE')}
-                  className={`py-3 sm:py-4 px-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm ${
+                  className={`py-2 sm:py-3 px-2 sm:px-4 rounded-lg sm:rounded-xl font-semibold transition-all flex items-center justify-center gap-1 text-[10px] sm:text-sm ${
                     paymentMethod === 'ONLINE'
                       ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                       : 'bg-slate-700/50 text-gray-300 hover:bg-slate-600/50'
                   }`}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3.5 h-3.5 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                   Online
@@ -952,45 +952,45 @@ const Hero = () => {
             </div>
 
             {bookingStep === 1 && (
-              <div className="space-y-5">
+              <div className="space-y-2 sm:space-y-5">
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-[10px] sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                     Pickup Location
                   </label>
                   <div className="relative">
-                    <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-400 h-5 w-5" />
+                    <MapPin className="absolute left-2.5 sm:left-4 top-1/2 transform -translate-y-1/2 text-blue-400 h-3.5 w-3.5 sm:h-5 sm:w-5" />
                     <input
                       type="text"
                       value={pickup}
                       onChange={handlePickupChange}
                       placeholder="Enter pickup location"
-                      className="w-full pl-11 pr-24 py-3.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      className="w-full pl-8 sm:pl-11 pr-16 sm:pr-24 py-2.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg sm:rounded-xl text-white placeholder-gray-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     />
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
+                    <div className="absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2 flex gap-0.5">
                       <button
                         onClick={() => openMapModal('pickup')}
-                        className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-blue-400 transition-colors"
+                        className="p-1 sm:p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-blue-400 transition-colors"
                         title="Select on map"
                       >
-                        <Map className="h-4 w-4" />
+                        <Map className="h-3 w-3 sm:h-4 sm:w-4" />
                       </button>
                       <button
                         onClick={() => getCurrentLocation('pickup')}
-                        className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-blue-400 transition-colors"
+                        className="p-1 sm:p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-blue-400 transition-colors"
                         title="Use my location"
                       >
-                        <Crosshair className="h-4 w-4" />
+                        <Crosshair className="h-3 w-3 sm:h-4 sm:w-4" />
                       </button>
                     </div>
                   </div>
                   
                   {pickupSuggestions.length > 0 && (
-                    <div className="absolute z-20 mt-2 w-full bg-slate-800/95 backdrop-blur-xl rounded-xl border border-slate-700 shadow-xl max-h-60 overflow-y-auto">
+                    <div className="absolute z-20 mt-1 sm:mt-2 w-full bg-slate-800/95 backdrop-blur-xl rounded-lg sm:rounded-xl border border-slate-700 shadow-xl max-h-40 sm:max-h-60 overflow-y-auto">
                       {pickupSuggestions.map((place, idx) => (
                         <button
                           key={idx}
                           onClick={() => selectPlace(place, 'pickup')}
-                          className="w-full text-left px-4 py-3 hover:bg-slate-700 text-white text-sm border-b border-slate-700 last:border-0 transition-colors"
+                          className="w-full text-left px-2.5 sm:px-4 py-2 sm:py-3 hover:bg-slate-700 text-white text-[10px] sm:text-sm border-b border-slate-700 last:border-0 transition-colors"
                         >
                           {place.description}
                         </button>
@@ -1000,43 +1000,43 @@ const Hero = () => {
                 </div>
 
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                  <label className="block text-[10px] sm:text-sm font-medium text-gray-300 mb-1 sm:mb-2">
                     Drop Location
                   </label>
                   <div className="relative">
-                    <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-red-400 h-5 w-5" />
+                    <MapPin className="absolute left-2.5 sm:left-4 top-1/2 transform -translate-y-1/2 text-red-400 h-3.5 w-3.5 sm:h-5 sm:w-5" />
                     <input
                       type="text"
                       value={drop}
                       onChange={handleDropChange}
                       placeholder="Enter drop location"
-                      className="w-full pl-11 pr-24 py-3.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      className="w-full pl-8 sm:pl-11 pr-16 sm:pr-24 py-2.5 sm:py-3 bg-white/10 border border-white/20 rounded-lg sm:rounded-xl text-white placeholder-gray-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     />
-                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
+                    <div className="absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2 flex gap-0.5">
                       <button
                         onClick={() => openMapModal('drop')}
-                        className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
+                        className="p-1 sm:p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
                         title="Select on map"
                       >
-                        <Map className="h-4 w-4" />
+                        <Map className="h-3 w-3 sm:h-4 sm:w-4" />
                       </button>
                       <button
                         onClick={() => getCurrentLocation('drop')}
-                        className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
+                        className="p-1 sm:p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-red-400 transition-colors"
                         title="Use my location"
                       >
-                        <Crosshair className="h-4 w-4" />
+                        <Crosshair className="h-3 w-3 sm:h-4 sm:w-4" />
                       </button>
                     </div>
                   </div>
                   
                   {dropSuggestions.length > 0 && (
-                    <div className="absolute z-20 mt-2 w-full bg-slate-800/95 backdrop-blur-xl rounded-xl border border-slate-700 shadow-xl max-h-60 overflow-y-auto">
+                    <div className="absolute z-20 mt-1 sm:mt-2 w-full bg-slate-800/95 backdrop-blur-xl rounded-lg sm:rounded-xl border border-slate-700 shadow-xl max-h-40 sm:max-h-60 overflow-y-auto">
                       {dropSuggestions.map((place, idx) => (
                         <button
                           key={idx}
                           onClick={() => selectPlace(place, 'drop')}
-                          className="w-full text-left px-4 py-3 hover:bg-slate-700 text-white text-sm border-b border-slate-700 last:border-0 transition-colors"
+                          className="w-full text-left px-2.5 sm:px-4 py-2 sm:py-3 hover:bg-slate-700 text-white text-[10px] sm:text-sm border-b border-slate-700 last:border-0 transition-colors"
                         >
                           {place.description}
                         </button>
@@ -1048,7 +1048,7 @@ const Hero = () => {
                 <button
                   onClick={() => setBookingStep(2)}
                   disabled={!pickup || !drop}
-                  className="w-full py-4 bg-white hover:bg-gray-100 text-black font-semibold rounded-xl transition-all text-base disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                  className="w-full py-2.5 sm:py-4 bg-white hover:bg-gray-100 text-black font-semibold rounded-lg sm:rounded-xl transition-all text-xs sm:text-base disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                 >
                   Select Vehicle
                 </button>
@@ -1056,33 +1056,33 @@ const Hero = () => {
             )}
 
             {bookingStep === 2 && (
-              <div className="space-y-5">
-                <h3 className="text-lg font-semibold text-white mb-4">
+              <div className="space-y-3 sm:space-y-5">
+                <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">
                   Select Vehicle Type
                 </h3>
                 
-                <div className="space-y-3 max-h-80 md:max-h-96 overflow-y-auto pr-1">
+                <div className="space-y-2 sm:space-y-3 max-h-64 sm:max-h-80 md:max-h-96 overflow-y-auto pr-1">
                   {VEHICLE_TYPES.map((vehicle) => (
                     <button
                       key={vehicle.id}
                       onClick={() => setSelectedVehicle(vehicle)}
-                      className={`w-full p-4 rounded-2xl border-2 transition-all ${
+                      className={`w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border-2 transition-all ${
                         selectedVehicle?.id === vehicle.id
                           ? 'border-blue-500 bg-blue-500/20 shadow-lg shadow-blue-500/20'
                           : 'border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/20'
                       }`}
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="text-4xl">{vehicle.icon}</div>
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="text-2xl sm:text-4xl">{vehicle.icon}</div>
                         <div className="flex-1 text-left">
-                          <h4 className="text-white font-semibold text-base">{vehicle.name}</h4>
-                          <p className="text-sm text-gray-400">{vehicle.description}</p>
-                          <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
+                          <h4 className="text-white font-semibold text-sm sm:text-base">{vehicle.name}</h4>
+                          <p className="text-xs sm:text-sm text-gray-400">{vehicle.description}</p>
+                          <div className="flex items-center gap-2 sm:gap-4 mt-1 sm:mt-2 text-xs text-gray-400">
                             <span className="flex items-center gap-1">
-                              <Users className="h-4 w-4" /> {vehicle.capacity} Seats
+                              <Users className="h-3 w-3 sm:h-4 sm:w-4" /> {vehicle.capacity} Seats
                             </span>
                             <span className="flex items-center gap-1">
-                              <Car className="h-4 w-4" /> {vehicle.luggage} Bags
+                              <Car className="h-3 w-3 sm:h-4 sm:w-4" /> {vehicle.luggage} Bags
                             </span>
                           </div>
                         </div>
@@ -1091,20 +1091,20 @@ const Hero = () => {
                   ))}
                 </div>
 
-                <div className="flex gap-3 pt-3">
+                <div className="flex gap-2 sm:gap-3 pt-2 sm:pt-3">
                   <button
                     onClick={() => setBookingStep(1)}
-                    className="flex-1 py-3.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all text-sm"
+                    className="flex-1 py-3 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg sm:rounded-xl transition-all text-xs sm:text-sm"
                   >
                     Back
                   </button>
                   <button
                     onClick={calculateFare}
                     disabled={!selectedVehicle || isCalculating}
-                    className="flex-1 py-3.5 bg-white hover:bg-gray-100 text-black font-semibold rounded-xl transition-all text-sm disabled:opacity-50 shadow-lg"
+                    className="flex-1 py-3 sm:py-3.5 bg-white hover:bg-gray-100 text-black font-semibold rounded-lg sm:rounded-xl transition-all text-xs sm:text-sm disabled:opacity-50 shadow-lg"
                   >
                     {isCalculating ? (
-                      <Loader className="h-5 w-5 animate-spin mx-auto" />
+                      <Loader className="h-4 w-4 sm:h-5 sm:w-5 animate-spin mx-auto" />
                     ) : (
                       'Calculate Fare'
                     )}
@@ -1114,8 +1114,8 @@ const Hero = () => {
             )}
 
             {bookingStep === 3 && fareDetails && (
-              <div className="bg-white/10 rounded-2xl p-5 space-y-4">
-                <div className="flex justify-between text-sm">
+              <div className="bg-white/10 rounded-xl sm:rounded-2xl p-3 sm:p-5 space-y-3 sm:space-y-4">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-400">Trip Type</span>
                   <span className={`font-medium ${
                     tripType === 'round-trip' ? 'text-purple-400' : 
@@ -1130,11 +1130,11 @@ const Hero = () => {
 
                 {(tripType === 'round-trip' || tripType === 'outstation') && fareDetails?.days && (
                   <>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-xs sm:text-sm">
                       <span className="text-gray-400">Days</span>
                       <span className="text-white">{fareDetails.days} day{fareDetails.days > 1 ? 's' : ''}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-xs sm:text-sm">
                       <span className="text-gray-400">Nights</span>
                       <span className="text-white">{fareDetails.totalNights} night{fareDetails.totalNights > 1 ? 's' : ''}</span>
                     </div>
@@ -1142,36 +1142,36 @@ const Hero = () => {
                 )}
 
                 {tripType === 'local' && fareDetails?.hours && (
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-gray-400">Hours</span>
                     <span className="text-white">{fareDetails.hours} hour{fareDetails.hours > 1 ? 's' : ''}</span>
                   </div>
                 )}
 
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-400">Payment Method</span>
                   <span className={`font-medium ${paymentMethod === 'CASH' ? 'text-green-400' : 'text-blue-400'}`}>
                     {paymentMethod === 'CASH' ? 'Cash' : 'Online'}
                   </span>
                 </div>
 
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-400">Distance</span>
                   <span className="text-white">{fareDetails?.distanceKm || 0} km</span>
                 </div>
 
                 {(tripType === 'round-trip' || tripType === 'outstation') && fareDetails?.billableKm && (
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-gray-400">Billable KM</span>
                     <span className="text-white">{fareDetails.billableKm} km</span>
                   </div>
                 )}
 
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-400">Base Fare</span>
                   <span className="text-white">₹{fareDetails?.baseFare || 0}</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm">
                   <span className="text-gray-400">Distance Fare</span>
                   <span className="text-white">
                     ₹{fareDetails?.pricePerKm || 0} × {(tripType === 'round-trip' || tripType === 'outstation') ? (fareDetails?.billableKm || 0) : (fareDetails?.distanceKm || 0)} km
@@ -1179,31 +1179,31 @@ const Hero = () => {
                 </div>
 
                 {(tripType === 'round-trip' || tripType === 'outstation') && fareDetails?.totalNights && (
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-gray-400">Driver Allowance</span>
                     <span className="text-white">₹{fareDetails.driverAllowanceTotal || 0}</span>
                   </div>
                 )}
 
-                <div className="border-t border-white/20 pt-4 flex justify-between font-semibold">
-                  <span className="text-gray-300 text-base">Total Fare</span>
-                  <span className="text-blue-400 text-2xl font-bold">₹{fareDetails?.estimatedFare || 0}</span>
+                <div className="border-t border-white/20 pt-3 sm:pt-4 flex justify-between font-semibold">
+                  <span className="text-gray-300 text-sm sm:text-base">Total Fare</span>
+                  <span className="text-blue-400 text-xl sm:text-2xl font-bold">₹{fareDetails?.estimatedFare || 0}</span>
                 </div>
 
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-2 sm:gap-3 pt-2">
                   <button
                     onClick={() => setBookingStep(2)}
-                    className="flex-1 py-3.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl transition-all text-sm"
+                    className="flex-1 py-3 sm:py-3.5 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-lg sm:rounded-xl transition-all text-xs sm:text-sm"
                   >
                     Back
                   </button>
                   <button
                     onClick={handleBooking}
                     disabled={isSearching}
-                    className="flex-1 py-3.5 bg-white hover:bg-gray-100 text-black font-semibold rounded-xl transition-all text-sm disabled:opacity-50 shadow-lg"
+                    className="flex-1 py-3 sm:py-3.5 bg-white hover:bg-gray-100 text-black font-semibold rounded-lg sm:rounded-xl transition-all text-xs sm:text-sm disabled:opacity-50 shadow-lg"
                   >
                     {isSearching ? (
-                      <Loader className="h-5 w-5 animate-spin mx-auto" />
+                      <Loader className="h-4 w-4 sm:h-5 sm:w-5 animate-spin mx-auto" />
                     ) : (
                       'Confirm Booking'
                     )}
@@ -1214,70 +1214,70 @@ const Hero = () => {
           </div>
         </div>
 
-        <div className="mt-8 sm:mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 md:gap-6">
-          <div className="group bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border border-white/10 hover:border-white/30 hover:bg-white/20 transition-all duration-300 cursor-pointer">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="mt-6 sm:mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-5 md:gap-6">
+          <div className="group bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-6 md:p-8 border border-white/10 hover:border-white/30 hover:bg-white/20 transition-all duration-300 cursor-pointer">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 bg-blue-600/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-4 group-hover:scale-110 transition-transform">
+              <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-1 sm:mb-2">One-Way Trips</h3>
-            <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4">Travel between any two cities with fixed pricing</p>
+            <h3 className="text-sm sm:text-lg md:text-xl font-bold text-white mb-1 sm:mb-2">One-Way Trips</h3>
+            <p className="text-gray-300 text-[10px] sm:text-sm mb-2 sm:mb-4">Travel between any two cities with fixed pricing</p>
             <button 
               onClick={() => {
                 setTripType('one-way');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="text-white text-xs sm:text-sm font-medium hover:text-gray-200 flex items-center gap-1 group-hover:gap-2 transition-all"
+              className="text-white text-[10px] sm:text-sm font-medium hover:text-gray-200 flex items-center gap-1 group-hover:gap-2 transition-all"
             >
               Book now
-              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+              <ChevronRight className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
             </button>
           </div>
           
-          <div className="group bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border border-white/10 hover:border-white/30 hover:bg-white/20 transition-all duration-300 cursor-pointer">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-600/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="group bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-6 md:p-8 border border-white/10 hover:border-white/30 hover:bg-white/20 transition-all duration-300 cursor-pointer">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 bg-amber-600/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-4 group-hover:scale-110 transition-transform">
+              <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </div>
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-1 sm:mb-2">Round Trips</h3>
-            <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4">Complete packages with return journey included</p>
+            <h3 className="text-sm sm:text-lg md:text-xl font-bold text-white mb-1 sm:mb-2">Round Trips</h3>
+            <p className="text-gray-300 text-[10px] sm:text-sm mb-2 sm:mb-4">Complete packages with return journey included</p>
             <button 
               onClick={() => {
                 setTripType('round-trip');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="text-white text-xs sm:text-sm font-medium hover:text-gray-200 flex items-center gap-1 group-hover:gap-2 transition-all"
+              className="text-white text-[10px] sm:text-sm font-medium hover:text-gray-200 flex items-center gap-1 group-hover:gap-2 transition-all"
             >
               Book now
-              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+              <ChevronRight className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
             </button>
           </div>
           
-          <div className="group bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 border border-white/10 hover:border-white/30 hover:bg-white/20 transition-all duration-300 cursor-pointer hidden md:block">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-600/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 group-hover:scale-110 transition-transform">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="group bg-white/10 backdrop-blur-md rounded-xl sm:rounded-2xl p-3 sm:p-6 md:p-8 border border-white/10 hover:border-white/30 hover:bg-white/20 transition-all duration-300 cursor-pointer hidden md:block">
+            <div className="w-9 h-9 sm:w-12 sm:h-12 bg-purple-600/30 rounded-lg sm:rounded-xl flex items-center justify-center mb-2 sm:mb-4 group-hover:scale-110 transition-transform">
+              <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-1 sm:mb-2">Corporate Travel</h3>
-            <p className="text-gray-300 text-xs sm:text-sm mb-3 sm:mb-4">Business travel solutions with billing support</p>
+            <h3 className="text-sm sm:text-lg md:text-xl font-bold text-white mb-1 sm:mb-2">Corporate Travel</h3>
+            <p className="text-gray-300 text-[10px] sm:text-sm mb-2 sm:mb-4">Business travel solutions with billing support</p>
             <button 
               onClick={() => {
                 setTripType('one-way');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="text-white text-xs sm:text-sm font-medium hover:text-gray-200 flex items-center gap-1 group-hover:gap-2 transition-all"
+              className="text-white text-[10px] sm:text-sm font-medium hover:text-gray-200 flex items-center gap-1 group-hover:gap-2 transition-all"
             >
               Book now
-              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+              <ChevronRight className="h-2.5 w-2.5 sm:h-4 sm:w-4" />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="absolute bottom-6 sm:bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce hidden sm:block group">
+      <div className="absolute bottom-4 sm:bottom-10 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce hidden sm:block group">
         <span className="text-white/60 text-xs font-medium">Scroll to explore</span>
         <div className="w-8 h-12 border-2 border-white/40 rounded-full flex justify-center pt-2">
           <div className="w-1.5 h-3 bg-white/60 rounded-full animate-pulse"></div>

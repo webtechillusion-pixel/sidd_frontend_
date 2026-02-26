@@ -152,15 +152,53 @@ const handleLogout = async () => {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm rounded-b-2xl">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16 md:h-20">
+    <header className="fixed top-0 left-0 right-0 z-50">
+      {/* Top Info Bar */}
+      <div className="bg-[#8ecae6] py-1.5 md:py-2 border-b border-[#219ebc]/20 hidden sm:block">
+        <div className="container mx-auto px-2 sm:px-4">
+          <div className="flex flex-col items-center justify-center gap-1.5 text-xs md:text-sm md:flex-row md:gap-4 lg:gap-8">
+            <div className="flex items-center justify-center gap-1.5 md:gap-2">
+              <div className="rounded-full bg-[#219ebc]/20 p-0.5">
+                <svg className="h-3 w-3 md:h-4 md:w-4 text-[#023047]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </div>
+              <span className="font-medium text-[#023047] text-[10px] md:text-sm">Airport Pickup</span>
+              <span className="font-bold text-[#fb8500] text-[10px] md:text-sm">₹1000/-</span>
+            </div>
+            <div className="flex items-center justify-center gap-1.5 md:gap-2">
+              <div className="rounded-full bg-[#219ebc]/20 p-0.5">
+                <Car className="h-3 w-3 md:h-4 md:w-4 text-[#023047]" />
+              </div>
+              <span className="font-medium text-[#023047] text-[10px] md:text-sm">Outstation</span>
+              <span className="text-[#023047] text-[10px] md:text-sm">Sedan</span>
+              <span className="font-bold text-[#fb8500] text-[10px] md:text-sm">₹11/km</span>
+              <span className="hidden md:inline text-[#023047]">•</span>
+              <span className="hidden md:inline text-[#023047] text-[10px] md:text-sm">SUV</span>
+              <span className="font-bold text-[#fb8500] text-[10px] md:text-sm">₹13/km</span>
+            </div>
+            <div className="flex items-center justify-center gap-1.5 md:gap-2">
+              <div className="rounded-full bg-[#219ebc]/20 p-0.5">
+                <svg className="h-3 w-3 md:h-4 md:w-4 text-[#023047]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <span className="font-medium text-[#023047] text-[10px] md:text-sm">24/7 Support</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Main Header */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="container mx-auto px-2 sm:px-4">
+          <div className="flex items-center justify-between h-16 md:h-20">
           
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 hover:opacity-80 transition-opacity">
-            <img src="/pariyatan logo.png" alt="Pariyatan" className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 object-contain" />
+          <Link to="/" className="flex items-center space-x-1.5 sm:space-x-2 hover:opacity-80 transition-opacity">
+            <img src="/pariyatan logo.png" alt="Pariyatan" className="h-12 w-12 sm:h-12 sm:w-12 md:h-14 md:w-14 lg:h-16 lg:w-16 object-contain" />
             <div>
-              <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold text-[#023047]">Pariyatan</h1>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#023047]">Pariyatan</h1>
             </div>
           </Link>
 
@@ -292,6 +330,7 @@ const handleLogout = async () => {
           >
             {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
+        </div>
         </div>
 
         {/* Mobile Menu */}

@@ -1,5 +1,4 @@
 import React from 'react';
-import TopInfoBar from '../components/home/TopInfoBar';
 import Hero from '../components/home/Hero';
 import ServiceSection from '../components/home/ServiceSection';
 import HowItWorks from '../components/home/HowItWorks';
@@ -12,7 +11,6 @@ import CTASection from '../components/home/CTASection';
 const HomePage = () => {
   return (
     <>
-      <TopInfoBar />
       <Hero />
       <ServiceSection />
       <HowItWorks />
