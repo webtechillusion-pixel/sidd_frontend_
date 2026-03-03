@@ -30,6 +30,7 @@ import {
   useJsApiLoader,
   Autocomplete
 } from '@react-google-maps/api';
+import { motion } from 'framer-motion'; // ✅ Added import
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -473,51 +474,59 @@ const Hero = () => {
   };
 
   const selectPlace = async (place, type) => {
-    try {
-      const addressText = place.addressText || place.description;
-      const placeIdValue = place.place_id || place.placeId;
-      
-      if (!placeIdValue) {
-        toast.error('Invalid place selected');
-        return;
-      }
-
-      const response = await bookingService.getPlaceDetails(placeIdValue);
-      const responseData = response.data || response;
-      
-      if (responseData && responseData.success && responseData.data && responseData.data.lat && responseData.data.lng) {
-        const locationData = {
-          addressText: responseData.data.addressText || addressText,
-          address: responseData.data.address || addressText,
-          placeId: responseData.data.placeId || placeIdValue,
-          lat: responseData.data.lat,
-          lng: responseData.data.lng,
-          city: responseData.data.city,
-          state: responseData.data.state,
-          country: responseData.data.country
-        };
-        
-        if (type === 'pickup') {
-          setPickup(addressText);
-          setPickupLocation(locationData);
-          setPickupSuggestions([]);
-        } else {
-          setDrop(addressText);
-          setDropLocation(locationData);
-          setDropSuggestions([]);
-        }
-
-        if ((type === 'pickup' && dropLocation) || (type === 'drop' && pickupLocation)) {
-          calculateFare();
-        }
-      } else {
-        toast.error('Could not get location details. Please try again or select from map.');
-      }
-    } catch (error) {
-      console.error('Error selecting place:', error);
-      toast.error(error.response?.data?.message || 'Failed to get location details. Please select from map.');
+  try {
+    const addressText = place.addressText || place.description;
+    const placeIdValue = place.place_id || place.placeId;
+    
+    if (!placeIdValue) {
+      toast.error('Invalid place selected');
+      return;
     }
-  };
+
+    const response = await bookingService.getPlaceDetails(placeIdValue);
+    const responseData = response.data || response;
+    
+    // Flexible extraction: check for coordinates in responseData or responseData.data
+    let locationDataObj = null;
+    if (responseData.lat && responseData.lng) {
+      locationDataObj = responseData;
+    } else if (responseData.data && responseData.data.lat && responseData.data.lng) {
+      locationDataObj = responseData.data;
+    }
+
+    if (locationDataObj) {
+      const locationData = {
+        addressText: locationDataObj.addressText || locationDataObj.address || addressText,
+        address: locationDataObj.address || locationDataObj.addressText || addressText,
+        placeId: locationDataObj.placeId || placeIdValue,
+        lat: locationDataObj.lat,
+        lng: locationDataObj.lng,
+        city: locationDataObj.city,
+        state: locationDataObj.state,
+        country: locationDataObj.country
+      };
+      
+      if (type === 'pickup') {
+        setPickup(addressText);
+        setPickupLocation(locationData);
+        setPickupSuggestions([]);
+      } else {
+        setDrop(addressText);
+        setDropLocation(locationData);
+        setDropSuggestions([]);
+      }
+
+      if ((type === 'pickup' && dropLocation) || (type === 'drop' && pickupLocation)) {
+        calculateFare();
+      }
+    } else {
+      toast.error('Could not get location details. Please try again or select from map.');
+    }
+  } catch (error) {
+    console.error('Error selecting place:', error);
+    toast.error(error.response?.data?.message || 'Failed to get location details. Please select from map.');
+  }
+};
 
   const calculateFare = async () => {
     if (!pickupLocation || !dropLocation || !selectedVehicle) {
@@ -738,7 +747,13 @@ const Hero = () => {
       <div className="container mx-auto px-2 sm:px-4 md:px-6 lg:px-8 relative z-10 pt-12 sm:pt-16 pb-4 md:py-12 lg:py-16 w-full overflow-hidden">
         <div className="grid lg:grid-cols-2 gap-4 lg:gap-8 xl:gap-10 items-start">
           
-          <div className="text-white order-2 lg:order-1">
+          {/* Left Content with Motion */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-white order-2 lg:order-1"
+          >
             <div className="mb-3 sm:mb-6">
               <div className="inline-flex items-center px-2.5 py-1 sm:px-4 sm:py-2 bg-white/10 backdrop-blur-md rounded-full mb-2 sm:mb-4 border border-white/20">
                 <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full mr-1.5 sm:mr-2 animate-pulse"></span>
@@ -794,9 +809,15 @@ const Hero = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
-          <div className="bg-white/10 backdrop-blur-2xl rounded-xl sm:rounded-3xl p-2 sm:p-6 md:p-8 border border-white/30 shadow-2xl order-1 lg:order-2 w-full max-w-[420px] lg:max-w-none mx-auto overflow-hidden">
+          {/* Booking Widget with Motion */}
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="bg-white/10 backdrop-blur-2xl rounded-xl sm:rounded-3xl p-2 sm:p-6 md:p-8 border border-white/30 shadow-2xl order-1 lg:order-2 w-full max-w-[420px] lg:max-w-none mx-auto overflow-hidden"
+          >
             <div className="flex items-center justify-between mb-3 sm:mb-6">
               <div>
                 <h2 className="text-base sm:text-2xl md:text-3xl font-bold text-white">Book Your Ride</h2>
@@ -1211,7 +1232,7 @@ const Hero = () => {
                 </div>
               </div>
             )}
-          </div>
+          </motion.div>
         </div>
 
         <div className="mt-6 sm:mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-5 md:gap-6">

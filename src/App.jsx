@@ -48,10 +48,12 @@ const AdminRoutes = React.lazy(() => import("./routes/AdminRoutes"));
 
 // Protected Route
 import ProtectedRoute from "./components/auth/ProtectedRoutes";
+import ScrollToTop from "./components/common/ScrollToTop";
 
 function App() {
   return (
     <Router>
+     <ScrollToTop />
       <AuthProvider>
         <AdminProvider>
           <SocketProvider>

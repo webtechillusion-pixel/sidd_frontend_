@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 const AuthLayout = ({ children, title, subtitle, footerLink, footerText }) => {
   // Function to determine link text based on the route
@@ -15,27 +15,32 @@ const AuthLayout = ({ children, title, subtitle, footerLink, footerText }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-50 flex items-start justify-center p-4">
+      <div className="w-full max-w-6xl flex flex-col lg:flex-row items-start justify-center gap-8 lg:gap-12">
         
         {/* Left Side - Branding */}
-        <div className="w-full lg:w-1/2 text-center lg:text-left">
+        <motion.div
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full lg:w-1/2 text-center lg:text-left pt-10 lg:pt-16"
+        >
           <Link to="/" className="inline-flex items-center gap-3 mb-8 hover:opacity-80 transition-opacity">
             <MapPin className="h-10 w-10 text-blue-600" />
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">TravelX</h1>
-              <p className="text-gray-600">Explore Norway</p>
+              <h1 className="text-3xl font-bold text-gray-900">Pariyatan</h1>
+              <p className="text-gray-600">Explore India</p>
             </div>
           </Link>
           
           <div className="hidden lg:block">
             <div className="mb-6">
               <h2 className="text-5xl font-bold text-gray-900 leading-tight">
-                Discover Norway's
-                <span className="text-blue-600 block">Hidden Beauty</span>
+                Discover India's
+                <span className="text-blue-600 block">Incredible Beauty</span>
               </h2>
               <p className="text-gray-600 mt-4 text-lg">
-                From majestic fjords to northern lights, experience the adventure of a lifetime.
+                From the Himalayas to backwaters, experience the diversity of Incredible India.
               </p>
             </div>
             
@@ -71,10 +76,15 @@ const AuthLayout = ({ children, title, subtitle, footerLink, footerText }) => {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Right Side - Auth Form */}
-        <div className="w-full lg:w-1/2 max-w-lg">
+        <motion.div
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="w-full lg:w-1/2 max-w-lg"
+        >
           <div className="bg-white rounded-2xl shadow-lg p-6 md:p-8 lg:p-10">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
@@ -94,7 +104,7 @@ const AuthLayout = ({ children, title, subtitle, footerLink, footerText }) => {
             
             <div className="mt-8 pt-8 border-t border-gray-200">
               <p className="text-center text-gray-500 text-sm">
-                By continuing, you agree to TravelX's{' '}
+                By continuing, you agree to Pariyatan's{' '}
                 <Link to="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link> and{' '}
                 <Link to="/terms" className="text-blue-600 hover:underline">Terms of Service</Link>
               </p>
@@ -102,17 +112,22 @@ const AuthLayout = ({ children, title, subtitle, footerLink, footerText }) => {
           </div>
           
           {/* Mobile Stats */}
-          <div className="lg:hidden mt-8 grid grid-cols-2 gap-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className="lg:hidden mt-8 grid grid-cols-2 gap-4"
+          >
             <div className="bg-white p-4 rounded-xl shadow-sm">
-              <div className="text-2xl font-bold text-blue-600">500+</div>
-              <div className="text-sm text-gray-600">Tours Completed</div>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow-sm">
-              <div className="text-2xl font-bold text-blue-600">98%</div>
+              <div className="text-2xl font-bold text-blue-600">10,000+</div>
               <div className="text-sm text-gray-600">Happy Travelers</div>
             </div>
-          </div>
-        </div>
+            <div className="bg-white p-4 rounded-xl shadow-sm">
+              <div className="text-2xl font-bold text-blue-600">100+</div>
+              <div className="text-sm text-gray-600">Destinations</div>
+            </div>
+          </motion.div>
+        </motion.div>
       </div>
     </div>
   );
