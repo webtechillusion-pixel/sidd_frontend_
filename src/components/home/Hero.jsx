@@ -617,7 +617,7 @@ const Hero = () => {
         vehicleType: selectedVehicle.id,
         bookingType: bookingType,
         scheduledAt: bookingType === 'SCHEDULED' ? `${scheduledDate}T${scheduledTime}:00` : null,
-        paymentMethod: 'CASH',
+        paymentMethod: paymentMethod, //'CASH'
         distanceKm: fareDetails.distanceKm,
         estimatedFare: fareDetails.estimatedFare
       };
