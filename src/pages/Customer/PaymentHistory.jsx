@@ -24,7 +24,12 @@ const PaymentHistory = ({ onBack }) => {
       setLoading(true);
       const response = await customerService.getPaymentHistory();
       const paymentsData = response?.data?.payments || response?.data || response?.payments || [];
-      setPayments(paymentsData);
+      
+      const uniquePayments = paymentsData.filter((payment, index, self) => 
+        index === self.findIndex((p) => p._id === payment._id)
+      );
+      
+      setPayments(uniquePayments);
     } catch (error) {
       console.error('Failed to fetch payments:', error);
     } finally {

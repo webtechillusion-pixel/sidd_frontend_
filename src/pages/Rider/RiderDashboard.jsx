@@ -778,7 +778,7 @@ const handleLogout = async () => {
       } catch (e) { console.log('Auth logout error:', e); }
       
       // Force redirect
-      window.location.href = '/login';
+      window.location.href = '/';
     }
   };
 

@@ -115,13 +115,13 @@ const handleLogout = async () => {
       sessionStorage.clear();
       // Call context logout
       await logout();
-      // Navigate to login page
-      window.location.href = '/login/customer';
+      // Navigate to home page
+      window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
       localStorage.clear();
       sessionStorage.clear();
-      window.location.href = '/login/customer';
+      window.location.href = '/';
     }
   };
 

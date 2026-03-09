@@ -178,7 +178,7 @@ const Register = () => {
         newsletter: formData.newsletter
       });
 
-      navigate('/verify-email');
+      navigate('/');
     } catch (err) {
       console.error('Registration error:', err);
       if (err.message) {
