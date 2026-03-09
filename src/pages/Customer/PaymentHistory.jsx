@@ -12,12 +12,12 @@ const PaymentHistory = ({ onBack }) => {
     fetchPayments();
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchPayments();
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     fetchPayments();
+  //   }, 10000);
+  //   return () => clearInterval(interval);
+  // }, []);
 
   const fetchPayments = async () => {
     try {
@@ -112,7 +112,8 @@ const PaymentHistory = ({ onBack }) => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center text-sm text-gray-600">
                   <Calendar className="h-4 w-4 mr-2" />
-                  {new Date(payment.createdAt).toLocaleDateString()}
+                  {/* {new Date(payment.createdAt).toLocaleDateString()} */}
+                  {new Date(payment.createdAt).toLocaleDateString('en-GB')}
                 </div>
                 <div className="text-lg font-bold text-gray-900">
                   ₹{payment.amount}

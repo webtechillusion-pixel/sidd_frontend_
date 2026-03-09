@@ -137,15 +137,18 @@ const PaymentPage = () => {
           try {
             // Verify payment
             const verifyResponse = await api.post('/api/payments/verify', {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              paymentId: orderResponse.data.data.paymentId
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+              bookingId: bookingDetails.bookingId || bookingDetails._id // orderResponse.data.data.paymentId
             });
 
             if (verifyResponse.data.success) {
               setPaymentStatus('SUCCESS');
               toast.success('Payment successful!');
+
+              // ✅ Stop loading
+              setLoading(false);
               
               const bookingId = bookingDetails?.bookingId || bookingDetails?._id;
               setTimeout(() => {
@@ -157,10 +160,14 @@ const PaymentPage = () => {
                 });
               }, 2000);
             } else {
+              // ✅ Stop loading on failure
+              setLoading(false);
               toast.error('Payment verification failed');
             }
           } catch (error) {
             console.error('Payment verification error:', error);
+            // ✅ Stop loading on error
+            setLoading(false);
             toast.error('Payment verification failed');
           }
         },
@@ -191,11 +198,29 @@ const PaymentPage = () => {
       razorpay.open();
       
     } catch (error) {
-      console.error('Online payment error:', error);
-      toast.error(error.message || 'Failed to initiate payment');
-    } finally {
-      setLoading(false);
+  console.error('Online payment error:', error);
+  if (error.response && error.response.data && error.response.data.message) {
+    const msg = error.response.data.message;
+    if (msg.includes('Payment already completed')) {
+      // Payment already done – redirect to success
+      setPaymentStatus('SUCCESS');
+      toast.success('Payment already completed');
+      setTimeout(() => {
+        navigate('/customer/bookings', {
+          state: { 
+            paymentSuccess: true, 
+            bookingId: bookingDetails._id 
+          }
+        });
+      }, 2000);
+    } else {
+      toast.error(msg);
     }
+  } else {
+    toast.error(error.message || 'Failed to initiate payment');
+  }
+  setLoading(false);
+}
   };
 
   if (!bookingDetails) {
