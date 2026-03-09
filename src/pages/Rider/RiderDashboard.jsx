@@ -777,8 +777,8 @@ const handleLogout = async () => {
         authLogout();
       } catch (e) { console.log('Auth logout error:', e); }
       
-      // Force redirect
-      window.location.href = '/';
+      // Force redirect to login
+      window.location.href = '/login/rider';
     }
   };
 
