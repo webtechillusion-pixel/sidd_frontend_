@@ -101,7 +101,7 @@ export function Dashboard({ stats, profile, cab, liveEarnings }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {loading && (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-500"></div>
@@ -110,7 +110,7 @@ export function Dashboard({ stats, profile, cab, liveEarnings }) {
       
       {!loading && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6">
             <StatCard 
               title="Today's Earnings" 
               value={`₹${Number(dashboardData.todayEarnings || liveEarnings || 0).toFixed(1)}`} 
@@ -131,11 +131,13 @@ export function Dashboard({ stats, profile, cab, liveEarnings }) {
               value={`${Number(stats?.acceptance || profile?.acceptanceRate || 0).toFixed(1)}%`} 
               icon={<FaCheckCircle className="text-teal-500" />}
             />
-            <StatCard 
-              title="Rating" 
-              value={`${profile?.overallRating || stats?.rating || 0} (${profile?.totalRatings || stats?.totalRatings || 0})`}
-              icon={<FaStar className="text-yellow-500" />}
-            />
+            <div className="col-span-2 md:col-span-3 lg:col-span-1">
+              <StatCard 
+                title="Rating" 
+                value={`${profile?.overallRating || stats?.rating || 0} (${profile?.totalRatings || stats?.totalRatings || 0})`}
+                icon={<FaStar className="text-yellow-500" />}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

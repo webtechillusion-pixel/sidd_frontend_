@@ -12,12 +12,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import riderService from '../../services/riderService';
 import { toast } from 'react-toastify';
-import {
-  GoogleMap,
-  LoadScript,
-  Marker,
-  useJsApiLoader
-} from '@react-google-maps/api';
+import { GoogleMap, LoadScript, Marker } from '@react-google-maps/api';
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
@@ -25,7 +20,7 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const mapContainerStyle = {
   width: '100%',
   height: '100%',
-  minHeight: '600px'
+  minHeight: '400px'
 };
 
 // Default center (India)
@@ -71,12 +66,8 @@ const Navigation = () => {
   const locationTimeoutRef = useRef(null);
   const watchIdRef = useRef(null);
 
-  // Load Google Maps
-  const { isLoaded, loadError } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    libraries
-  });
+  const [isLoaded, setIsLoaded] = useState(() => typeof window !== 'undefined' && !!window.google);
+  const [loadError, setLoadError] = useState(null);
 
   // Initialize map
   const onMapLoad = useCallback((map) => {
@@ -305,7 +296,7 @@ const Navigation = () => {
     };
   }, []);
 
-  // Show loading state
+  // Show error state only
   if (loadError) {
     return (
       <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -318,31 +309,27 @@ const Navigation = () => {
     );
   }
 
-  if (!isLoaded) {
-    return (
-      <div className="h-full flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-400">Loading Google Maps...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-full flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <LoadScript
+      googleMapsApiKey={GOOGLE_MAPS_API_KEY}
+      libraries={libraries}
+      version="weekly"
+      onLoad={() => setIsLoaded(true)}
+      onError={(err) => setLoadError(err)}
+    >
+      <div className="h-full flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Header */}
-      <div className="bg-gradient-to-r from-teal-600/20 to-blue-600/20 border-b border-slate-700 p-4">
-        <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-teal-600/20 to-blue-600/20 border-b border-slate-700 p-3 sm:p-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl flex items-center justify-center">
-              <FaLocationArrow className="text-white text-lg" />
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-teal-500 to-blue-500 rounded-xl flex items-center justify-center">
+              <FaLocationArrow className="text-white text-sm sm:text-lg" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-teal-400 to-blue-400 bg-clip-text text-transparent">
+              <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-teal-400 to-blue-400 bg-clip-text text-transparent">
                 Location Manager
               </h1>
-              <p className="text-sm text-slate-400">
+              <p className="text-xs sm:text-sm text-slate-400">
                 {currentLocation ? '📍 Location active' : '⚫ Location pending'}
               </p>
             </div>
@@ -351,19 +338,19 @@ const Navigation = () => {
           {/* Map Type Toggle */}
           <button
             onClick={handleMapTypeChange}
-            className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700 rounded-xl text-white transition-all flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 bg-slate-700/50 hover:bg-slate-700 rounded-xl text-white transition-all flex items-center gap-2 text-sm"
           >
             {mapType === 'roadmap' ? <FaSatellite /> : <FaMap />}
-            <span>{mapType === 'roadmap' ? 'Satellite' : 'Map'}</span>
+            <span className="hidden sm:inline">{mapType === 'roadmap' ? 'Satellite' : 'Map'}</span>
           </button>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 h-full">
+      <div className="flex-1 p-2 sm:p-4">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 lg:gap-4 h-full">
           {/* Left Panel - Controls */}
-          <div className="lg:col-span-1 space-y-4">
+          <div className="lg:col-span-1 space-y-3 lg:space-y-4">
             {/* Current Location Card */}
             <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-4">
               <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
@@ -494,6 +481,12 @@ const Navigation = () => {
               }}
               onLoad={onMapLoad}
               onClick={onMapClick}
+              loadingElement={<div className="h-full w-full flex items-center justify-center bg-slate-800">
+                <div className="text-center">
+                  <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  <p className="text-slate-400 text-sm">Loading map...</p>
+                </div>
+              </div>}
             >
               {/* Current Location Marker (Blue) */}
               {currentLocation && window.google && (
@@ -540,6 +533,7 @@ const Navigation = () => {
         </div>
       </div>
     </div>
+    </LoadScript>
   );
 };
 

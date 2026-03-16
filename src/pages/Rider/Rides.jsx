@@ -1,6 +1,6 @@
 // pages/Rider/Rides.jsx - FIXED VERSION with database pricing
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   FaCar,
   FaMapMarkerAlt,
@@ -96,6 +96,33 @@ const Rides = ({
   const [vehiclePricing, setVehiclePricing] = useState({});
   const [isLoadingPricing, setIsLoadingPricing] = useState(false);
   const [isInitialLocationFetched, setIsInitialLocationFetched] = useState(false);
+
+  // Calculate ride completion values - only recalculate when pricing or booking changes, not on every keystroke
+  const completionValues = useMemo(() => {
+    if (!activeBooking || !vehiclePricing) return null;
+    
+    const vehicleTypeKey = activeBooking.vehicleType?.toUpperCase();
+    const pricing = vehiclePricing[vehicleTypeKey] || vehiclePricing[activeBooking.vehicleType] || { baseFare: 50, pricePerKm: 12, adminCommissionPercent: 20 };
+    
+    const estimatedDistance = activeBooking.distanceKm || 0;
+    const billableKm = activeBooking.billableKm || estimatedDistance;
+    const isRoundTrip = activeBooking.tripType === 'ROUND_TRIP';
+    const baseFare = pricing.baseFare;
+    const perKmRate = pricing.pricePerKm;
+    const commissionPercent = pricing.adminCommissionPercent || 25;
+    
+    return { 
+      pricing, 
+      estimatedDistance, 
+      billableKm, 
+      isRoundTrip, 
+      baseFare, 
+      perKmRate, 
+      commissionPercent,
+      // Store initial values separately so they don't change on input
+      initialDistance: isRoundTrip ? billableKm : estimatedDistance
+    };
+  }, [activeBooking, vehiclePricing]);
   
   // Sync props to state when they change
   useEffect(() => {
@@ -147,24 +174,26 @@ const Rides = ({
       const isRoundTrip = activeBooking.tripType === 'ROUND_TRIP';
       const estimatedDistance = activeBooking.distanceKm || 0;
       const billableKm = activeBooking.billableKm || estimatedDistance;
+      const initialDistance = isRoundTrip ? billableKm : estimatedDistance;
       
-      setRideCompletionData({
-        actualDistance: isRoundTrip ? billableKm : estimatedDistance,
-        additionalCharges: 0,
+      setRideCompletionData(prev => ({
+        ...prev,
+        actualDistance: prev.actualDistance || initialDistance,
+        additionalCharges: prev.additionalCharges || 0,
         additionalChargesBreakdown: {
-          tollCharges: 0,
-          parkingCharges: 0,
-          nightCharges: 0,
-          otherCharges: 0,
-          description: ''
+          tollCharges: prev.additionalChargesBreakdown?.tollCharges || 0,
+          parkingCharges: prev.additionalChargesBreakdown?.parkingCharges || 0,
+          nightCharges: prev.additionalChargesBreakdown?.nightCharges || 0,
+          otherCharges: prev.additionalChargesBreakdown?.otherCharges || 0,
+          description: prev.additionalChargesBreakdown?.description || ''
         }
-      });
+      }));
     }
   }, [showCompletionModal, activeBooking]);
 
   // Auto-refresh active booking status every 5 seconds
   useEffect(() => {
-    if (activeBooking && activeTab === 'active') {
+    if (activeBooking && activeTab === 'active' && !showCompletionModal) {
       // Initial fetch
       fetchActiveBooking();
       
@@ -175,7 +204,7 @@ const Rides = ({
       
       return () => clearInterval(activeBookingInterval);
     }
-  }, [activeBooking, activeTab]);
+  }, [activeBooking, activeTab, showCompletionModal]);
 
   // Auto-refresh after OTP verification
   useEffect(() => {
@@ -885,60 +914,62 @@ const CountdownTimer = ({ targetDate }) => {
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab('available')}
-              className={`px-4 py-2 rounded-xl font-semibold transition-all ${
-                activeTab === 'available'
-                  ? 'bg-gradient-to-r from-teal-600 to-blue-600 text-white'
-                  : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              Available Rides 
-              {availableBookings.length > 0 && (
-                <span className="ml-2 bg-red-500 text-white px-2 py-0.5 rounded-full text-xs">
-                  {availableBookings.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('active')}
-              className={`px-4 py-2 rounded-xl font-semibold transition-all ${
-                activeTab === 'active'
-                  ? 'bg-gradient-to-r from-teal-600 to-blue-600 text-white'
-                  : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700'
-              }`}
-            >
-              Current Ride 
-              {activeBooking && (
-                <span className="ml-2 bg-green-500 text-white px-2 py-0.5 rounded-full text-xs animate-pulse">
-                  ACTIVE
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Auto-refresh indicator */}
-          {activeTab === 'available' && (
-            <div className="px-4 py-2 bg-slate-700/50 rounded-xl text-white flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              Auto-refresh
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
+              <button
+                onClick={() => setActiveTab('available')}
+                className={`px-3 sm:px-4 py-2 rounded-xl font-semibold transition-all whitespace-nowrap ${
+                  activeTab === 'available'
+                    ? 'bg-gradient-to-r from-teal-600 to-blue-600 text-white'
+                    : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 text-sm sm:text-base'
+                }`}
+              >
+                Available Rides 
+                {availableBookings.length > 0 && (
+                  <span className="ml-1 sm:ml-2 bg-red-500 text-white px-2 py-0.5 rounded-full text-xs">
+                    {availableBookings.length}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('active')}
+                className={`px-3 sm:px-4 py-2 rounded-xl font-semibold transition-all whitespace-nowrap ${
+                  activeTab === 'active'
+                    ? 'bg-gradient-to-r from-teal-600 to-blue-600 text-white'
+                    : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 text-sm sm:text-base'
+                }`}
+              >
+                Current Ride 
+                {activeBooking && (
+                  <span className="ml-1 sm:ml-2 bg-green-500 text-white px-2 py-0.5 rounded-full text-xs animate-pulse">
+                    ACTIVE
+                  </span>
+                )}
+              </button>
             </div>
-          )}
+
+            {/* Auto-refresh indicator */}
+            {activeTab === 'available' && (
+              <div className="px-3 sm:px-4 py-2 bg-slate-700/50 rounded-xl text-white flex items-center gap-2 text-xs sm:text-sm">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                Auto-refresh
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+      <div className="flex-1 p-2 sm:p-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
         {/* Available Rides Tab */}
         {activeTab === 'available' && (
-          <div className="space-y-4 overflow-y-auto pb-20">
+          <div className="space-y-3 sm:space-y-4 overflow-y-auto pb-20">
             {/* Available Rides Header */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-white">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <h2 className="text-base sm:text-lg font-semibold text-white">
                 Available Rides Near You
               </h2>
-              <p className="text-sm text-slate-400">
+              <p className="text-xs sm:text-sm text-slate-400">
                 {availableBookings.length} ride{availableBookings.length !== 1 ? 's' : ''} available
               </p>
             </div>
@@ -949,13 +980,13 @@ const CountdownTimer = ({ targetDate }) => {
                 <FaSpinner className="animate-spin text-4xl text-teal-400" />
               </div>
             ) : availableBookings.length === 0 ? (
-              <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-12 text-center">
-                <FaCar className="text-5xl text-slate-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">No Rides Available</h3>
-                <p className="text-slate-400 mb-4">
+              <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 sm:p-12 text-center">
+                <FaCar className="text-4xl sm:text-5xl text-slate-600 mx-auto mb-4" />
+                <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No Rides Available</h3>
+                <p className="text-slate-400 mb-4 text-sm sm:text-base">
                   Stay online and we'll notify you when new rides are available
                 </p>
-                <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
+                <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-500">
                   <div className={`w-2 h-2 rounded-full ${locationTracking ? 'bg-green-400 animate-pulse' : 'bg-yellow-400'}`} />
                   <span>{locationTracking ? 'Tracking active' : 'Waiting for location...'}</span>
                 </div>
@@ -968,19 +999,19 @@ const CountdownTimer = ({ targetDate }) => {
                 return (
                   <div
                     key={bookingKey}
-                    className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 hover:border-teal-500/50 transition-all"
+                    className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-3 sm:p-6 hover:border-teal-500/50 transition-all"
                   >
                     {/* Ride Header */}
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3 sm:mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-gradient-to-r from-teal-600/20 to-blue-600/20 rounded-xl flex items-center justify-center">
-                          <FaCar className="text-2xl text-teal-400" />
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-teal-600/20 to-blue-600/20 rounded-xl flex items-center justify-center">
+                          <FaCar className="text-lg sm:text-2xl text-teal-400" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-white">
+                          <h3 className="text-base sm:text-lg font-semibold text-white">
                             {booking.vehicleType || 'Cab'} Ride
                           </h3>
-                          <p className="text-sm text-slate-400">
+                          <p className="text-xs sm:text-sm text-slate-400">
                             {booking.distanceKm ? booking.distanceKm.toFixed(1) : '?'} km • {formatCurrency(booking.estimatedFare || 0)}
                           </p>
                         </div>
@@ -988,23 +1019,23 @@ const CountdownTimer = ({ targetDate }) => {
                       
                       {/* Timer */}
                       {timeRemaining && booking.bookingType === 'IMMEDIATE' ? (
-  <div className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
-    <span className="text-yellow-400 text-sm font-semibold">
-      {timeRemaining}
-    </span>
-  </div>
-) : booking.bookingType === 'SCHEDULED' && (
-  <div className="px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-lg">
-    <span className="text-purple-400 text-sm font-semibold">
-      {Math.round((new Date(booking.expiresAt) - new Date()) / (1000 * 60))}m to respond
-    </span>
-  </div>
-)}
+                      <div className="px-2 sm:px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-lg self-start">
+                        <span className="text-yellow-400 text-xs sm:text-sm font-semibold">
+                          {timeRemaining}
+                        </span>
+                      </div>
+                  ) : booking.bookingType === 'SCHEDULED' && (
+                      <div className="px-2 sm:px-3 py-1 bg-purple-500/20 border border-purple-500/30 rounded-lg self-start">
+                        <span className="text-purple-400 text-xs sm:text-sm font-semibold">
+                          {Math.round((new Date(booking.expiresAt) - new Date()) / (1000 * 60))}m to respond
+                        </span>
+                      </div>
+                  )}
                     </div>
 
                     {/* Pickup & Drop */}
-                    <div className="space-y-3 mb-4">
-                      <div className="flex items-start gap-3">
+                    <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
+                      <div className="flex items-start gap-2 sm:gap-3">
                         <FaMapMarkerAlt className="text-blue-400 mt-1 flex-shrink-0" />
                         <div>
                           <p className="text-xs text-slate-400">PICKUP</p>
@@ -1018,7 +1049,7 @@ const CountdownTimer = ({ targetDate }) => {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2 sm:gap-3">
                         <FaMapMarkerAlt className="text-red-400 mt-1 flex-shrink-0" />
                         <div>
                           <p className="text-xs text-slate-400">DROP</p>
@@ -1036,50 +1067,50 @@ const CountdownTimer = ({ targetDate }) => {
 
                     {/* Customer Info */}
                     {booking.userId && (
-                      <div className="flex items-center gap-3 mb-4 p-3 bg-slate-700/30 rounded-lg">
-                        <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
-                          <FaUser className="text-white" />
+                      <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 p-2 sm:p-3 bg-slate-700/30 rounded-lg">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
+                          <FaUser className="text-white text-xs sm:text-sm" />
                         </div>
                         <div>
                           <p className="text-sm font-medium text-white">
                             {booking.userId.name || 'Customer'}
                           </p>
-                          <div className="flex items-center gap-2 text-xs text-slate-400">
-                            <FaStar className="text-yellow-400" />
+                          <div className="flex items-center gap-1 sm:gap-2 text-xs text-slate-400">
+                            <FaStar className="text-yellow-400 text-xs" />
                             <span>{booking.userId.rating || 4.5}</span>
                           </div>
                         </div>
                       </div>
                     )}
 
-{booking.bookingType === 'SCHEDULED' && (
-  <div className="mb-4 p-3 bg-purple-500/20 border border-purple-500/30 rounded-lg">
-    <div className="flex items-center gap-2 text-purple-400 mb-1">
-      <FaCalendarAlt className="text-sm" />
-      <span className="text-xs font-semibold">SCHEDULED RIDE</span>
-    </div>
-    <p className="text-sm text-white">
-      {new Date(booking.scheduledAt).toLocaleString('en-US', {
-        weekday: 'short',
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })}
-    </p>
-    <p className="text-xs text-purple-300 mt-1">
-      {formatScheduledTime(booking.scheduledAt)}
-    </p>
-  </div>
-)}
+                    {booking.bookingType === 'SCHEDULED' && (
+                      <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-purple-500/20 border border-purple-500/30 rounded-lg">
+                        <div className="flex items-center gap-2 text-purple-400 mb-1">
+                          <FaCalendarAlt className="text-xs sm:text-sm" />
+                          <span className="text-xs font-semibold">SCHEDULED RIDE</span>
+                        </div>
+                        <p className="text-xs sm:text-sm text-white">
+                          {new Date(booking.scheduledAt).toLocaleString('en-US', {
+                            weekday: 'short',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                        <p className="text-xs text-purple-300 mt-1">
+                          {formatScheduledTime(booking.scheduledAt)}
+                        </p>
+                      </div>
+                    )}
 
                     {/* Action Buttons */}
-                    <div className="flex gap-3">
+                    <div className="flex gap-2 sm:gap-3">
                       <button
                         onClick={() => handleAcceptBooking(booking)}
                         disabled={isLoading}
-                        className="flex-1 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                        className="flex-1 py-2 sm:py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-1 sm:gap-2 disabled:opacity-50 text-sm sm:text-base"
                       >
                         {isLoading ? <FaSpinner className="animate-spin" /> : <FaCheckCircle />}
                         Accept
@@ -1087,7 +1118,7 @@ const CountdownTimer = ({ targetDate }) => {
                       <button
                         onClick={() => handleRejectBooking(booking._id || booking.id)}
                         disabled={isLoading}
-                        className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                        className="flex-1 py-2 sm:py-3 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-1 sm:gap-2 disabled:opacity-50 text-sm sm:text-base"
                       >
                         <FaTimesCircle />
                         Reject
@@ -1171,12 +1202,12 @@ const CountdownTimer = ({ targetDate }) => {
     </div>
 
     {/* Ride Details */}
-    <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
-      <h3 className="text-white font-semibold mb-4">Ride Details</h3>
+    <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-3 sm:p-6">
+      <h3 className="text-white font-semibold mb-3 sm:mb-4">Ride Details</h3>
       
       {/* Pickup & Drop */}
-      <div className="space-y-3 mb-4">
-        <div className="flex items-start gap-3">
+      <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
+        <div className="flex items-start gap-2 sm:gap-3">
           <FaMapMarkerAlt className="text-blue-400 mt-1 flex-shrink-0" />
           <div>
             <p className="text-xs text-slate-400">PICKUP</p>
@@ -1185,7 +1216,7 @@ const CountdownTimer = ({ targetDate }) => {
             </p>
           </div>
         </div>
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-2 sm:gap-3">
           <FaMapMarkerAlt className="text-red-400 mt-1 flex-shrink-0" />
           <div>
             <p className="text-xs text-slate-400">DROP</p>
@@ -1198,9 +1229,9 @@ const CountdownTimer = ({ targetDate }) => {
 
       {/* Show countdown for scheduled rides */}
       {activeBooking.bookingType === 'SCHEDULED' && activeBooking.scheduledAt && (
-        <div className="mb-4 p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-          <h4 className="text-purple-400 font-medium mb-2 flex items-center gap-2">
-            <FaClock className="text-sm" />
+        <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+          <h4 className="text-purple-400 font-medium mb-2 flex items-center gap-2 text-sm">
+            <FaClock className="text-xs sm:text-sm" />
             Time Until Pickup
           </h4>
           <CountdownTimer targetDate={activeBooking.scheduledAt} />
@@ -1209,51 +1240,51 @@ const CountdownTimer = ({ targetDate }) => {
 
       {/* Customer Info */}
       {activeBooking.userId && (
-        <div className="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg mb-4">
-          <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
-            <FaUser className="text-white text-xl" />
+        <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-slate-700/30 rounded-lg mb-3 sm:mb-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full flex items-center justify-center">
+            <FaUser className="text-white text-lg sm:text-xl" />
           </div>
           <div className="flex-1">
-            <p className="text-white font-medium">{activeBooking.userId.name || 'Customer'}</p>
-            <p className="text-sm text-slate-400">Customer</p>
+            <p className="text-white font-medium text-sm sm:text-base">{activeBooking.userId.name || 'Customer'}</p>
+            <p className="text-xs sm:text-sm text-slate-400">Customer</p>
           </div>
           {activeBooking.userId.phone && (
             <a 
               href={`tel:${activeBooking.userId.phone}`}
               className="p-2 bg-teal-600/20 hover:bg-teal-600/30 rounded-lg text-teal-400 transition-all"
             >
-              <FaPhone />
+              <FaPhone className="text-sm sm:text-base" />
             </a>
           )}
         </div>
       )}
 
       {/* Fare Info with Rate from Database */}
-      <div className="bg-slate-700/30 rounded-lg p-4 mb-4">
-        <div className="flex justify-between items-center mb-3">
-          <h4 className="text-white font-medium">Trip Details</h4>
+      <div className="bg-slate-700/30 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+        <div className="flex justify-between items-center mb-2 sm:mb-3">
+          <h4 className="text-white font-medium text-sm sm:text-base">Trip Details</h4>
           <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded">
             {activeBooking.vehicleType}
           </span>
         </div>
         
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3">
           <div>
             <p className="text-xs text-slate-400">Distance</p>
-            <p className="text-lg font-semibold text-white">{activeBooking.distanceKm || 0} km</p>
+            <p className="text-base sm:text-lg font-semibold text-white">{activeBooking.distanceKm || 0} km</p>
           </div>
           <div>
             <p className="text-xs text-slate-400">Rate per km</p>
-            <p className="text-lg font-semibold text-teal-400">
+            <p className="text-base sm:text-lg font-semibold text-teal-400">
               ₹{vehiclePricing[activeBooking.vehicleType?.toUpperCase()]?.pricePerKm || vehiclePricing[activeBooking.vehicleType]?.pricePerKm || 0}
             </p>
           </div>
         </div>
         
-        <div className="mt-3 pt-3 border-t border-slate-600">
+        <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-slate-600">
           <div className="flex justify-between items-center">
-            <span className="text-slate-400">Estimated Fare</span>
-            <span className="text-xl font-bold text-teal-400">
+            <span className="text-slate-400 text-sm">Estimated Fare</span>
+            <span className="text-lg sm:text-xl font-bold text-teal-400">
               {formatCurrency(activeBooking.estimatedFare || 0)}
             </span>
           </div>
@@ -1261,10 +1292,10 @@ const CountdownTimer = ({ targetDate }) => {
       </div>
 
       {/* Trip Type & Payment Method */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-slate-700/30 rounded-lg p-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div className="bg-slate-700/30 rounded-lg p-2 sm:p-3">
           <p className="text-xs text-slate-400">Trip Type</p>
-          <p className="text-lg font-semibold text-white">
+          <p className="text-base sm:text-lg font-semibold text-white">
             {activeBooking.tripType === 'ROUND_TRIP' ? (
               <span className="text-yellow-400">Round Trip</span>
             ) : (
@@ -1275,22 +1306,22 @@ const CountdownTimer = ({ targetDate }) => {
             <p className="text-xs text-slate-400">{activeBooking.days} day(s)</p>
           )}
         </div>
-        <div className="bg-slate-700/30 rounded-lg p-3">
+        <div className="bg-slate-700/30 rounded-lg p-2 sm:p-3">
           <p className="text-xs text-slate-400">Payment</p>
-          <p className={`text-lg font-semibold ${activeBooking.paymentMethod === 'CASH' ? 'text-yellow-400' : 'text-green-400'}`}>
+          <p className={`text-base sm:text-lg font-semibold ${activeBooking.paymentMethod === 'CASH' ? 'text-yellow-400' : 'text-green-400'}`}>
             {activeBooking.paymentMethod === 'CASH' ? 'Cash' : 'Online'}
           </p>
         </div>
       </div>
 
       {/* Action Buttons based on status */}
-      <div className="space-y-3">
+      <div className="space-y-2 sm:space-y-3">
         {activeBooking.bookingStatus === 'DRIVER_ASSIGNED' && (
           <>
             <button
               onClick={handleDriverArrived}
               disabled={isLoading}
-              className="w-full py-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 sm:py-4 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
             >
               {isLoading ? <FaSpinner className="animate-spin" /> : <FaMapMarkerAlt />}
               I've Arrived at Pickup
@@ -1299,7 +1330,7 @@ const CountdownTimer = ({ targetDate }) => {
             <button
               onClick={handleCancelBooking}
               disabled={isLoading}
-              className="w-full py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 font-semibold rounded-xl transition-all"
+              className="w-full py-2 sm:py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 font-semibold rounded-xl transition-all text-sm sm:text-base"
             >
               Cancel Ride
             </button>
@@ -1314,7 +1345,7 @@ const CountdownTimer = ({ targetDate }) => {
                 setShowOtpModal(true);
               }}
               disabled={isLoading}
-              className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 sm:py-4 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
             >
               <FaKey />
               Verify OTP & Start Ride
@@ -1323,7 +1354,7 @@ const CountdownTimer = ({ targetDate }) => {
             <button
               onClick={handleCancelBooking}
               disabled={isLoading}
-              className="w-full py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 font-semibold rounded-xl transition-all"
+              className="w-full py-2 sm:py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 font-semibold rounded-xl transition-all text-sm sm:text-base"
             >
               Cancel Ride
             </button>
@@ -1344,7 +1375,7 @@ const CountdownTimer = ({ targetDate }) => {
               }
               setShowCompletionModal(true);
             }}
-            className="w-full py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+            className="w-full py-3 sm:py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
           >
             <FaFlag />
             Complete Ride
@@ -1357,15 +1388,15 @@ const CountdownTimer = ({ targetDate }) => {
 
         {/* No Active Ride State */}
         {activeTab === 'active' && !activeBooking && (
-          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-12 text-center">
-            <FaCar className="text-5xl text-slate-600 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No Active Ride</h3>
-            <p className="text-slate-400 mb-4">
+          <div className="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6 sm:p-12 text-center">
+            <FaCar className="text-4xl sm:text-5xl text-slate-600 mx-auto mb-4" />
+            <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">No Active Ride</h3>
+            <p className="text-slate-400 mb-4 text-sm sm:text-base">
               You don't have any active rides at the moment
             </p>
             <button
               onClick={() => setActiveTab('available')}
-              className="px-6 py-3 bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white rounded-xl font-semibold"
+              className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white rounded-xl font-semibold text-sm sm:text-base"
             >
               View Available Rides
             </button>
@@ -1376,15 +1407,15 @@ const CountdownTimer = ({ targetDate }) => {
       {/* OTP Modal */}
       {showOtpModal && selectedBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-slate-800 rounded-2xl w-full max-w-md p-6 border border-slate-700">
-            <h3 className="text-xl font-bold text-white mb-4">Enter OTP to Start Ride</h3>
-            <p className="text-sm text-slate-400 mb-4">
+          <div className="bg-slate-800 rounded-2xl w-full max-w-md p-4 sm:p-6 border border-slate-700">
+            <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Enter OTP to Start Ride</h3>
+            <p className="text-sm text-slate-400 mb-3 sm:mb-4">
               Ask the customer for the 6-digit OTP to start the ride
             </p>
             
-            <div className="mb-4 p-3 bg-slate-700/30 rounded-lg">
+            <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-slate-700/30 rounded-lg">
               <p className="text-xs text-slate-400">Customer Name</p>
-              <p className="text-white font-medium">{selectedBooking.userId?.name || 'Customer'}</p>
+              <p className="text-white font-medium text-sm sm:text-base">{selectedBooking.userId?.name || 'Customer'}</p>
             </div>
 
             <input
@@ -1392,26 +1423,26 @@ const CountdownTimer = ({ targetDate }) => {
               value={otpInput}
               onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
               placeholder="Enter 6-digit OTP"
-              className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white text-center text-2xl tracking-widest font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+              className="w-full px-3 sm:px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white text-center text-xl sm:text-2xl tracking-widest font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3 sm:mb-4"
               maxLength="6"
               autoFocus
             />
 
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={() => {
                   setShowOtpModal(false);
                   setOtpInput('');
                   setSelectedBooking(null);
                 }}
-                className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all"
+                className="flex-1 py-2 sm:py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 onClick={handleStartRide}
                 disabled={otpInput.length !== 6 || isLoading}
-                className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 py-2 sm:py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl transition-all flex items-center justify-center gap-1 sm:gap-2 disabled:opacity-50 text-sm sm:text-base"
               >
                 {isLoading ? <FaSpinner className="animate-spin" /> : <FaCheck />}
                 Verify & Start
@@ -1423,10 +1454,10 @@ const CountdownTimer = ({ targetDate }) => {
 
       {/* Ride Completion Modal - FIXED WITH DATABASE PRICING */}
       {showCompletionModal && activeBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" key="ride-completion-modal">
           <div className="bg-slate-800 rounded-2xl w-full max-w-md max-h-[90vh] border border-slate-700 overflow-hidden flex flex-col">
-            <div className="p-6 border-b border-slate-700">
-              <h3 className="text-xl font-bold text-white">Complete Ride</h3>
+            <div className="p-4 sm:p-6 border-b border-slate-700">
+              <h3 className="text-lg sm:text-xl font-bold text-white">Complete Ride</h3>
               <p className="text-sm text-slate-400 mt-1">Enter ride details and calculate fare</p>
             </div>
             
@@ -1435,42 +1466,11 @@ const CountdownTimer = ({ targetDate }) => {
               <div className="flex justify-center py-8">
                 <FaSpinner className="animate-spin text-4xl text-teal-400" />
               </div>
+            ) : !completionValues ? (
+              <div className="text-center py-8">
+                <p className="text-red-400">Pricing information not available</p>
+              </div>
             ) : (
-              (() => {
-                // Normalize vehicle type to match pricing keys (uppercase)
-                const vehicleTypeKey = activeBooking.vehicleType?.toUpperCase();
-                const pricing = vehiclePricing[vehicleTypeKey] || vehiclePricing[activeBooking.vehicleType] || { baseFare: 50, pricePerKm: 12, adminCommissionPercent: 20 };
-                
-                if (!vehiclePricing[vehicleTypeKey] && !vehiclePricing[activeBooking.vehicleType]) {
-                  console.warn('⚠️ Pricing not found for vehicle type:', activeBooking.vehicleType, 'Using default pricing');
-                }
-                
-                if (!pricing) {
-                  return (
-                    <div className="text-center py-8">
-                      <p className="text-red-400">Pricing information not available</p>
-                    </div>
-                  );
-                }
-                
-                const estimatedDistance = activeBooking.distanceKm || 0;
-                const billableKm = activeBooking.billableKm || estimatedDistance;
-                const isRoundTrip = activeBooking.tripType === 'ROUND_TRIP';
-                const actualDistance = rideCompletionData.actualDistance || (isRoundTrip ? billableKm : estimatedDistance);
-                const additionalCharges = rideCompletionData.additionalCharges || 0;
-                
-                // Calculate fares using database pricing
-                const baseFare = pricing.baseFare;
-                const perKmRate = pricing.pricePerKm;
-                const commissionPercent = pricing.adminCommissionPercent || 25;
-                
-                const distanceFare = actualDistance * perKmRate;
-                const subtotal = baseFare + distanceFare;
-                const totalFare = subtotal + additionalCharges;
-                const commission = Math.round(totalFare * commissionPercent / 100);
-                const riderEarning = totalFare - commission;
-                
-                return (
                   <div className="space-y-4 mb-6">
                     {/* Customer Info */}
                     <div className="bg-slate-700/30 rounded-lg p-4">
@@ -1514,20 +1514,20 @@ const CountdownTimer = ({ targetDate }) => {
                     </div>
 
                     {/* Trip Type & Payment & Estimated Fare */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="bg-slate-700/30 rounded-lg p-3">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                      <div className="bg-slate-700/30 rounded-lg p-2 sm:p-3">
                         <p className="text-xs text-slate-400">Trip Type</p>
-                        <p className="text-white font-medium">{activeBooking.tripType === 'ROUND_TRIP' ? 'Round Trip' : 'One Way'}</p>
+                        <p className="text-white font-medium text-sm">{activeBooking.tripType === 'ROUND_TRIP' ? 'Round Trip' : 'One Way'}</p>
                       </div>
-                      <div className="bg-slate-700/30 rounded-lg p-3">
+                      <div className="bg-slate-700/30 rounded-lg p-2 sm:p-3">
                         <p className="text-xs text-slate-400">Payment</p>
-                        <p className={`font-medium ${activeBooking.paymentMethod === 'CASH' ? 'text-yellow-400' : 'text-green-400'}`}>
+                        <p className={`font-medium text-sm ${activeBooking.paymentMethod === 'CASH' ? 'text-yellow-400' : 'text-green-400'}`}>
                           {activeBooking.paymentMethod === 'CASH' ? 'Cash' : 'Online'}
                         </p>
                       </div>
-                      <div className="bg-slate-700/30 rounded-lg p-3">
+                      <div className="bg-slate-700/30 rounded-lg p-2 sm:p-3">
                         <p className="text-xs text-slate-400">Est. Fare</p>
-                        <p className="text-white font-medium">₹{activeBooking.estimatedFare || 0}</p>
+                        <p className="text-white font-medium text-sm">₹{activeBooking.estimatedFare || 0}</p>
                       </div>
                     </div>
 
@@ -1538,48 +1538,47 @@ const CountdownTimer = ({ targetDate }) => {
                       </label>
                       <input
                         type="number"
-                        value={rideCompletionData.actualDistance || (isRoundTrip ? billableKm : estimatedDistance)}
-                        onChange={(e) => setRideCompletionData({
-                          ...rideCompletionData,
-                          actualDistance: parseFloat(e.target.value) || 0
-                        })}
+                        value={rideCompletionData.actualDistance || completionValues?.initialDistance || 0}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          setRideCompletionData(prev => ({...prev, actualDistance: val}));
+                        }}
                         step="0.1"
-                        min={isRoundTrip ? billableKm : estimatedDistance}
-                        className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        min={completionValues?.initialDistance || 0}
+                        className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-slate-700 border border-slate-600 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                         placeholder="Enter actual distance"
                         autoFocus
                       />
                       <p className="text-xs text-slate-500 mt-1">
-                        {isRoundTrip ? `Round Trip - Billable: ${billableKm.toFixed(2)} km` : `Estimated: ${estimatedDistance.toFixed(2)} km`}
+                        {activeBooking?.tripType === 'ROUND_TRIP' ? `Round Trip - Billable: ${completionValues?.billableKm?.toFixed(2) || 0} km` : `Estimated: ${completionValues?.estimatedDistance?.toFixed(2) || 0} km`}
                       </p>
                     </div>
 
-                    {/* Additional Charges breakdown */}
+                    {/* Additional charges breakdown */}
                     <div>
                       <label className="block text-sm font-medium text-slate-400 mb-2">
                         Additional Charges Breakdown (₹)
                       </label>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3">
                         <div>
                           <input
                             type="number"
                             value={rideCompletionData.additionalChargesBreakdown.tollCharges}
-                            onChange={(e) => setRideCompletionData({
-                              ...rideCompletionData,
-                              additionalChargesBreakdown: {
-                                ...rideCompletionData.additionalChargesBreakdown,
-                                tollCharges: parseFloat(e.target.value) || 0
-                              },
-                              additionalCharges: (
-                                (parseFloat(e.target.value) || 0) +
-                                rideCompletionData.additionalChargesBreakdown.parkingCharges +
-                                rideCompletionData.additionalChargesBreakdown.nightCharges +
-                                rideCompletionData.additionalChargesBreakdown.otherCharges
-                              )
-                            })}
-                            min="0"
-                            step="10"
-                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white text-sm"
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              setRideCompletionData(prev => ({
+                                ...prev,
+                                additionalCharges: val + 
+                                  (prev.additionalChargesBreakdown.parkingCharges || 0) +
+                                  (prev.additionalChargesBreakdown.nightCharges || 0) +
+                                  (prev.additionalChargesBreakdown.otherCharges || 0),
+                                additionalChargesBreakdown: {
+                                  ...prev.additionalChargesBreakdown,
+                                  tollCharges: val
+                                }
+                              }));
+                            }}
+                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Toll"
                           />
                           <p className="text-xs text-slate-500 mt-1">Toll</p>
@@ -1588,22 +1587,21 @@ const CountdownTimer = ({ targetDate }) => {
                           <input
                             type="number"
                             value={rideCompletionData.additionalChargesBreakdown.parkingCharges}
-                            onChange={(e) => setRideCompletionData({
-                              ...rideCompletionData,
-                              additionalChargesBreakdown: {
-                                ...rideCompletionData.additionalChargesBreakdown,
-                                parkingCharges: parseFloat(e.target.value) || 0
-                              },
-                              additionalCharges: (
-                                rideCompletionData.additionalChargesBreakdown.tollCharges +
-                                (parseFloat(e.target.value) || 0) +
-                                rideCompletionData.additionalChargesBreakdown.nightCharges +
-                                rideCompletionData.additionalChargesBreakdown.otherCharges
-                              )
-                            })}
-                            min="0"
-                            step="10"
-                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white text-sm"
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              setRideCompletionData(prev => ({
+                                ...prev,
+                                additionalCharges: (prev.additionalChargesBreakdown.tollCharges || 0) + 
+                                  val +
+                                  (prev.additionalChargesBreakdown.nightCharges || 0) +
+                                  (prev.additionalChargesBreakdown.otherCharges || 0),
+                                additionalChargesBreakdown: {
+                                  ...prev.additionalChargesBreakdown,
+                                  parkingCharges: val
+                                }
+                              }));
+                            }}
+                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Parking"
                           />
                           <p className="text-xs text-slate-500 mt-1">Parking</p>
@@ -1612,22 +1610,21 @@ const CountdownTimer = ({ targetDate }) => {
                           <input
                             type="number"
                             value={rideCompletionData.additionalChargesBreakdown.nightCharges}
-                            onChange={(e) => setRideCompletionData({
-                              ...rideCompletionData,
-                              additionalChargesBreakdown: {
-                                ...rideCompletionData.additionalChargesBreakdown,
-                                nightCharges: parseFloat(e.target.value) || 0
-                              },
-                              additionalCharges: (
-                                rideCompletionData.additionalChargesBreakdown.tollCharges +
-                                rideCompletionData.additionalChargesBreakdown.parkingCharges +
-                                (parseFloat(e.target.value) || 0) +
-                                rideCompletionData.additionalChargesBreakdown.otherCharges
-                              )
-                            })}
-                            min="0"
-                            step="10"
-                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white text-sm"
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              setRideCompletionData(prev => ({
+                                ...prev,
+                                additionalCharges: (prev.additionalChargesBreakdown.tollCharges || 0) + 
+                                  (prev.additionalChargesBreakdown.parkingCharges || 0) +
+                                  val +
+                                  (prev.additionalChargesBreakdown.otherCharges || 0),
+                                additionalChargesBreakdown: {
+                                  ...prev.additionalChargesBreakdown,
+                                  nightCharges: val
+                                }
+                              }));
+                            }}
+                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Night"
                           />
                           <p className="text-xs text-slate-500 mt-1">Night</p>
@@ -1636,22 +1633,21 @@ const CountdownTimer = ({ targetDate }) => {
                           <input
                             type="number"
                             value={rideCompletionData.additionalChargesBreakdown.otherCharges}
-                            onChange={(e) => setRideCompletionData({
-                              ...rideCompletionData,
-                              additionalChargesBreakdown: {
-                                ...rideCompletionData.additionalChargesBreakdown,
-                                otherCharges: parseFloat(e.target.value) || 0
-                              },
-                              additionalCharges: (
-                                rideCompletionData.additionalChargesBreakdown.tollCharges +
-                                rideCompletionData.additionalChargesBreakdown.parkingCharges +
-                                rideCompletionData.additionalChargesBreakdown.nightCharges +
-                                (parseFloat(e.target.value) || 0)
-                              )
-                            })}
-                            min="0"
-                            step="10"
-                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white text-sm"
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value) || 0;
+                              setRideCompletionData(prev => ({
+                                ...prev,
+                                additionalCharges: (prev.additionalChargesBreakdown.tollCharges || 0) + 
+                                  (prev.additionalChargesBreakdown.parkingCharges || 0) +
+                                  (prev.additionalChargesBreakdown.nightCharges || 0) +
+                                  val,
+                                additionalChargesBreakdown: {
+                                  ...prev.additionalChargesBreakdown,
+                                  otherCharges: val
+                                }
+                              }));
+                            }}
+                            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="Other"
                           />
                           <p className="text-xs text-slate-500 mt-1">Other</p>
@@ -1659,14 +1655,16 @@ const CountdownTimer = ({ targetDate }) => {
                       </div>
                       <input
                         type="text"
-                        value={rideCompletionData.additionalChargesBreakdown.description}
-                        onChange={(e) => setRideCompletionData({
-                          ...rideCompletionData,
-                          additionalChargesBreakdown: {
-                            ...rideCompletionData.additionalChargesBreakdown,
-                            description: e.target.value
-                          }
-                        })}
+                        value={rideCompletionData.additionalChargesBreakdown.description || ''}
+                        onChange={(e) => {
+                          setRideCompletionData(prev => ({
+                            ...prev,
+                            additionalChargesBreakdown: {
+                              ...prev.additionalChargesBreakdown,
+                              description: e.target.value
+                            }
+                          }));
+                        }}
                         className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-xl text-white text-sm mt-3"
                         placeholder="Description (optional)"
                       />
@@ -1676,7 +1674,15 @@ const CountdownTimer = ({ targetDate }) => {
                     <div className="bg-slate-700/30 rounded-lg p-4">
                       <h4 className="text-white font-medium mb-3">Fare Breakdown</h4>
                       
-                      <div className="space-y-2">
+                        {(completionValues && (() => {
+                          const actualDistance = rideCompletionData.actualDistance || completionValues.initialDistance;
+                          const additionalCharges = rideCompletionData.additionalCharges || 0;
+                          const distanceFare = actualDistance * completionValues.perKmRate;
+                          const subtotal = completionValues.baseFare + distanceFare;
+                          const totalFare = subtotal + additionalCharges;
+                          
+                          return (
+                        <div className="space-y-2">
                         {/* Vehicle Type & Rate */}
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-400">Vehicle Type:</span>
@@ -1684,20 +1690,20 @@ const CountdownTimer = ({ targetDate }) => {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-400">Rate per km:</span>
-                          <span className="text-white font-bold">₹{perKmRate}</span>
+                          <span className="text-white font-bold">₹{completionValues.perKmRate}</span>
                         </div>
                         
                         {/* Base Fare */}
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-400">Base Fare:</span>
-                          <span className="text-white">₹{baseFare}</span>
+                          <span className="text-white">₹{completionValues.baseFare}</span>
                         </div>
                         
                         {/* Distance Fare */}
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-400">Distance Fare:</span>
                           <span className="text-white">
-                            {actualDistance.toFixed(1)} km × ₹{perKmRate} = ₹{Math.round(distanceFare)}
+                            {actualDistance.toFixed(1)} km × ₹{completionValues.perKmRate} = ₹{Math.round(distanceFare)}
                           </span>
                         </div>
 
@@ -1723,26 +1729,26 @@ const CountdownTimer = ({ targetDate }) => {
                           <span className="text-slate-300">TOTAL FARE:</span>
                           <span className="text-teal-400 text-xl">₹{Math.round(totalFare)}</span>
                         </div>
-                      </div>
+                        </div>
+                          );
+                        })())}
                     </div>
                   </div>
-                );
-              })()
             )}
             </div>
             
             {/* Action Buttons */}
-            <div className="p-6 border-t border-slate-700 flex gap-3">
+            <div className="p-4 sm:p-6 border-t border-slate-700 flex gap-2 sm:gap-3">
               <button
                 onClick={() => setShowCompletionModal(false)}
-                className="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all"
+                className="flex-1 py-2 sm:py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCompleteRide}
                 disabled={!rideCompletionData.actualDistance || rideCompletionData.actualDistance < (activeBooking?.distanceKm || 0) || isLoading || isLoadingPricing}
-                className="flex-1 py-3 bg-gradient-to-r from-teal-600 to-green-600 hover:from-teal-700 hover:to-green-700 text-white rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="flex-1 py-2 sm:py-3 bg-gradient-to-r from-teal-600 to-green-600 hover:from-teal-700 hover:to-green-700 text-white rounded-xl transition-all flex items-center justify-center gap-1 sm:gap-2 disabled:opacity-50 text-sm sm:text-base"
               >
                 {isLoading ? <FaSpinner className="animate-spin" /> : <FaCheck />}
                 Complete Ride

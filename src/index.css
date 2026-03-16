@@ -37,6 +37,15 @@ input, textarea {
   display: none;
 }
 
+/* Hide scrollbar for mobile navigation */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 @keyframes scaleIn {
   from {
     opacity: 0;

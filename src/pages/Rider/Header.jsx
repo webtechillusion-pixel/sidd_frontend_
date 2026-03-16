@@ -157,19 +157,19 @@ const menuItems = [
       
       {/* Mobile Navigation */}
       <div className="lg:hidden border-t bg-gray-50">
-        <div className="flex overflow-x-auto space-x-1 p-2">
+        <div className="flex overflow-x-auto scrollbar-hide space-x-1 p-2 -webkit-overflow-scrolling-touch">
           {menuItems.map(([key, label, Icon]) => (
             <button
               key={key}
               onClick={() => setActivePage(key)}
-              className={`flex-shrink-0 flex flex-col items-center gap-1 px-3 py-2 rounded-lg text-xs transition-all duration-200 min-w-[60px] ${
+              className={`flex-shrink-0 flex flex-col items-center gap-1 px-2 sm:px-3 py-2 rounded-lg text-xs transition-all duration-200 min-w-[55px] sm:min-w-[60px] ${
                 activePage === key
                   ? "bg-teal-600 text-white shadow-lg transform scale-105"
                   : "text-gray-600 hover:bg-white hover:shadow-sm"
               }`}
             >
-              <Icon className="text-sm" />
-              <span className="font-medium">{label}</span>
+              <Icon className="text-xs sm:text-sm" />
+              <span className="font-medium text-[10px] sm:text-xs">{label}</span>
             </button>
           ))}
         </div>
